@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Nasch Emsdetten</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon.png">
+  <style>
+    /* ── Reset & Basis ───────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:    #1e3a5f;
+      --navy-lt: #2d5285;
+      --gold:    #f0a500;
+      --white:   #ffffff;
+      --bg:      #f4f6f9;
+      --card:    #ffffff;
+      --text:    #1a1a2e;
+      --muted:   #6b7280;
+      --border:  #e5e7eb;
+      --early:   #FFF2CC;
+      --early-t: #7D6608;
+      --late:    #FAE5D3;
+      --late-t:  #784212;
+      --success: #E1F5EE;
+      --success-t:#085041;
+      --danger:  #FCEBEB;
+      --danger-t: #791F1F;
+      --warn:    #faeeda;
+      --warn-t:  #633806;
+      --radius:  10px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+    }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Screens ─────────────────────────────────────────── */
+    .screen { display: none; flex-direction: column; min-height: 100%; }
+    .screen.active { display: flex; }
+
+    /* ── LOGIN SCREEN ────────────────────────────────────── */
+    #loginScreen {
+      background: var(--navy);
+      align-items: center;
+      justify-content: center;
+      padding: calc(var(--safe-top) + 24px) 24px calc(var(--safe-bot) + 24px);
+    }
+    .login-logo { text-align: center; margin-bottom: 40px; }
+    .login-logo h1 {
+      color: var(--white);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .login-logo p { color: #7ab0d8; font-size: 14px; margin-top: 4px; }
+    .login-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .login-card h2 {
+      color: var(--white);
+      font-size: 17px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-card p {
+      color: #a0b8d0;
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .pin-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.4);
+      background: transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .pin-dot.filled { background: var(--gold); border-color: var(--gold); }
+    .pin-dot.error  { background: #E24B4A; border-color: #E24B4A; }
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .key {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 16px 8px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--white);
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+    }
+    .key:active { background: rgba(255,255,255,0.25); }
+    .key.del { font-size: 16px; }
+    .key.empty { visibility: hidden; }
+    .login-err {
+      text-align: center;
+      font-size: 13px;
+      color: #F09595;
+      margin-top: 14px;
+      min-height: 18px;
+    }
+
+    /* ── HAUPTNAVIGATION ─────────────────────────────────── */
+    .topbar {
+      background: var(--navy);
+      padding: calc(var(--safe-top) + 10px) 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .topbar-title { color: var(--white); font-size: 16px; font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .topbar-icon { color: #a0b8d0; font-size: 20px; cursor: pointer; }
+    .avatar-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--navy);
+      cursor: pointer;
+    }
+
+    /* ── BOTTOM NAVIGATION ───────────────────────────────── */
+    .bottom-nav {
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: var(--safe-bot);
+      flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 10px 4px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      color: var(--muted);
+      font-size: 10px;
+      gap: 3px;
+      transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--navy); }
+    .nav-icon { font-size: 22px; }
+    .nav-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--navy);
+      display: none;
+    }
+    .nav-item.active .nav-dot { display: block; }
+
+    /* ── PAGE CONTENT ────────────────────────────────────── */
+    .page-content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .page { display: none; padding: 14px; }
+    .page.active { display: block; }
+
+    /* ── KARTEN & ELEMENTE ───────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      background: var(--card);
+    }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
+    .card-body { padding: 12px 14px; border-top: 1px solid var(--border); }
+
+    /* ── WOCHENPLAN ──────────────────────────────────────── */
+    .week-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+    }
+    .week-label { font-size: 13px; font-weight: 600; color: var(--text); }
+    .week-btn { color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
+    .legend {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .leg {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--muted);
+    }
+    .leg-box {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+    }
+    .plan-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    .plan-table { border-collapse: collapse; min-width: 480px; width: 100%; }
+    .plan-table th {
+      background: #f8fafc;
+      padding: 6px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    .plan-table th.name-col {
+      text-align: left;
+      padding-left: 10px;
+      min-width: 80px;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #f8fafc;
+    }
+    .plan-table td {
+      padding: 4px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .plan-table td.name-cell {
+      text-align: left;
+      padding-left: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--card);
+    }
+    .plan-table tr.me-row td { background: rgba(30,58,95,0.05); }
+    .plan-table tr.me-row td.name-cell { background: rgba(30,58,95,0.08); color: var(--navy); }
+    .plan-table tr:last-child td { border-bottom: none; }
+    .shift-pill {
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 9px;
+      font-weight: 600;
+      display: block;
+      margin: 1px;
+      white-space: nowrap;
+    }
+    .s-early { background: var(--early); color: var(--early-t); }
+    .s-late  { background: var(--late);  color: var(--late-t);  }
+    .s-off   { color: var(--muted); font-size: 10px; }
+    .s-vacation { background: #FBEAF0; color: #72243E; }
+    .s-kv    { background: #fef08a; color: var(--warn-t); border: 1px solid #eab308; }
+    .s-bs    { background: #EEEDFE; color: #3C3489; }
+    .s-office{ background: #e8ddd4; color: #6b4c36; }
+    .s-meeting{background: var(--late); color: var(--late-t); }
+    .s-clean { background: #d0f4f4; color: #0e6e6e; }
+    .s-ho    { background: #E6F1FB; color: #0C447C; }
+    .today-col { background: rgba(30,58,95,0.04) !important; }
+    .today-th  { color: var(--navy) !important; background: rgba(30,58,95,0.08) !important; }
+    .foot-row td {
+      background: #f8fafc;
+      padding: 5px 4px;
+      font-size: 9px;
+      font-weight: 600;
+    }
+    .f-early { color: var(--early-t); display: block; }
+    .f-late  { color: var(--late-t); display: block; }
+    .f-total { color: var(--text); display: block; }
+    .foot-sum { background: #1e3a5f !important; color: #e8f4fd; border-radius: 4px; padding: 2px 4px; font-size: 9px; }
+
+    /* ── PROFIL / MEIN BEREICH ───────────────────────────── */
+    .profil-header {
+      background: var(--navy);
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 12px;
+      border-radius: var(--radius);
+    }
+    .profil-av {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; color: var(--navy);
+    }
+    .profil-name { color: var(--white); font-size: 16px; font-weight: 600; }
+    .profil-meta { color: #a0b8d0; font-size: 12px; margin-top: 2px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+    }
+    .stat-lbl { font-size: 11px; color: var(--muted); }
+    .stat-val { font-size: 20px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+    .menu-list { display: flex; flex-direction: column; gap: 0; }
+    .menu-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .menu-item:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    .menu-item:last-child  { border-radius: 0 0 var(--radius) var(--radius); border-bottom: none; }
+    .menu-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .menu-label { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+    .menu-arrow { color: var(--muted); font-size: 16px; }
+    .badge-count {
+      background: #E24B4A; color: #fff;
+      border-radius: 10px; font-size: 11px; font-weight: 600;
+      padding: 2px 7px;
+    }
+
+    /* ── BENACHRICHTIGUNGEN ──────────────────────────────── */
+    .notif-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .notif-item.unread { background: #f0f5ff; }
+    .notif-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .notif-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .notif-body  { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+    .notif-time  { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+    .unread-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--navy); margin-top: 6px; flex-shrink: 0; }
+
+    /* ── GESPERRT-SCREEN ─────────────────────────────────── */
+    .sperr-screen {
+      padding: 24px;
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .sperr-icon { font-size: 48px; color: #E24B4A; }
+    .sperr-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .sperr-body  { font-size: 14px; color: var(--muted); max-width: 280px; line-height: 1.5; }
+
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn {
+      border: none; border-radius: var(--radius);
+      padding: 13px 20px; font-size: 14px; font-weight: 600;
+      cursor: pointer; width: 100%; text-align: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.85; }
+    .btn-primary { background: var(--navy); color: var(--white); }
+    .btn-success { background: #1D9E75; color: var(--white); }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── BANNER ──────────────────────────────────────────── */
+    .banner {
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 12px;
+      display: flex; align-items: flex-start; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .banner-warn  { background: var(--warn);    border: 1px solid #eab308; color: var(--warn-t); }
+    .banner-info  { background: #E6F1FB;         border: 1px solid #185FA5; color: #0C447C; }
+    .banner-ok    { background: var(--success);  border: 1px solid #1D9E75; color: var(--success-t); }
+    .banner-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── SECTION HEADER ──────────────────────────────────── */
+    .section-hdr {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      padding: 4px 0 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── PIN ÄNDERN ──────────────────────────────────────── */
+    .pin-change-wrap { max-width: 320px; margin: 0 auto; }
+    .step-dots {
+      display: flex; justify-content: center; gap: 8px;
+      margin-bottom: 20px;
+    }
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border);
+      transition: background 0.2s;
+    }
+    .step-dot.active { background: var(--navy); }
+    .step-dot.done   { background: #1D9E75; }
+
+    /* ── UTIL ────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .mt-8  { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ LOGIN SCREEN ══════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-logo">
+    <h1>Nasch Emsdetten</h1>
+    <p>Mitarbeiter-App</p>
+  </div>
+  <div class="login-card">
+    <h2>Willkommen</h2>
+    <p>Bitte PIN eingeben</p>
+    <div class="pin-dots" id="loginDots">
+      <div class="pin-dot" id="ld0"></div>
+      <div class="pin-dot" id="ld1"></div>
+      <div class="pin-dot" id="ld2"></div>
+      <div class="pin-dot" id="ld3"></div>
+    </div>
+    <div class="keypad">
+      <div class="key" data-key="1">1</div>
+      <div class="key" data-key="2">2</div>
+      <div class="key" data-key="3">3</div>
+      <div class="key" data-key="4">4</div>
+      <div class="key" data-key="5">5</div>
+      <div class="key" data-key="6">6</div>
+      <div class="key" data-key="7">7</div>
+      <div class="key" data-key="8">8</div>
+      <div class="key" data-key="9">9</div>
+      <div class="key empty"></div>
+      <div class="key" data-key="0">0</div>
+      <div class="key del" data-key="del">⌫</div>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ HAUPT-APP ══════════════════════════ -->
+<div id="appScreen" class="screen">
+
+  <!-- Topbar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-title" id="topbarTitle">Wochenplan</div>
+    <div class="topbar-right">
+      <span class="topbar-icon" id="bellBtn" title="Benachrichtigungen">🔔</span>
+      <div class="avatar-btn" id="avatarBtn">LK</div>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="page-content">
+
+    <!-- ── WOCHENPLAN ────────────────────────────────────── -->
+    <div class="page active" id="pagePlan">
+      <div class="week-nav">
+        <span class="week-btn" id="prevWeek">‹</span>
+        <span class="week-label" id="weekLabel">KW 41 · 05.10.–11.10.2026</span>
+        <span class="week-btn" id="nextWeek">›</span>
+      </div>
+      <div class="legend">
+        <div class="leg"><div class="leg-box" style="background:#FFF2CC;"></div>Früh</div>
+        <div class="leg"><div class="leg-box" style="background:#FAE5D3;"></div>Spät</div>
+        <div class="leg"><div class="leg-box" style="background:#FBEAF0;"></div>Urlaub</div>
+        <div class="leg"><div class="leg-box" style="background:#fef08a;"></div>KV</div>
+        <div class="leg"><div class="leg-box" style="background:#EEEDFE;"></div>BS</div>
+        <div class="leg"><div class="leg-box" style="background:#E6F1FB;"></div>HO</div>
+      </div>
+      <div class="plan-wrap">
+        <table class="plan-table" id="planTable"></table>
+      </div>
+    </div>
+
+    <!-- ── MEIN BEREICH ──────────────────────────────────── -->
+    <div class="page" id="pageProfil">
+      <div class="profil-header" id="profilHeader">
+        <div class="profil-av" id="profilAv">LK</div>
+        <div>
+          <div class="profil-name" id="profilName">Lee Ko</div>
+          <div class="profil-meta" id="profilMeta">Vollzeit · Filialleiterin</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-lbl">Resturlaub</div>
+          <div class="stat-val" id="urlaubRest">12</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Wunschfrei / Zyklus</div>
+          <div class="stat-val" id="wunschKont">3</div>
+        </div>
+      </div>
+      <div class="section-hdr">Meine Bereiche</div>
+      <div class="card menu-list">
+        <div class="menu-item" onclick="goTo('pageKrank')">
+          <div class="menu-icon" style="background:#FCEBEB;">🤒</div>
+          <span class="menu-label">Krankmeldung</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageWunsch')">
+          <div class="menu-icon" style="background:#FBEAF0;">🏖</div>
+          <span class="menu-label">Wunschfrei / Urlaub</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageStundenzettel')">
+          <div class="menu-icon" style="background:#E6F1FB;">📋</div>
+          <span class="menu-label">Stundenzettel</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageVerfuegbar')">
+          <div class="menu-icon" style="background:#E1F5EE;">📅</div>
+          <span class="menu-label">Verfügbarkeit</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" id="homeOfficeMenu" onclick="goTo('pageHomeOffice')">
+          <div class="menu-icon" style="background:#E6F1FB;">🏠</div>
+          <span class="menu-label">Home-Office eintragen</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pagePIN')">
+          <div class="menu-icon" style="background:#f8f8f8;">🔑</div>
+          <span class="menu-label">PIN ändern</span>
+          <span class="menu-arrow">›</span>
+        </div>
+      </div>
+      <div class="mt-12">
+        <button class="btn btn-outline" id="logoutBtn">Abmelden</button>
+      </div>
+    </div>
+
+    <!-- ── BENACHRICHTIGUNGEN ────────────────────────────── -->
+    <div class="page" id="pageNotif">
+      <div class="section-hdr">Heute</div>
+      <div class="card">
+        <div class="notif-item unread">
+          <div class="notif-icon" style="background:#E1F5EE;">📅</div>
+          <div style="flex:1;">
+            <div class="notif-title">Neuer Wochenplan veröffentlicht</div>
+            <div class="notif-body">KW 41 ist jetzt sichtbar. Schichten wurden in deinen Kalender übertragen.</div>
+            <div class="notif-time">vor 15 Min.</div>
+          </div>
+          <div class="unread-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon" style="background:#FBEAF0;">🏖</div>
+          <div style="flex:1;">
+            <div class="notif-title">Wunschfrei genehmigt</div>
+            <div class="notif-body">Fr., 09.10. Frühschicht wurde genehmigt.</div>
+            <div class="notif-time">vor 1 Std.</div>
+          </div>
+          <div class="unread-dot"></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:#FCEBEB;">👥</div>
+          <div style="flex:1;">
+            <div class="notif-title">Stundenzettel September bereit</div>
+            <div class="notif-body">Bitte bis 30.09. um 22:00 Uhr unterschreiben.</div>
+            <div class="notif-time">Mo., 28.09. · 08:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN-BEREICH ──────────────────────────────────── -->
+    <div class="page" id="pageAdmin">
+      <div class="section-hdr">Admin · Lee Ko</div>
+      <div class="card menu-list">
+        <div class="menu-item" onclick="goTo('pageAdminPlan')">
+          <div class="menu-icon" style="background:#E6F1FB;">📊</div>
+          <span class="menu-label">Planung KW 41</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageAdminWunsch')">
+          <div class="menu-icon" style="background:#FBEAF0;">✅</div>
+          <span class="menu-label">Wunschfrei genehmigen</span>
+          <div class="badge-count">3</div>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageAdminKrank')">
+          <div class="menu-icon" style="background:#FCEBEB;">🤒</div>
+          <span class="menu-label">Krankmeldungen</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageAdminKV')">
+          <div class="menu-icon" style="background:#faeeda;">👥</div>
+          <span class="menu-label">KV-System</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageAdminMitarbeiter')">
+          <div class="menu-icon" style="background:#E1F5EE;">👤</div>
+          <span class="menu-label">Mitarbeiterliste</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="goTo('pageAdminStunden')">
+          <div class="menu-icon" style="background:#f8f8f8;">📋</div>
+          <span class="menu-label">Stundenzettel</span>
+          <span class="menu-arrow">›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PIN ÄNDERN ────────────────────────────────────── -->
+    <div class="page" id="pagePIN">
+      <div class="pin-change-wrap">
+        <div class="step-dots" id="pinStepDots">
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" id="pinChangeTitle">Aktuelle PIN eingeben</div>
+          </div>
+          <div class="card-body">
+            <div class="pin-dots" id="changeDots">
+              <div class="pin-dot" id="cd0"></div>
+              <div class="pin-dot" id="cd1"></div>
+              <div class="pin-dot" id="cd2"></div>
+              <div class="pin-dot" id="cd3"></div>
+            </div>
+            <div class="keypad">
+              <div class="key" data-changekey="1">1</div>
+              <div class="key" data-changekey="2">2</div>
+              <div class="key" data-changekey="3">3</div>
+              <div class="key" data-changekey="4">4</div>
+              <div class="key" data-changekey="5">5</div>
+              <div class="key" data-changekey="6">6</div>
+              <div class="key" data-changekey="7">7</div>
+              <div class="key" data-changekey="8">8</div>
+              <div class="key" data-changekey="9">9</div>
+              <div class="key empty"></div>
+              <div class="key" data-changekey="0">0</div>
+              <div class="key del" data-changekey="del">⌫</div>
+            </div>
+            <div class="login-err" id="pinChangeErr"></div>
+            <div style="color:#085041;text-align:center;font-size:13px;margin-top:8px;display:none;" id="pinChangeOk">✓ PIN erfolgreich geändert!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub-Seiten (Platzhalter – werden in js/pages.js geladen) -->
+    <div class="page" id="pageKrank"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageWunsch"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageStundenzettel"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageVerfuegbar"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageHomeOffice"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageAdminPlan"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageAdminWunsch"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageAdminKrank"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageAdminKV"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageAdminMitarbeiter"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageAdminStunden"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+
+  </div><!-- /page-content -->
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav" id="bottomNav">
+    <div class="nav-item active" data-nav="plan">
+      <span class="nav-icon">📅</span>
+      <span>Plan</span>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" data-nav="profil">
+      <span class="nav-icon">👤</span>
+      <span>Mein Bereich</span>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" data-nav="notif">
+      <span class="nav-icon">🔔</span>
+      <span>Benachrichtigungen</span>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" data-nav="admin" id="adminNavItem" style="display:none;">
+      <span class="nav-icon">⚙️</span>
+      <span>Admin</span>
+      <div class="nav-dot"></div>
+    </div>
+  </nav>
+
+</div><!-- /appScreen -->
+
+<script src="js/data.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
