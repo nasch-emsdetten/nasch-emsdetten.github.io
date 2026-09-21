@@ -1,846 +1,1214 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#1e3a5f">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Nasch Emsdetten</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon.png">
-  <style>
-    /* ── Reset & Basis ───────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --navy:    #1e3a5f;
-      --navy-lt: #2d5285;
-      --gold:    #f0a500;
-      --white:   #ffffff;
-      --bg:      #f4f6f9;
-      --card:    #ffffff;
-      --text:    #1a1a2e;
-      --muted:   #6b7280;
-      --border:  #e5e7eb;
-      --early:   #FFF2CC;
-      --early-t: #7D6608;
-      --late:    #FAE5D3;
-      --late-t:  #784212;
-      --success: #E1F5EE;
-      --success-t:#085041;
-      --danger:  #FCEBEB;
-      --danger-t: #791F1F;
-      --warn:    #faeeda;
-      --warn-t:  #633806;
-      --radius:  10px;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bot: env(safe-area-inset-bottom, 0px);
-    }
-    html, body {
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-    }
-    body { display: flex; flex-direction: column; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<title>Nasch Emsdetten</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#1e3a5f;--gold:#f0a500;--bg:#f4f6f9;--card:#fff;
+  --text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;
+  --early:#FFF2CC;--early-t:#7D6608;--late:#FAE5D3;--late-t:#784212;
+  --ok:#E1F5EE;--ok-t:#085041;--err:#FCEBEB;--err-t:#791F1F;
+  --warn:#faeeda;--warn-t:#633806;--info:#E6F1FB;--info-t:#0C447C;
+  --radius:10px;
+  --sbot:env(safe-area-inset-bottom,0px);
+  --stop:env(safe-area-inset-top,0px);
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+body{display:flex;flex-direction:column;}
+.screen{display:none;flex-direction:column;min-height:100%;}
+.screen.active{display:flex;}
 
-    /* ── Screens ─────────────────────────────────────────── */
-    .screen { display: none; flex-direction: column; min-height: 100%; }
-    .screen.active { display: flex; }
+/* ── LOGIN ── */
+#loginScreen{background:var(--navy);align-items:center;justify-content:center;
+  padding:calc(var(--stop)+24px) 24px calc(var(--sbot)+24px);}
+.logo{text-align:center;margin-bottom:36px;}
+.logo h1{color:#fff;font-size:26px;font-weight:700;}
+.logo p{color:#7ab0d8;font-size:13px;margin-top:4px;}
+.login-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;padding:24px;width:100%;max-width:300px;}
+.login-card h2{color:#fff;font-size:16px;text-align:center;margin-bottom:4px;}
+.login-card p{color:#a0b8d0;font-size:12px;text-align:center;margin-bottom:20px;}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:24px;}
+.pd{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:transparent;transition:all .15s;}
+.pd.on{background:var(--gold);border-color:var(--gold);}
+.pd.err{background:#E24B4A;border-color:#E24B4A;}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.k{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+  border-radius:12px;padding:16px 8px;text-align:center;font-size:20px;font-weight:600;
+  color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.k:active{background:rgba(255,255,255,.28);}
+.kerr{text-align:center;font-size:13px;color:#F09595;margin-top:12px;min-height:18px;}
 
-    /* ── LOGIN SCREEN ────────────────────────────────────── */
-    #loginScreen {
-      background: var(--navy);
-      align-items: center;
-      justify-content: center;
-      padding: calc(var(--safe-top) + 24px) 24px calc(var(--safe-bot) + 24px);
-    }
-    .login-logo { text-align: center; margin-bottom: 40px; }
-    .login-logo h1 {
-      color: var(--white);
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .login-logo p { color: #7ab0d8; font-size: 14px; margin-top: 4px; }
-    .login-card {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 16px;
-      padding: 28px 24px;
-      width: 100%;
-      max-width: 320px;
-    }
-    .login-card h2 {
-      color: var(--white);
-      font-size: 17px;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .login-card p {
-      color: #a0b8d0;
-      font-size: 13px;
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .pin-dots {
-      display: flex;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 28px;
-    }
-    .pin-dot {
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.4);
-      background: transparent;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .pin-dot.filled { background: var(--gold); border-color: var(--gold); }
-    .pin-dot.error  { background: #E24B4A; border-color: #E24B4A; }
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-    /* Login-Screen Tasten (dunkel) */
-    .key {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
-      padding: 16px 8px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--white);
-      cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.1s;
-    }
-    .key:active { background: rgba(255,255,255,0.25); }
-    .key.del { font-size: 16px; }
-    .key.empty { visibility: hidden; }
-    /* PIN-Änderung Tasten (hell) – überschreiben die dunklen Stile */
-    .key-light {
-      background: #f8fafc;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px 8px;
-      text-align: center;
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.1s, border-color 0.1s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .key-light:active { background: #e8edf5; border-color: var(--navy); }
-    .key-light.del { font-size: 17px; color: var(--muted); }
-    .key-light.empty { visibility: hidden; }
-    .login-err {
-      text-align: center;
-      font-size: 13px;
-      color: #F09595;
-      margin-top: 14px;
-      min-height: 18px;
-    }
+/* ── APP ── */
+.topbar{background:var(--navy);padding:calc(var(--stop)+10px) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tb-title{color:#fff;font-size:16px;font-weight:600;}
+.tb-right{display:flex;align-items:center;gap:14px;}
+.tb-icon{color:#a0b8d0;font-size:20px;cursor:pointer;}
+.av{width:32px;height:32px;border-radius:50%;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;}
 
-    /* ── HAUPTNAVIGATION ─────────────────────────────────── */
-    .topbar {
-      background: var(--navy);
-      padding: calc(var(--safe-top) + 10px) 16px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .topbar-title { color: var(--white); font-size: 16px; font-weight: 600; }
-    .topbar-right { display: flex; align-items: center; gap: 14px; }
-    .topbar-icon { color: #a0b8d0; font-size: 20px; cursor: pointer; }
-    .avatar-btn {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: var(--gold);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: var(--navy);
-      cursor: pointer;
-    }
+.page-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.page{display:none;padding:14px;}
+.page.active{display:block;}
 
-    /* ── BOTTOM NAVIGATION ───────────────────────────────── */
-    .bottom-nav {
-      background: var(--card);
-      border-top: 1px solid var(--border);
-      display: flex;
-      padding-bottom: var(--safe-bot);
-      flex-shrink: 0;
-    }
-    .nav-item {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 10px 4px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      color: var(--muted);
-      font-size: 10px;
-      gap: 3px;
-      transition: color 0.15s;
-    }
-    .nav-item.active { color: var(--navy); }
-    .nav-icon { font-size: 22px; }
-    .nav-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--navy);
-      display: none;
-    }
-    .nav-item.active .nav-dot { display: block; }
+.bot-nav{background:var(--card);border-top:1px solid var(--border);
+  display:flex;padding-bottom:var(--sbot);flex-shrink:0;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 4px;cursor:pointer;color:var(--muted);font-size:10px;gap:3px;}
+.ni.active{color:var(--navy);}
+.ni-icon{font-size:22px;}
 
-    /* ── PAGE CONTENT ────────────────────────────────────── */
-    .page-content {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .page { display: none; padding: 14px; }
-    .page.active { display: block; }
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:12px;}
+.card-h{display:flex;align-items:center;gap:10px;padding:12px 14px;}
+.card-t{font-size:14px;font-weight:600;flex:1;}
+.card-b{padding:12px 14px;border-top:1px solid var(--border);}
+.sec{font-size:12px;font-weight:500;color:var(--muted);padding:4px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
 
-    /* ── KARTEN & ELEMENTE ───────────────────────────────── */
-    .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      margin-bottom: 12px;
-    }
-    .card-header {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 14px;
-      background: var(--card);
-    }
-    .card-title { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
-    .card-body { padding: 12px 14px; border-top: 1px solid var(--border); }
+/* ── MENU ── */
+.menu-list{display:flex;flex-direction:column;}
+.mi{display:flex;align-items:center;gap:12px;padding:14px 16px;
+  background:var(--card);border-bottom:1px solid var(--border);cursor:pointer;}
+.mi:last-child{border-bottom:none;}
+.mi-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.mi-lbl{font-size:14px;font-weight:500;flex:1;}
+.mi-arr{color:var(--muted);font-size:16px;}
 
-    /* ── WOCHENPLAN ──────────────────────────────────────── */
-    .week-nav {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      margin-bottom: 10px;
-    }
-    .week-label { font-size: 13px; font-weight: 600; color: var(--text); }
-    .week-btn { color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
-    .legend {
-      display: flex; gap: 8px; flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    .leg {
-      display: flex; align-items: center; gap: 4px;
-      font-size: 11px; color: var(--muted);
-    }
-    .leg-box {
-      width: 12px; height: 12px;
-      border-radius: 3px;
-    }
-    .plan-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-    .plan-table { border-collapse: collapse; min-width: 480px; width: 100%; }
-    .plan-table th {
-      background: #f8fafc;
-      padding: 6px 4px;
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--muted);
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-      border-right: 1px solid var(--border);
-    }
-    .plan-table th.name-col {
-      text-align: left;
-      padding-left: 10px;
-      min-width: 80px;
-      position: sticky;
-      left: 0;
-      z-index: 2;
-      background: #f8fafc;
-    }
-    .plan-table td {
-      padding: 4px;
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-      border-right: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    .plan-table td.name-cell {
-      text-align: left;
-      padding-left: 10px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      position: sticky;
-      left: 0;
-      z-index: 1;
-      background: var(--card);
-    }
-    .plan-table tr.me-row td { background: rgba(30,58,95,0.05); }
-    .plan-table tr.me-row td.name-cell { background: rgba(30,58,95,0.08); color: var(--navy); }
-    .plan-table tr:last-child td { border-bottom: none; }
-    .shift-pill {
-      border-radius: 4px;
-      padding: 2px 4px;
-      font-size: 9px;
-      font-weight: 600;
-      display: block;
-      margin: 1px;
-      white-space: nowrap;
-    }
-    .s-early { background: var(--early); color: var(--early-t); }
-    .s-late  { background: var(--late);  color: var(--late-t);  }
-    .s-off   { color: var(--muted); font-size: 10px; }
-    .s-vacation { background: #FBEAF0; color: #72243E; }
-    .s-kv    { background: #fef08a; color: var(--warn-t); border: 1px solid #eab308; }
-    .s-bs    { background: #EEEDFE; color: #3C3489; }
-    .s-office{ background: #e8ddd4; color: #6b4c36; }
-    .s-meeting{background: var(--late); color: var(--late-t); }
-    .s-clean { background: #d0f4f4; color: #0e6e6e; }
-    .s-ho    { background: #E6F1FB; color: #0C447C; }
-    .today-col { background: rgba(30,58,95,0.04) !important; }
-    .today-th  { color: var(--navy) !important; background: rgba(30,58,95,0.08) !important; }
-    .foot-row td {
-      background: #f8fafc;
-      padding: 5px 4px;
-      font-size: 9px;
-      font-weight: 600;
-    }
-    .f-early { color: var(--early-t); display: block; }
-    .f-late  { color: var(--late-t); display: block; }
-    .f-total { color: var(--text); display: block; }
-    .foot-sum { background: #1e3a5f !important; color: #e8f4fd; border-radius: 4px; padding: 2px 4px; font-size: 9px; }
+/* ── PROFIL ── */
+.prof-h{background:var(--navy);padding:16px;display:flex;align-items:center;gap:12px;border-radius:var(--radius);margin-bottom:12px;}
+.prof-av{width:48px;height:48px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--navy);}
+.prof-name{color:#fff;font-size:16px;font-weight:600;}
+.prof-meta{color:#a0b8d0;font-size:12px;margin-top:2px;}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;}
+.stat-l{font-size:11px;color:var(--muted);}
+.stat-v{font-size:20px;font-weight:700;color:var(--navy);margin-top:2px;}
 
-    /* ── PROFIL / MEIN BEREICH ───────────────────────────── */
-    .profil-header {
-      background: var(--navy);
-      padding: 16px;
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 12px;
-      border-radius: var(--radius);
-    }
-    .profil-av {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: var(--gold);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 700; color: var(--navy);
-    }
-    .profil-name { color: var(--white); font-size: 16px; font-weight: 600; }
-    .profil-meta { color: #a0b8d0; font-size: 12px; margin-top: 2px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-    .stat-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 10px 12px;
-    }
-    .stat-lbl { font-size: 11px; color: var(--muted); }
-    .stat-val { font-size: 20px; font-weight: 700; color: var(--navy); margin-top: 2px; }
-    .menu-list { display: flex; flex-direction: column; gap: 0; }
-    .menu-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .menu-item:first-child { border-radius: var(--radius) var(--radius) 0 0; }
-    .menu-item:last-child  { border-radius: 0 0 var(--radius) var(--radius); border-bottom: none; }
-    .menu-icon {
-      width: 36px; height: 36px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
-    .menu-label { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
-    .menu-arrow { color: var(--muted); font-size: 16px; }
-    .badge-count {
-      background: #E24B4A; color: #fff;
-      border-radius: 10px; font-size: 11px; font-weight: 600;
-      padding: 2px 7px;
-    }
+/* ── PLAN ── */
+.week-nav{display:flex;align-items:center;justify-content:space-between;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;}
+.wlbl{font-size:13px;font-weight:600;}
+.wbtn{color:var(--muted);font-size:20px;cursor:pointer;padding:4px;}
+.plan-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);}
+.plan-t{border-collapse:collapse;min-width:440px;width:100%;}
+.plan-t th{background:#f8fafc;padding:6px 4px;font-size:10px;font-weight:600;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+.plan-t th.nc{text-align:left;padding-left:10px;min-width:80px;position:sticky;left:0;z-index:2;background:#f8fafc;}
+.plan-t td{padding:4px;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;}
+.plan-t td.nc{text-align:left;padding-left:10px;font-size:11px;font-weight:600;position:sticky;left:0;z-index:1;background:var(--card);}
+.plan-t tr.me td{background:rgba(30,58,95,.05);}
+.plan-t tr.me td.nc{background:rgba(30,58,95,.08);color:var(--navy);}
+.pill{border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;display:block;margin:1px;}
+.pF{background:var(--early);color:var(--early-t);}
+.pS{background:var(--late);color:var(--late-t);}
+.p-{color:var(--muted);font-size:10px;}
+.pU{background:#FBEAF0;color:#72243E;}
+.pKV{background:#fef08a;color:var(--warn-t);}
+.pBS{background:#EEEDFE;color:#3C3489;}
+.pHO{background:var(--info);color:var(--info-t);}
 
-    /* ── BENACHRICHTIGUNGEN ──────────────────────────────── */
-    .notif-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 12px 14px;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-    }
-    .notif-item.unread { background: #f0f5ff; }
-    .notif-icon {
-      width: 36px; height: 36px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; flex-shrink: 0;
-    }
-    .notif-title { font-size: 13px; font-weight: 600; color: var(--text); }
-    .notif-body  { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
-    .notif-time  { font-size: 10px; color: #9ca3af; margin-top: 3px; }
-    .unread-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--navy); margin-top: 6px; flex-shrink: 0; }
+/* ── BANNER ── */
+.banner{border-radius:var(--radius);padding:9px 12px;font-size:12px;display:flex;align-items:flex-start;gap:7px;margin-bottom:10px;}
+.bwarn{background:var(--warn);border:1px solid #eab308;color:var(--warn-t);}
+.binfo{background:var(--info);border:1px solid #185FA5;color:var(--info-t);}
+.bok{background:var(--ok);border:1px solid #1D9E75;color:var(--ok-t);}
 
-    /* ── GESPERRT-SCREEN ─────────────────────────────────── */
-    .sperr-screen {
-      padding: 24px;
-      text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 14px;
-    }
-    .sperr-icon { font-size: 48px; color: #E24B4A; }
-    .sperr-title { font-size: 18px; font-weight: 700; color: var(--text); }
-    .sperr-body  { font-size: 14px; color: var(--muted); max-width: 280px; line-height: 1.5; }
+/* ── FORMULAR ── */
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;}
+input[type=text],input[type=date],input[type=tel],input[type=time],input[type=number],textarea,select{
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:var(--text);}
+input:focus,textarea:focus{outline:2px solid var(--navy);border-color:transparent;}
+textarea{min-height:60px;resize:none;}
+.err-msg{color:#dc2626;font-size:12px;min-height:16px;margin-top:4px;}
 
-    /* ── BUTTONS ─────────────────────────────────────────── */
-    .btn {
-      border: none; border-radius: var(--radius);
-      padding: 13px 20px; font-size: 14px; font-weight: 600;
-      cursor: pointer; width: 100%; text-align: center;
-      -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s;
-    }
-    .btn:active { opacity: 0.85; }
-    .btn-primary { background: var(--navy); color: var(--white); }
-    .btn-success { background: #1D9E75; color: var(--white); }
-    .btn-outline {
-      background: transparent;
-      border: 1.5px solid var(--border);
-      color: var(--text);
-    }
+/* ── BUTTONS ── */
+.btn{border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:10px;}
+.btn-primary{background:var(--navy);color:#fff;}
+.btn-success{background:#1D9E75;color:#fff;}
+.btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--text);}
 
-    /* ── BANNER ──────────────────────────────────────────── */
-    .banner {
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      font-size: 12px;
-      display: flex; align-items: flex-start; gap: 8px;
-      margin-bottom: 10px;
-    }
-    .banner-warn  { background: var(--warn);    border: 1px solid #eab308; color: var(--warn-t); }
-    .banner-info  { background: #E6F1FB;         border: 1px solid #185FA5; color: #0C447C; }
-    .banner-ok    { background: var(--success);  border: 1px solid #1D9E75; color: var(--success-t); }
-    .banner-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+/* ── PIN ÄNDERN ── */
+.pin-step-dots{display:flex;justify-content:center;gap:10px;margin-bottom:20px;}
+.psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
+.psd.a{background:var(--navy);}
+.psd.d{background:#1D9E75;}
+/* PIN-Punkte hell */
+.chg-pd{width:22px;height:22px;border-radius:50%;border:2px solid #cbd5e1;background:transparent;transition:all .15s;}
 
-    /* ── SECTION HEADER ──────────────────────────────────── */
-    .section-hdr {
-      font-size: 12px; font-weight: 600; color: var(--muted);
-      padding: 4px 0 6px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 8px;
-      letter-spacing: 0.3px;
-    }
+/* ── NOTIF ── */
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--border);}
+.notif-item.unread{background:#f0f5ff;}
+.n-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.n-title{font-size:13px;font-weight:600;}
+.n-body{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+.n-time{font-size:10px;color:#9ca3af;margin-top:3px;}
+.udot{width:8px;height:8px;border-radius:50%;background:var(--navy);margin-top:4px;flex-shrink:0;}
 
-    /* ── PIN ÄNDERN ──────────────────────────────────────── */
-    .pin-change-wrap { max-width: 320px; margin: 0 auto; }
-    /* Helle PIN-Punkte (für App-Kontext auf weißem Hintergrund) */
-    .pin-dot-light {
-      width: 20px; height: 20px; border-radius: 50%;
-      border: 2px solid #d1d5db; background: transparent;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .pin-dot-light.filled { background: var(--navy); border-color: var(--navy); }
-    .pin-dot-light.error  { background: #E24B4A;    border-color: #E24B4A; }
-    .pin-dot-light.ok     { background: #1D9E75;    border-color: #1D9E75; }
-    .step-dots {
-      display: flex; justify-content: center; gap: 8px;
-      margin-bottom: 20px;
-    }
-    .step-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--border);
-      transition: background 0.2s;
-    }
-    .step-dot.active { background: var(--navy); }
-    .step-dot.done   { background: #1D9E75; }
+/* ── TOGGLE ── */
+.tgl{width:40px;height:22px;border-radius:11px;cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;}
+.tgl.on{background:#1D9E75;}
+.tgl.off{background:#d1d5db;}
+.tgl-k{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.tgl.on .tgl-k{left:20px;}
+.tgl.off .tgl-k{left:2px;}
 
-    /* ── UTIL ────────────────────────────────────────────── */
-    .hidden { display: none !important; }
-    .mt-8  { margin-top: 8px; }
-    .mt-12 { margin-top: 12px; }
-  </style>
+/* ── UTILS ── */
+.back{display:flex;align-items:center;gap:6px;margin-bottom:14px;cursor:pointer;color:var(--muted);font-size:13px;}
+.hidden{display:none!important;}
+.mt8{margin-top:8px;}
+.mt12{margin-top:12px;}
+.tab-row{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;}
+.tab{flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;background:var(--card);color:var(--muted);border-right:1px solid var(--border);}
+.tab:last-child{border-right:none;}
+.tab.active{background:var(--navy);color:#fff;}
+
+/* ── WOCHENPLAN ADMIN ── */
+.plan-t td.edit-cell{cursor:pointer;position:relative;}
+.plan-t td.edit-cell:active{background:rgba(30,58,95,.08)!important;}
+</style>
 </head>
 <body>
 
-<!-- ══════════════════ LOGIN SCREEN ══════════════════════ -->
+<!-- LOGIN -->
 <div id="loginScreen" class="screen active">
-  <div class="login-logo">
-    <h1>Nasch Emsdetten</h1>
-    <p>Mitarbeiter-App</p>
-  </div>
+  <div class="logo"><h1>Nasch Emsdetten</h1><p>Mitarbeiter-App</p></div>
   <div class="login-card">
-    <h2>Willkommen</h2>
-    <p>Bitte PIN eingeben</p>
-    <div class="pin-dots" id="loginDots">
-      <div class="pin-dot" id="ld0"></div>
-      <div class="pin-dot" id="ld1"></div>
-      <div class="pin-dot" id="ld2"></div>
-      <div class="pin-dot" id="ld3"></div>
+    <h2>Willkommen</h2><p>PIN eingeben</p>
+    <div class="pin-dots">
+      <div class="pd" id="ld0"></div><div class="pd" id="ld1"></div>
+      <div class="pd" id="ld2"></div><div class="pd" id="ld3"></div>
     </div>
-    <div class="keypad">
-      <div class="key" data-key="1">1</div>
-      <div class="key" data-key="2">2</div>
-      <div class="key" data-key="3">3</div>
-      <div class="key" data-key="4">4</div>
-      <div class="key" data-key="5">5</div>
-      <div class="key" data-key="6">6</div>
-      <div class="key" data-key="7">7</div>
-      <div class="key" data-key="8">8</div>
-      <div class="key" data-key="9">9</div>
-      <div class="key empty"></div>
-      <div class="key" data-key="0">0</div>
-      <div class="key del" data-key="del">⌫</div>
+    <div class="kp" id="loginKP">
+      <div class="k" onclick="lKey('1')">1</div><div class="k" onclick="lKey('2')">2</div><div class="k" onclick="lKey('3')">3</div>
+      <div class="k" onclick="lKey('4')">4</div><div class="k" onclick="lKey('5')">5</div><div class="k" onclick="lKey('6')">6</div>
+      <div class="k" onclick="lKey('7')">7</div><div class="k" onclick="lKey('8')">8</div><div class="k" onclick="lKey('9')">9</div>
+      <div style="visibility:hidden;"></div>
+      <div class="k" onclick="lKey('0')">0</div><div class="k" onclick="lKey('del')" style="font-size:16px;">⌫</div>
     </div>
-    <div class="login-err" id="loginErr"></div>
+    <div class="kerr" id="loginErr"></div>
   </div>
 </div>
 
-<!-- ══════════════════ HAUPT-APP ══════════════════════════ -->
+<!-- HAUPT-APP -->
 <div id="appScreen" class="screen">
-
-  <!-- Topbar -->
-  <div class="topbar" id="topbar">
-    <div class="topbar-title" id="topbarTitle">Wochenplan</div>
-    <div class="topbar-right">
-      <span class="topbar-icon" id="bellBtn" title="Benachrichtigungen">🔔</span>
-      <div class="avatar-btn" id="avatarBtn">LK</div>
+  <div class="topbar">
+    <div class="tb-title" id="tbTitle">Wochenplan</div>
+    <div class="tb-right">
+      <span class="tb-icon" onclick="navTo('notif')">🔔</span>
+      <div class="av" id="avBtn" onclick="navTo('profil')">LK</div>
     </div>
   </div>
 
-  <!-- Page Content -->
-  <div class="page-content">
+  <div class="page-wrap">
 
-    <!-- ── WOCHENPLAN ────────────────────────────────────── -->
-    <div class="page active" id="pagePlan">
-      <div class="week-nav" id="weekNav">
-        <span class="week-btn" id="prevWeek" style="visibility:hidden;">‹</span>
-        <span class="week-label" id="weekLabel">KW 41 · 05.10.–11.10.2026</span>
-        <span class="week-btn" id="nextWeek" style="visibility:hidden;">›</span>
+    <!-- WOCHENPLAN -->
+    <div class="page active" id="pgPlan">
+      <div class="week-nav">
+        <span class="wbtn" id="prevW" style="visibility:hidden;" onclick="wNav(-1)">‹</span>
+        <span class="wlbl" id="wLbl">KW 41 · 05.10.–11.10.2026</span>
+        <span class="wbtn" id="nextW" style="visibility:hidden;" onclick="wNav(1)">›</span>
       </div>
-      <div class="legend">
-        <div class="leg"><div class="leg-box" style="background:#FFF2CC;"></div>Früh</div>
-        <div class="leg"><div class="leg-box" style="background:#FAE5D3;"></div>Spät</div>
-        <div class="leg"><div class="leg-box" style="background:#FBEAF0;"></div>Urlaub</div>
-        <div class="leg"><div class="leg-box" style="background:#fef08a;"></div>KV</div>
-        <div class="leg"><div class="leg-box" style="background:#EEEDFE;"></div>BS</div>
-        <div class="leg"><div class="leg-box" style="background:#E6F1FB;"></div>HO</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--muted);">
+        <span>🟨 Früh</span><span>🟧 Spät</span><span>🩷 Urlaub</span><span>🟡 KV</span>
       </div>
-      <div class="plan-wrap">
-        <table class="plan-table" id="planTable"></table>
-      </div>
+      <div class="plan-wrap"><table class="plan-t" id="planTbl"></table></div>
     </div>
 
-    <!-- ── MEIN BEREICH ──────────────────────────────────── -->
-    <div class="page" id="pageProfil">
-      <div class="profil-header" id="profilHeader">
-        <div class="profil-av" id="profilAv">LK</div>
+    <!-- MEIN BEREICH -->
+    <div class="page" id="pgProfil">
+      <div class="prof-h">
+        <div class="prof-av" id="profAv">LK</div>
         <div>
-          <div class="profil-name" id="profilName">Lee Ko</div>
-          <div class="profil-meta" id="profilMeta">Vollzeit · Filialleiterin</div>
+          <div class="prof-name" id="profName">Lee Ko</div>
+          <div class="prof-meta" id="profMeta">Vollzeit · Filialleiterin</div>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-lbl">Resturlaub</div>
-          <div class="stat-val" id="urlaubRest">12</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-lbl">Wunschfrei / Zyklus</div>
-          <div class="stat-val" id="wunschKont">3</div>
-        </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-l">Resturlaub</div><div class="stat-v" id="profUrlaub">12</div></div>
+        <div class="stat"><div class="stat-l">Wunschfrei / Zyklus</div><div class="stat-v" id="profWunsch">3</div></div>
       </div>
-      <div class="section-hdr">Meine Bereiche</div>
+      <div class="sec">Meine Bereiche</div>
       <div class="card menu-list">
-        <div class="menu-item" onclick="goTo('pageKrank')">
-          <div class="menu-icon" style="background:#FCEBEB;">🤒</div>
-          <span class="menu-label">Krankmeldung</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" onclick="goTo('pgKrank','Krankmeldung')">
+          <div class="mi-icon" style="background:#FCEBEB;">🤒</div><span class="mi-lbl">Krankmeldung</span><span class="mi-arr">›</span>
         </div>
-        <div class="menu-item" onclick="goTo('pageWunsch')">
-          <div class="menu-icon" style="background:#FBEAF0;">🏖</div>
-          <span class="menu-label">Wunschfrei / Urlaub</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" onclick="goTo('pgWunsch','Wunschfrei / Urlaub')">
+          <div class="mi-icon" style="background:#FBEAF0;">🏖</div><span class="mi-lbl">Wunschfrei / Urlaub</span><span class="mi-arr">›</span>
         </div>
-        <div class="menu-item" onclick="goTo('pageStundenzettel')">
-          <div class="menu-icon" style="background:#E6F1FB;">📋</div>
-          <span class="menu-label">Stundenzettel</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" onclick="goTo('pgStunden','Stundenzettel')">
+          <div class="mi-icon" style="background:#E6F1FB;">📋</div><span class="mi-lbl">Stundenzettel</span><span class="mi-arr">›</span>
         </div>
-        <div class="menu-item" onclick="goTo('pageVerfuegbar')">
-          <div class="menu-icon" style="background:#E1F5EE;">📅</div>
-          <span class="menu-label">Verfügbarkeit</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" onclick="goTo('pgVerfueg','Verfügbarkeit')">
+          <div class="mi-icon" style="background:#E1F5EE;">📅</div><span class="mi-lbl">Verfügbarkeit</span><span class="mi-arr">›</span>
         </div>
-        <div class="menu-item" onclick="goTo('pageKalender')">
-          <div class="menu-icon" style="background:#E6F1FB;">🗓</div>
-          <span class="menu-label">Kalender verbinden</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" onclick="goTo('pgKalender','Kalender')">
+          <div class="mi-icon" style="background:#E6F1FB;">🗓</div><span class="mi-lbl">Kalender verbinden</span><span class="mi-arr">›</span>
         </div>
-        <div class="menu-item" id="homeOfficeMenu" onclick="goTo('pageHomeOffice')">
-          <div class="menu-icon" style="background:#E6F1FB;">🏠</div>
-          <span class="menu-label">Home-Office eintragen</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" id="miHO" onclick="goTo('pgHO','Home-Office')" style="display:none;">
+          <div class="mi-icon" style="background:#E6F1FB;">🏠</div><span class="mi-lbl">Home-Office</span><span class="mi-arr">›</span>
         </div>
-        <div class="menu-item" onclick="goTo('pagePIN')">
-          <div class="menu-icon" style="background:#f8f8f8;">🔑</div>
-          <span class="menu-label">PIN ändern</span>
-          <span class="menu-arrow">›</span>
+        <div class="mi" onclick="goTo('pgPIN','PIN ändern')">
+          <div class="mi-icon" style="background:#f8f8f8;">🔑</div><span class="mi-lbl">PIN ändern</span><span class="mi-arr">›</span>
         </div>
       </div>
-      <div class="mt-12">
-        <button class="btn btn-outline" id="logoutBtn">Abmelden</button>
+      <button class="btn btn-outline mt12" onclick="doLogout()">Abmelden</button>
+    </div>
+
+    <!-- BENACHRICHTIGUNGEN -->
+    <div class="page" id="pgNotif">
+      <div class="tab-row">
+        <div class="tab active" id="ntab1" onclick="nTab(1)">Posteingang</div>
+        <div class="tab" id="ntab2" onclick="nTab(2)">Einstellungen</div>
+        <div class="tab" id="ntab3" onclick="nTab(3)">Kanäle</div>
+      </div>
+      <div id="np1">
+        <div class="sec">Heute</div>
+        <div class="card">
+          <div class="notif-item unread">
+            <div class="n-icon" style="background:#E1F5EE;">📅</div>
+            <div style="flex:1;"><div class="n-title">Neuer Wochenplan veröffentlicht</div>
+              <div class="n-body">KW 41 ist jetzt sichtbar.</div><div class="n-time">vor 15 Min.</div></div>
+            <div class="udot"></div>
+          </div>
+          <div class="notif-item unread">
+            <div class="n-icon" style="background:#FBEAF0;">🏖</div>
+            <div style="flex:1;"><div class="n-title">Wunschfrei genehmigt</div>
+              <div class="n-body">Fr., 09.10. Frühschicht wurde genehmigt.</div><div class="n-time">vor 1 Std.</div></div>
+            <div class="udot"></div>
+          </div>
+          <div class="notif-item">
+            <div class="n-icon" style="background:#E6F1FB;">📋</div>
+            <div style="flex:1;"><div class="n-title">Stundenzettel Oktober bereit</div>
+              <div class="n-body">Bitte bis 31.10. um 22:00 Uhr unterschreiben.</div><div class="n-time">Mo., 01.10.</div></div>
+          </div>
+        </div>
+      </div>
+      <div id="np2" style="display:none;">
+        <div class="sec">Welche Ereignisse?</div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">Neuer Wochenplan</div><div style="font-size:11px;color:var(--muted);">Bei Veröffentlichung</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">Wunschfrei / Urlaub</div><div style="font-size:11px;color:var(--muted);">Genehmigt oder abgelehnt</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">KV-Anfrage</div><div style="font-size:11px;color:var(--muted);">Wenn Vertretung gesucht wird</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">Stundenzettel</div><div style="font-size:11px;color:var(--muted);">Monatlich zur Unterschrift</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">Abgabefristen</div><div style="font-size:11px;color:var(--muted);">5 und 2 Tage vorher</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+        </div>
+      </div>
+      <div id="np3" style="display:none;">
+        <div class="sec">Wie benachrichtigen?</div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+            <div style="width:36px;height:36px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📱</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">App-Benachrichtigung</div><div style="font-size:11px;color:var(--muted);">Direkt in der App</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;">
+            <div style="width:36px;height:36px;background:#E1F5EE;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💬</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">WhatsApp Backup</div><div style="font-size:11px;color:var(--muted);">Wenn App nicht geöffnet</div></div>
+            <div class="tgl on" onclick="tglSwitch(this)"><div class="tgl-k"></div></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- ── BENACHRICHTIGUNGEN ────────────────────────────── -->
-    <div class="page" id="pageNotif">
-      <div class="section-hdr">Heute</div>
+    <!-- ADMIN MENÜ -->
+    <div class="page" id="pgAdmin">
+      <div class="sec">Admin · Lee Ko</div>
+      <div class="card menu-list">
+        <div class="mi" onclick="goTo('pgAdminPlan','Planung')">
+          <div class="mi-icon" style="background:#E6F1FB;">📊</div><span class="mi-lbl">Wochenplan bearbeiten</span><span class="mi-arr">›</span>
+        </div>
+        <div class="mi" onclick="goTo('pgAdminWunsch','Anträge')">
+          <div class="mi-icon" style="background:#FBEAF0;">✅</div><span class="mi-lbl">Wunschfrei genehmigen</span>
+          <span style="background:#E24B4A;color:#fff;border-radius:10px;font-size:11px;font-weight:600;padding:2px 7px;">3</span>
+          <span class="mi-arr">›</span>
+        </div>
+        <div class="mi" onclick="goTo('pgAdminKrank','Krankmeldungen')">
+          <div class="mi-icon" style="background:#FCEBEB;">🤒</div><span class="mi-lbl">Krankmeldungen</span><span class="mi-arr">›</span>
+        </div>
+        <div class="mi" onclick="goTo('pgAdminKV','KV-System')">
+          <div class="mi-icon" style="background:#faeeda;">👥</div><span class="mi-lbl">KV-System</span><span class="mi-arr">›</span>
+        </div>
+        <div class="mi" onclick="goTo('pgAdminMA','Mitarbeiterliste')">
+          <div class="mi-icon" style="background:#E1F5EE;">👤</div><span class="mi-lbl">Mitarbeiterliste</span><span class="mi-arr">›</span>
+        </div>
+        <div class="mi" onclick="goTo('pgAdminStz','Stundenzettel Admin')">
+          <div class="mi-icon" style="background:#f8f8f8;">📋</div><span class="mi-lbl">Stundenzettel</span><span class="mi-arr">›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-SEITEN: MEIN BEREICH -->
+    <div class="page" id="pgKrank">
+      <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
+      <div class="banner bwarn"><span>📞</span><span>Zuerst telefonisch melden! Diese Bestätigung ersetzt nicht den Anruf.</span></div>
       <div class="card">
-        <div class="notif-item unread">
-          <div class="notif-icon" style="background:#E1F5EE;">📅</div>
-          <div style="flex:1;">
-            <div class="notif-title">Neuer Wochenplan veröffentlicht</div>
-            <div class="notif-body">KW 41 ist jetzt sichtbar. Schichten wurden in deinen Kalender übertragen.</div>
-            <div class="notif-time">vor 15 Min.</div>
-          </div>
-          <div class="unread-dot"></div>
-        </div>
-        <div class="notif-item unread">
-          <div class="notif-icon" style="background:#FBEAF0;">🏖</div>
-          <div style="flex:1;">
-            <div class="notif-title">Wunschfrei genehmigt</div>
-            <div class="notif-body">Fr., 09.10. Frühschicht wurde genehmigt.</div>
-            <div class="notif-time">vor 1 Std.</div>
-          </div>
-          <div class="unread-dot"></div>
-        </div>
-        <div class="notif-item">
-          <div class="notif-icon" style="background:#FCEBEB;">👥</div>
-          <div style="flex:1;">
-            <div class="notif-title">Stundenzettel September bereit</div>
-            <div class="notif-body">Bitte bis 30.09. um 22:00 Uhr unterschreiben.</div>
-            <div class="notif-time">Mo., 28.09. · 08:00</div>
-          </div>
+        <div class="card-h"><div class="card-t">Krankmeldung</div></div>
+        <div class="card-b" style="display:flex;flex-direction:column;gap:8px;">
+          <label>Krank ab</label>
+          <input type="date" id="krankVon">
+          <label>Voraussichtlich bis (optional)</label>
+          <input type="date" id="krankBis">
+          <label>Hinweis (optional)</label>
+          <input type="text" placeholder="z.B. 2–3 Tage">
+          <div class="banner bok hidden" id="krankOK">✓ Krankmeldung gesendet – Lee Ko wurde benachrichtigt.</div>
+          <button class="btn btn-primary" onclick="sendeKrank()">Krankmeldung senden</button>
         </div>
       </div>
     </div>
 
-    <!-- ── ADMIN-BEREICH ──────────────────────────────────── -->
-    <div class="page" id="pageAdmin">
-      <div class="section-hdr">Admin · Lee Ko</div>
-      <div class="card menu-list">
-        <div class="menu-item" onclick="goTo('pageAdminPlan')">
-          <div class="menu-icon" style="background:#E6F1FB;">📊</div>
-          <span class="menu-label">Planung KW 41</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-item" onclick="goTo('pageAdminWunsch')">
-          <div class="menu-icon" style="background:#FBEAF0;">✅</div>
-          <span class="menu-label">Wunschfrei genehmigen</span>
-          <div class="badge-count">3</div>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-item" onclick="goTo('pageAdminKrank')">
-          <div class="menu-icon" style="background:#FCEBEB;">🤒</div>
-          <span class="menu-label">Krankmeldungen</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-item" onclick="goTo('pageAdminKV')">
-          <div class="menu-icon" style="background:#faeeda;">👥</div>
-          <span class="menu-label">KV-System</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-item" onclick="goTo('pageAdminMitarbeiter')">
-          <div class="menu-icon" style="background:#E1F5EE;">👤</div>
-          <span class="menu-label">Mitarbeiterliste</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-item" onclick="goTo('pageAdminStunden')">
-          <div class="menu-icon" style="background:#f8f8f8;">📋</div>
-          <span class="menu-label">Stundenzettel</span>
-          <span class="menu-arrow">›</span>
-        </div>
+    <div class="page" id="pgWunsch">
+      <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
+      <div class="tab-row">
+        <div class="tab active" id="wt1" onclick="wTab(1)">Wunschfrei</div>
+        <div class="tab" id="wt2" onclick="wTab(2)">Urlaub</div>
+        <div class="tab" id="wt3" onclick="wTab(3)">Verlauf</div>
       </div>
-    </div>
-
-    <!-- ── PIN ÄNDERN ────────────────────────────────────── -->
-    <div class="page" id="pagePIN">
-      <div style="max-width:320px;margin:0 auto;">
-        <!-- Schritt-Indikator -->
-        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;" id="pinStepDots">
-          <div class="step-dot active" style="width:8px;height:8px;border-radius:50%;background:#1e3a5f;"></div>
-          <div class="step-dot" style="width:8px;height:8px;border-radius:50%;background:#e5e7eb;"></div>
-          <div class="step-dot" style="width:8px;height:8px;border-radius:50%;background:#e5e7eb;"></div>
+      <div id="wp1">
+        <div class="banner bwarn"><span>⏰</span><span>Frist: Fr., 02.10.2026 · gilt für KW 41–43</span></div>
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-l">Kontingent / Zyklus</div><div class="stat-v" id="wfKont">2 von 3</div></div>
+          <div class="stat"><div class="stat-l">Beantragt</div><div class="stat-v">1 Tag</div></div>
         </div>
         <div class="card">
-          <div class="card-header">
-            <div class="card-title" id="pinChangeTitle">Aktuelle PIN eingeben</div>
+          <div class="card-h"><div class="card-t">Neuer Antrag</div></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:8px;">
+            <label>Datum</label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+              <div><label style="font-size:10px;">Von</label><input type="date" id="wfVon"></div>
+              <div><label style="font-size:10px;">Bis (optional)</label><input type="date" id="wfBis"></div>
+            </div>
+            <label>Schicht</label>
+            <select>
+              <option>Ganzer Tag (1 Tag)</option>
+              <option>Nur Frühschicht (½ Tag)</option>
+              <option>Nur Spätschicht (½ Tag)</option>
+            </select>
+            <label>Hinweis (optional)</label>
+            <input type="text" placeholder="z.B. Arzttermin">
+            <div class="banner bok hidden" id="wfOK">✓ Antrag gesendet – Lee Ko wurde benachrichtigt.</div>
+            <button class="btn btn-primary" onclick="sendeWF()">Antrag absenden</button>
           </div>
-          <div class="card-body">
-            <!-- PIN-Punkte mit Inline-Styles -->
-            <div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;">
-              <div id="cd0" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
-              <div id="cd1" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
-              <div id="cd2" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
-              <div id="cd3" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
+        </div>
+      </div>
+      <div id="wp2" style="display:none;">
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-l">Jahresanspruch</div><div class="stat-v" id="urlAnsp">25</div></div>
+          <div class="stat"><div class="stat-l">Resturlaub</div><div class="stat-v" id="urlRest">12</div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Urlaubsantrag</div></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+              <div><label style="font-size:10px;">Von</label><input type="date"></div>
+              <div><label style="font-size:10px;">Bis</label><input type="date"></div>
             </div>
-            <!-- Keypad mit Inline-Styles – kein CSS-Klassen-Problem -->
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;" id="changePadGrid">
-              <div data-changekey="1" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">1</div>
-              <div data-changekey="2" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">2</div>
-              <div data-changekey="3" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">3</div>
-              <div data-changekey="4" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">4</div>
-              <div data-changekey="5" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">5</div>
-              <div data-changekey="6" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">6</div>
-              <div data-changekey="7" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">7</div>
-              <div data-changekey="8" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">8</div>
-              <div data-changekey="9" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">9</div>
-              <div style="visibility:hidden;"></div>
-              <div data-changekey="0" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">0</div>
-              <div data-changekey="del" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:18px;color:#64748b;cursor:pointer;">⌫</div>
-            </div>
-            <div style="color:#dc2626;font-size:13px;text-align:center;margin-top:12px;min-height:20px;" id="pinChangeErr"></div>
-            <div style="color:#059669;text-align:center;font-size:13px;margin-top:8px;display:none;" id="pinChangeOk">✓ PIN erfolgreich geändert!</div>
+            <input type="text" placeholder="Bemerkung (optional)">
+            <div class="banner bok hidden" id="urlOK">✓ Urlaubsantrag gesendet.</div>
+            <button class="btn btn-primary" onclick="sendeURL()">Antrag absenden</button>
+          </div>
+        </div>
+      </div>
+      <div id="wp3" style="display:none;">
+        <div class="sec">Meine Anträge 2026</div>
+        <div class="card">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div><div style="font-size:13px;font-weight:600;">Wunschfrei – Fr., 09.10.</div><div style="font-size:11px;color:var(--muted);">Nur Früh · KW 41</div></div>
+            <span style="background:var(--ok);color:var(--ok-t);font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;">Genehmigt</span>
+          </div>
+          <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <div><div style="font-size:13px;font-weight:600;">Urlaub – 20.07.–10.08.</div><div style="font-size:11px;color:var(--muted);">15 Tage · Sommer</div></div>
+            <span style="background:var(--ok);color:var(--ok-t);font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;">Genehmigt</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Sub-Seiten werden dynamisch durch js/pages.js befüllt -->
-    <div class="page" id="pageKrank">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageWunsch">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageStundenzettel">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageVerfuegbar">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageKalender">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageHomeOffice">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageAdminPlan">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageAdminWunsch">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageAdminKrank">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageAdminKV">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageAdminMitarbeiter">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
-    </div>
-    <div class="page" id="pageAdminStunden">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
-      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    <div class="page" id="pgStunden">
+      <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
+      <div class="banner bwarn"><span>⏰</span><span>Frist: 31.10.2026 bis 22:00 Uhr – danach wird der Wochenplan gesperrt.</span></div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-l">Soll-Stunden</div><div class="stat-v" id="stzSoll">160h</div></div>
+        <div class="stat"><div class="stat-l">Ist-Stunden</div><div class="stat-v" style="color:var(--ok-t);" id="stzIst">158h</div></div>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-h"><div class="card-t">Wochenübersicht Oktober</div></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#f8fafc;">
+            <th style="padding:7px 12px;text-align:left;color:var(--muted);font-weight:600;">KW</th>
+            <th style="padding:7px;text-align:center;color:var(--early-t);font-weight:600;">Früh</th>
+            <th style="padding:7px;text-align:center;color:var(--late-t);font-weight:600;">Spät</th>
+            <th style="padding:7px 12px;text-align:right;font-weight:600;">Gesamt</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:7px 12px;font-weight:500;">KW 40</td><td style="text-align:center;color:var(--early-t);">3</td><td style="text-align:center;color:var(--late-t);">1</td><td style="text-align:right;padding:7px 12px;font-weight:600;">38h</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:7px 12px;font-weight:500;">KW 41</td><td style="text-align:center;color:var(--early-t);">2</td><td style="text-align:center;color:var(--late-t);">2</td><td style="text-align:right;padding:7px 12px;font-weight:600;">40h</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:7px 12px;font-weight:500;">KW 42</td><td style="text-align:center;color:var(--early-t);">3</td><td style="text-align:center;color:var(--late-t);">1</td><td style="text-align:right;padding:7px 12px;font-weight:600;">40h</td></tr>
+            <tr style="border-top:1px solid var(--border);"><td style="padding:7px 12px;font-weight:500;">KW 43</td><td style="text-align:center;color:var(--early-t);">2</td><td style="text-align:center;color:var(--late-t);">1</td><td style="text-align:right;padding:7px 12px;font-weight:600;">40h</td></tr>
+            <tr style="border-top:2px solid var(--border);background:#f8fafc;"><td style="padding:7px 12px;font-weight:700;">Gesamt</td><td style="text-align:center;color:var(--early-t);font-weight:700;">10</td><td style="text-align:center;color:var(--late-t);font-weight:700;">5</td><td style="text-align:right;padding:7px 12px;font-weight:700;color:var(--navy);">158h</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" id="signCard">
+        <div class="card-h"><div class="card-t">Digitale Unterschrift</div></div>
+        <div class="card-b" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="border:1.5px dashed var(--border);border-radius:var(--radius);background:#fafafa;overflow:hidden;">
+            <canvas id="sigCvs" style="display:block;touch-action:none;width:100%;height:80px;"></canvas>
+          </div>
+          <div style="color:#dc2626;font-size:12px;min-height:14px;" id="sigErr"></div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            <button class="btn btn-outline" onclick="clrSig()" style="margin-top:0;">✕ Löschen</button>
+            <button class="btn btn-success" onclick="doSign()" style="margin-top:0;">✓ Unterschreiben</button>
+          </div>
+        </div>
+      </div>
+      <div id="signedBox" style="display:none;">
+        <div style="background:var(--ok);border:1px solid #1D9E75;border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:10px;">
+          <div style="font-size:24px;margin-bottom:6px;">✅</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ok-t);" id="signedName">Lee Ko</div>
+          <div style="font-size:12px;color:var(--ok-t);">Unterschrieben – PDF wird am 31.10. um 22:05 Uhr an das Personal Büro gesendet.</div>
+        </div>
+        <button class="btn btn-outline" onclick="alert('PDF wird geöffnet…')">🖨 Drucken / PDF speichern</button>
+      </div>
     </div>
 
-  </div><!-- /page-content -->
+    <div class="page" id="pgVerfueg">
+      <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
+      <div class="banner bwarn"><span>🔒</span><span>Änderungen sind erst nach Genehmigung durch Lee Ko aktiv.</span></div>
+      <div class="sec">Verfügbarkeit pro Tag</div>
+      <div id="verfDays"></div>
+      <div id="verfGrundWrap" style="display:none;">
+        <label>Begründung (Pflicht bei Änderung)</label>
+        <textarea id="verfGrund" placeholder="z.B. neuer Schulstundenplan…"></textarea>
+      </div>
+      <div class="err-msg" id="verfErr"></div>
+      <div class="banner bok hidden" id="verfOK">✓ Änderung gesendet – wartet auf Genehmigung.</div>
+      <button class="btn btn-primary hidden" id="verfSendBtn" onclick="sendeVerf()">Änderung senden</button>
+    </div>
 
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav" id="bottomNav">
-    <div class="nav-item active" data-nav="plan">
-      <span class="nav-icon">📅</span>
-      <span>Plan</span>
-      <div class="nav-dot"></div>
+    <div class="page" id="pgKalender">
+      <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
+      <div class="sec">Kalender-Synchronisierung</div>
+      <div class="card">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#E6F1FB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📅</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Google Kalender</div><div style="font-size:11px;color:var(--muted);">Schichten automatisch eintragen</div></div>
+            <span style="background:#f1f5f9;color:var(--muted);font-size:10px;border-radius:4px;padding:2px 7px;border:1px solid var(--border);">Nicht verbunden</span>
+          </div>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="alert('Google OAuth wird geöffnet…')">📅 Google Kalender verbinden</button>
+        </div>
+        <div style="padding:12px 14px;" id="outlookKalRow">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#faeeda;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📧</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Outlook</div><div style="font-size:11px;color:var(--muted);">Für Microsoft 365 Konten</div></div>
+            <span style="background:#f1f5f9;color:var(--muted);font-size:10px;border-radius:4px;padding:2px 7px;border:1px solid var(--border);">Nicht verbunden</span>
+          </div>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="alert('Microsoft Login wird geöffnet…')">📧 Outlook verbinden</button>
+        </div>
+      </div>
     </div>
-    <div class="nav-item" data-nav="profil">
-      <span class="nav-icon">👤</span>
-      <span>Mein Bereich</span>
-      <div class="nav-dot"></div>
+
+    <div class="page" id="pgHO">
+      <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
+      <div class="banner binfo"><span>🏠</span><span>Home-Office ist unabhängig vom Wochenplan und wird selbst eingetragen.</span></div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">Home-Office eintragen</div></div>
+        <div class="card-b" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            <div><label style="font-size:10px;">Datum</label><input type="date"></div>
+            <div><label style="font-size:10px;">Von</label><input type="time" value="09:00"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            <div><label style="font-size:10px;">Bis</label><input type="time" value="17:00"></div>
+            <div><label style="font-size:10px;">Pause</label><input type="time" value="00:30"></div>
+          </div>
+          <input type="text" placeholder="Tätigkeit (optional)">
+          <div class="banner bok hidden" id="hoOK">✓ Home-Office eingetragen – Lee Ko wurde informiert.</div>
+          <button class="btn btn-primary" onclick="sendeHO()">Home-Office eintragen</button>
+        </div>
+      </div>
     </div>
-    <div class="nav-item" data-nav="notif">
-      <span class="nav-icon">🔔</span>
-      <span>Benachrichtigungen</span>
-      <div class="nav-dot"></div>
+
+    <!-- PIN ÄNDERN -->
+    <div class="page" id="pgPIN">
+      <div style="max-width:320px;margin:0 auto;">
+        <div class="pin-step-dots" id="psdRow">
+          <div class="psd a"></div><div class="psd"></div><div class="psd"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t" id="pinTitle">Aktuelle PIN eingeben</div></div>
+          <div class="card-b">
+            <div style="display:flex;justify-content:center;gap:16px;margin-bottom:22px;">
+              <div id="cpd0" class="chg-pd"></div>
+              <div id="cpd1" class="chg-pd"></div>
+              <div id="cpd2" class="chg-pd"></div>
+              <div id="cpd3" class="chg-pd"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <div onclick="cKey('1')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">1</div>
+              <div onclick="cKey('2')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">2</div>
+              <div onclick="cKey('3')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">3</div>
+              <div onclick="cKey('4')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">4</div>
+              <div onclick="cKey('5')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">5</div>
+              <div onclick="cKey('6')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">6</div>
+              <div onclick="cKey('7')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">7</div>
+              <div onclick="cKey('8')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">8</div>
+              <div onclick="cKey('9')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">9</div>
+              <div style="visibility:hidden;"></div>
+              <div onclick="cKey('0')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;-webkit-tap-highlight-color:transparent;">0</div>
+              <div onclick="cKey('del')" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px;text-align:center;font-size:18px;color:#64748b;cursor:pointer;-webkit-tap-highlight-color:transparent;">⌫</div>
+            </div>
+            <div style="color:#dc2626;font-size:13px;text-align:center;margin-top:12px;min-height:18px;" id="pinErr"></div>
+            <div style="color:#059669;text-align:center;font-size:13px;margin-top:8px;display:none;" id="pinOk">✓ PIN erfolgreich geändert!</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="nav-item" data-nav="admin" id="adminNavItem" style="display:none;">
-      <span class="nav-icon">⚙️</span>
-      <span>Admin</span>
-      <div class="nav-dot"></div>
+
+    <!-- ADMIN SUB-SEITEN -->
+    <div class="page" id="pgAdminPlan">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div class="week-nav" style="flex:1;margin-bottom:0;">
+          <span class="wbtn" onclick="wNav(-1)">‹</span>
+          <span class="wlbl" id="adminWLbl">KW 41</span>
+          <span class="wbtn" onclick="wNav(1)">›</span>
+        </div>
+        <button id="editBtn" onclick="toggleEdit()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;">✏️ Bearbeiten</button>
+      </div>
+      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Bearbeitungs-Modus – Zelle antippen zum Bearbeiten</span></div>
+      <div class="plan-wrap"><table class="plan-t" id="adminTbl"></table></div>
+      <div id="savePlanBar" style="display:none;position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--border);padding:10px 12px;display:none;gap:8px;">
+        <button onclick="savePlan()" style="flex:1;padding:11px;border:none;border-radius:var(--radius);background:#1D9E75;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Plan speichern</button>
+        <button onclick="cancelEdit()" style="padding:11px 16px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:13px;cursor:pointer;">Abbrechen</button>
+      </div>
+    </div>
+
+    <div class="page" id="pgAdminWunsch">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
+        <div class="stat"><div class="stat-l">Offen</div><div class="stat-v" style="color:#E24B4A;">3</div></div>
+        <div class="stat"><div class="stat-l">Genehmigt</div><div class="stat-v" style="color:var(--ok-t);">8</div></div>
+        <div class="stat"><div class="stat-l">Abgelehnt</div><div class="stat-v">2</div></div>
+      </div>
+      <div class="sec">Offene Anträge</div>
+      <div class="card" id="wunschCards">
+        <div style="border-color:#E24B4A;border-width:1.5px;border-style:solid;border-radius:var(--radius);overflow:hidden;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">RB</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Robin B. – Mo., 05.10. · Ganzer Tag</div><div style="font-size:11px;color:var(--muted);">Aushilfe · ⚠ Zaira J. hat denselben Tag</div></div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;" id="wa1">
+            <button onclick="approve('wa1')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✓ Genehmigen</button>
+            <button onclick="deny('wa1')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:#E24B4A;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✕ Ablehnen</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#633806;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">ZJ</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Zaira J. – Mo., 05.10. · Ganzer Tag</div><div style="font-size:11px;color:var(--muted);">Aushilfe · ⚠ Robin B. hat denselben Tag</div></div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;" id="wa2">
+            <button onclick="approve('wa2')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✓ Genehmigen</button>
+            <button onclick="deny('wa2')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:#E24B4A;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✕ Ablehnen</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#854F0B;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">LW</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Lina W. – Fr., 09.10. · Nur Früh</div><div style="font-size:11px;color:var(--muted);">Teilzeit · Kein Konflikt</div></div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;" id="wa3">
+            <button onclick="approve('wa3')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✓ Genehmigen</button>
+            <button onclick="deny('wa3')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:#E24B4A;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✕ Ablehnen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="pgAdminKrank">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div class="sec">Aktuell krank (2)</div>
+      <div class="card" style="border-color:#eab308;">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">JH</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Jennifer H.</div><div style="font-size:11px;color:var(--muted);">seit Mo., 14.09. · 6 Tage · ⚠ Attest fällig</div></div>
+          <span style="background:var(--warn);color:var(--warn-t);font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;">⚠ Attest</span>
+        </div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button onclick="alert('Attest-Erinnerung gesendet!')" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;cursor:pointer;">📨 Erinnerung</button>
+          <button onclick="alert('Ersatz-Suche geöffnet')" style="flex:1;padding:9px;border:none;border-radius:var(--radius);background:var(--navy);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">👥 Ersatz</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#854F0B;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">LW</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Lina W.</div><div style="font-size:11px;color:var(--muted);">seit Fr., 18.09. · 2 Tage · Attest ab Tag 3</div></div>
+          <span style="background:var(--err);color:var(--err-t);font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;">Krank</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="pgAdminKV">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div class="banner bwarn"><span>⏰</span><span>Verbindlich bis 16:15 Uhr · danach freiwillig</span></div>
+      <div class="sec">Offene KV heute</div>
+      <div class="card" style="border-color:#E24B4A;">
+        <div style="padding:10px 14px;display:flex;align-items:center;gap:8px;">
+          <div style="font-size:20px;">⚠️</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Robin B. – Spätschicht fehlt</div><div style="font-size:11px;color:var(--muted);">17:00–22:00 · verbindlich bis 16:15</div></div>
+        </div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);">
+          <div class="sec" style="margin-bottom:8px;">Verfügbare Mitarbeiter</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--ok-t);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">SS</div>
+            <div style="flex:1;font-size:12px;font-weight:600;">Suba S. <span style="font-weight:400;color:var(--muted);">· Teilzeit · hat frei</span></div>
+            <button onclick="alert('Anfrage gesendet!')" style="padding:6px 12px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Anfragen</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;">
+            <div style="width:26px;height:26px;border-radius:50%;background:#993C1D;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">CB</div>
+            <div style="flex:1;font-size:12px;font-weight:600;">Carina B. <span style="font-weight:400;color:var(--muted);">· Aushilfe · verfügbar</span></div>
+            <button onclick="alert('Anfrage gesendet!')" style="padding:6px 12px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Anfragen</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="alert('Neue KV-Anforderung')">+ Neue KV-Anforderung</button>
+    </div>
+
+    <div class="page" id="pgAdminMA">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div class="sec">Mitarbeiterliste · Oktober 2026</div>
+      <div id="maList"></div>
+    </div>
+
+    <div class="page" id="pgAdminStz">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div class="banner binfo"><span>📧</span><span>31.10. · 22:05 Uhr: PDF an Personal Büro (alswede@nasch.com)</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+        <div class="stat"><div class="stat-l">Unterschrieben</div><div class="stat-v" style="color:var(--ok-t);">13</div></div>
+        <div class="stat"><div class="stat-l">Ausstehend</div><div class="stat-v" style="color:#E24B4A;">2</div></div>
+      </div>
+      <div class="sec">Übersicht Oktober 2026</div>
+      <div id="stzList"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <button class="btn btn-outline" onclick="alert('Sperrung aufgehoben')">🔓 Sperrung aufheben</button>
+        <button class="btn btn-primary" onclick="alert('PDF wird erstellt…')">🖨 Alle drucken (PDF)</button>
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bot-nav">
+    <div class="ni active" id="ni-plan" onclick="navTo('plan')">
+      <span class="ni-icon">📅</span><span>Plan</span>
+    </div>
+    <div class="ni" id="ni-profil" onclick="navTo('profil')">
+      <span class="ni-icon">👤</span><span>Mein Bereich</span>
+    </div>
+    <div class="ni" id="ni-notif" onclick="navTo('notif')">
+      <span class="ni-icon">🔔</span><span>Benachrichtigungen</span>
+    </div>
+    <div class="ni hidden" id="ni-admin" onclick="navTo('admin')">
+      <span class="ni-icon">⚙️</span><span>Admin</span>
     </div>
   </nav>
-
 </div><!-- /appScreen -->
 
-<!-- Google Identity Services (Kalender-Auth) -->
-<script src="https://accounts.google.com/gsi/client" async></script>
-<!-- Microsoft MSAL (Outlook-Auth) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library-for-js/3.14.0/msal-browser.min.js"></script>
-<!-- EmailJS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<!-- jsPDF für PDF-Generierung -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- SCHICHT-EDITOR MODAL -->
+<div id="schichtModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);" onclick="if(event.target===this)closeModal()">
+  <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);">
+      <div><div style="font-size:14px;font-weight:700;" id="modalName">–</div><div style="font-size:12px;color:var(--muted);" id="modalDatum">–</div></div>
+      <button onclick="closeModal()" style="width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;font-size:16px;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <div style="padding:12px 16px;">
+      <div class="sec">Schicht wählen</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;" id="schichtOpts"></div>
+    </div>
+    <div id="zeitSec" style="padding:0 16px 12px;display:none;">
+      <div class="sec">Uhrzeit</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="zeitOpts"></div>
+    </div>
+    <div id="rollSec" style="padding:0 16px 12px;display:none;">
+      <div class="sec">Tätigkeit</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="rollOpts"></div>
+    </div>
+    <div style="padding:8px 16px 16px;">
+      <button onclick="applyShift()" style="width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--navy);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✓ Übernehmen</button>
+    </div>
+  </div>
+</div>
 
 <script src="js/data.js"></script>
 <script src="js/plan.js"></script>
-<script src="js/sheets-sync.js"></script>
-<script src="js/calendar-sync.js"></script>
-<script src="js/calendar-ui.js"></script>
-<script src="js/pdf-generator.js"></script>
-<script src="js/email-service.js"></script>
-<script src="js/pages.js"></script>
-<script src="js/admin-plan.js"></script>
-<script src="js/app.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════
+// HAUPT-LOGIK
+// ══════════════════════════════════════════════════════════
 
-<!-- Firebase SDKs (nach App-Skripten) -->
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
-           query, where, orderBy, addDoc, updateDoc }
-    from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-  import { getAuth, signInAnonymously, onAuthStateChanged, signOut }
-    from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+// ── Login ─────────────────────────────────────────────────
+let lPin='', lAttempts=0;
+function lKey(k){
+  if(lAttempts>=3) return;
+  if(k==='del'){lPin=lPin.slice(0,-1);}
+  else if(lPin.length<4){lPin+=k;}
+  updLD();
+  document.getElementById('loginErr').textContent='';
+  if(lPin.length===4) setTimeout(checkLogin,180);
+}
+function updLD(st){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('ld'+i);
+    d.className='pd'+(st==='err'?' err':i<lPin.length?' on':'');
+  }
+}
+function checkLogin(){
+  const uid=Object.keys(PINS).find(id=>PINS[id]===lPin);
+  if(uid&&USERS[uid]){
+    lAttempts=0; startApp(uid);
+  } else {
+    lAttempts++;
+    updLD('err');
+    if(lAttempts>=3) document.getElementById('loginErr').textContent='Zu viele Versuche. Bitte Lee Ko kontaktieren.';
+    else document.getElementById('loginErr').textContent=`Falsche PIN. Noch ${3-lAttempts} Versuch${lAttempts===2?'':'e'}.`;
+    setTimeout(()=>{lPin='';updLD();},800);
+  }
+}
 
-  // Firebase Config aus firebase-config.js verwenden
-  const FIREBASE_CONFIG = {
-    apiKey:            "DEIN_API_KEY",
-    authDomain:        "nasch-emsdetten.firebaseapp.com",
-    projectId:         "nasch-emsdetten",
-    storageBucket:     "nasch-emsdetten.appspot.com",
-    messagingSenderId: "DEINE_SENDER_ID",
-    appId:             "DEINE_APP_ID"
-  };
+// ── App starten ───────────────────────────────────────────
+function startApp(uid){
+  AppState.currentUserId=uid;
+  AppState.currentUser=USERS[uid];
+  const u=AppState.currentUser;
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('appScreen').classList.add('active');
+  document.getElementById('avBtn').textContent=u.initials;
+  document.getElementById('profAv').textContent=u.initials;
+  document.getElementById('profName').textContent=u.name;
+  document.getElementById('profMeta').textContent=u.label;
+  document.getElementById('profUrlaub').textContent=u.urlaubRest||0;
+  document.getElementById('profWunsch').textContent=u.wunschKont||1;
+  document.getElementById('wfKont').textContent=(u.wunschKont-1)+' von '+u.wunschKont;
+  document.getElementById('stzSoll').textContent=u.sollStundenMonat?u.sollStundenMonat+'h':'–';
+  document.getElementById('signedName').textContent=u.name;
+  // Wunschfrei Anspruch
+  document.getElementById('urlAnsp').textContent=u.typ==='VZ'?25:u.typ==='TZ'?20:0;
+  document.getElementById('urlRest').textContent=u.urlaubRest||0;
 
-  const app  = initializeApp(FIREBASE_CONFIG);
-  const db   = getFirestore(app);
-  const auth = getAuth(app);
+  // Admin
+  const isAdmin=['admin','vertretung'].includes(u.role);
+  if(isAdmin){ document.getElementById('ni-admin').classList.remove('hidden'); }
+  if(u.homeoffice){ document.getElementById('miHO').style.display='flex'; }
+  if(u.role!=='admin'){ document.getElementById('outlookKalRow').style.display='none'; }
 
-  window.Firebase = { db, auth, doc, getDoc, setDoc, collection,
-    getDocs, query, where, orderBy, addDoc, updateDoc,
-    signInAnonymously, onAuthStateChanged, signOut };
+  // Wochenplan
+  renderPlan();
+  const isAoV=['admin','vertretung'].includes(u.role);
+  document.getElementById('prevW').style.visibility=isAoV?'visible':'hidden';
+  document.getElementById('nextW').style.visibility=isAoV?'visible':'hidden';
 
-  // firebase-auth.js + firebase-data.js laden
-  await import('./js/firebase-auth.js');
-  await import('./js/firebase-data.js');
+  // Mitarbeiterliste + Stundenzettel vorbauen
+  buildMAList();
+  buildStzList();
+  buildVerfDays();
+  buildAdminPlan();
+  initSig();
+}
 
-  console.log('Firebase bereit ✓');
+// ── Navigation ────────────────────────────────────────────
+const NAV_PAGES={plan:'pgPlan',profil:'pgProfil',notif:'pgNotif',admin:'pgAdmin'};
+const NAV_TITLE={plan:'Wochenplan',profil:'Mein Bereich',notif:'Benachrichtigungen',admin:'Admin'};
+function navTo(key){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(NAV_PAGES[key]).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('ni-'+key)?.classList.add('active');
+  document.getElementById('tbTitle').textContent=NAV_TITLE[key];
+  document.querySelector('.page-wrap').scrollTop=0;
+}
+function goTo(pgId, title){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(pgId).classList.add('active');
+  document.getElementById('tbTitle').textContent=title||'';
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.querySelector('.page-wrap').scrollTop=0;
+}
+
+// ── Wochenplan Navigation ─────────────────────────────────
+function wNav(d){
+  const u=AppState.currentUser;
+  if(!['admin','vertretung'].includes(u?.role)) return;
+  AppState.weekOffset+=d;
+  renderPlan();
+  buildAdminPlan();
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+function nTab(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('ntab'+i)?.classList.toggle('active',i===n);
+    const p=document.getElementById('np'+i);
+    if(p) p.style.display=i===n?'block':'none';
+  });
+}
+function wTab(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('wt'+i)?.classList.toggle('active',i===n);
+    const p=document.getElementById('wp'+i);
+    if(p) p.style.display=i===n?'block':'none';
+  });
+}
+function tglSwitch(el){
+  const on=el.classList.contains('on');
+  el.classList.toggle('on',!on);
+  el.classList.toggle('off',on);
+}
+
+// ── Formulare ─────────────────────────────────────────────
+function sendeKrank(){document.getElementById('krankOK').classList.remove('hidden');}
+function sendeWF(){if(!document.getElementById('wfVon').value){alert('Bitte Datum wählen');return;}document.getElementById('wfOK').classList.remove('hidden');}
+function sendeURL(){document.getElementById('urlOK').classList.remove('hidden');}
+function sendeHO(){document.getElementById('hoOK').classList.remove('hidden');}
+function sendeVerf(){
+  if(!document.getElementById('verfGrund').value.trim()){document.getElementById('verfErr').textContent='Bitte Begründung angeben.';return;}
+  document.getElementById('verfErr').textContent='';
+  document.getElementById('verfOK').classList.remove('hidden');
+  document.getElementById('verfSendBtn').classList.add('hidden');
+  document.getElementById('verfGrundWrap').style.display='none';
+}
+
+// ── Verfügbarkeit ─────────────────────────────────────────
+const TAGE=['Mo','Di','Mi','Do','Fr','Sa','So'];
+const VOPTS=[{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'n',l:'Nicht verf.'}];
+const VFARBE={g:['#E1F5EE','#085041'],f:['#FFF2CC','#7D6608'],s:['#FAE5D3','#784212'],n:['#FCEBEB','#791F1F']};
+const vSel={Mo:'g',Di:'g',Mi:'n',Do:'g',Fr:'f',Sa:'f',So:'n'};
+const vOrig={...vSel};
+function buildVerfDays(){
+  const c=document.getElementById('verfDays');
+  if(!c) return;
+  c.innerHTML=TAGE.map(tag=>`
+    <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;padding:7px 12px;background:#f8fafc;">
+        <span style="font-size:13px;font-weight:600;flex:1;">${tag}</span>
+        <span id="vst_${tag}" style="font-size:11px;color:var(--muted);">${VOPTS.find(o=>o.k===vSel[tag])?.l}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:6px;">
+        ${VOPTS.map(o=>`<div onclick="selVerf('${tag}','${o.k}')" id="vo_${tag}_${o.k}"
+          style="padding:7px 6px;border-radius:4px;border:1px solid ${vSel[tag]===o.k?VFARBE[o.k][1]:'var(--border)'};
+            background:${vSel[tag]===o.k?VFARBE[o.k][0]:'var(--card)'};
+            text-align:center;cursor:pointer;font-size:11px;font-weight:600;
+            color:${vSel[tag]===o.k?VFARBE[o.k][1]:'var(--muted)'};">${o.l}</div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function selVerf(tag,key){
+  vSel[tag]=key;
+  TAGE.forEach(t=>{VOPTS.forEach(o=>{const el=document.getElementById('vo_'+t+'_'+o.k);if(el){const act=vSel[t]===o.k;el.style.background=act?VFARBE[o.k][0]:'var(--card)';el.style.borderColor=act?VFARBE[o.k][1]:'var(--border)';el.style.color=act?VFARBE[o.k][1]:'var(--muted)';}});});
+  document.getElementById('vst_'+tag).textContent=VOPTS.find(o=>o.k===key)?.l;
+  const changed=TAGE.some(t=>vSel[t]!==vOrig[t]);
+  document.getElementById('verfGrundWrap').style.display=changed?'block':'none';
+  document.getElementById('verfSendBtn').classList.toggle('hidden',!changed);
+}
+
+// ── PIN Ändern ────────────────────────────────────────────
+let cPin='',cStep=0,cNew='';
+function cKey(k){
+  if(k==='del'){cPin=cPin.slice(0,-1);}else if(cPin.length<4){cPin+=k;}
+  updCP();
+  document.getElementById('pinErr').textContent='';
+  if(cPin.length===4) setTimeout(procPIN,180);
+}
+function updCP(st){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('cpd'+i);
+    if(!d) return;
+    if(st==='err'){d.style.background='#dc2626';d.style.borderColor='#dc2626';}
+    else if(st==='ok'){d.style.background='#059669';d.style.borderColor='#059669';}
+    else if(i<cPin.length){d.style.background='#1e3a5f';d.style.borderColor='#1e3a5f';}
+    else{d.style.background='transparent';d.style.borderColor='#cbd5e1';}
+  }
+}
+function updPSD(){
+  const dots=document.querySelectorAll('#psdRow .psd');
+  dots.forEach((d,i)=>{d.className='psd'+(i<cStep?' d':i===cStep?' a':'');});
+}
+const BLOCKED=['1234','0000','1111','2222','3333','4444','5555','6666','7777','8888','9999'];
+function procPIN(){
+  const uid=AppState.currentUserId;
+  if(cStep===0){
+    if(PINS[uid]!==cPin){updCP('err');document.getElementById('pinErr').textContent='Falsche PIN.';setTimeout(()=>{cPin='';updCP();},800);}
+    else{cStep=1;updPSD();cPin='';updCP();document.getElementById('pinTitle').textContent='Neue PIN wählen';}
+  } else if(cStep===1){
+    if(BLOCKED.includes(cPin)){updCP('err');document.getElementById('pinErr').textContent='Diese PIN ist nicht erlaubt.';setTimeout(()=>{cPin='';updCP();},800);}
+    else{cNew=cPin;cStep=2;updPSD();cPin='';updCP();document.getElementById('pinTitle').textContent='Neue PIN bestätigen';}
+  } else {
+    if(cPin!==cNew){updCP('err');document.getElementById('pinErr').textContent='PINs stimmen nicht überein.';setTimeout(()=>{cPin='';cNew='';cStep=1;updPSD();updCP();document.getElementById('pinTitle').textContent='Neue PIN wählen';},900);}
+    else{PINS[uid]=cPin;updCP('ok');document.getElementById('pinOk').style.display='block';cPin='';cNew='';cStep=0;setTimeout(()=>{document.getElementById('pinOk').style.display='none';updCP();updPSD();document.getElementById('pinTitle').textContent='Aktuelle PIN eingeben';navTo('profil');},2000);}
+  }
+}
+
+// ── Unterschrift ──────────────────────────────────────────
+function initSig(){
+  const cvs=document.getElementById('sigCvs');
+  if(!cvs) return;
+  const ctx=cvs.getContext('2d');
+  cvs.width=cvs.offsetWidth||300;cvs.height=80;
+  ctx.strokeStyle='#1e3a5f';ctx.lineWidth=2.5;ctx.lineCap='round';
+  let drawing=false,hasSig=false;
+  window._sigCtx=ctx;window._hasSig=()=>hasSig;window._clrSig=()=>{ctx.clearRect(0,0,cvs.width,cvs.height);hasSig=false;};
+  function pos(e){const r=cvs.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*(cvs.width/r.width),y:(s.clientY-r.top)*(cvs.height/r.height)};}
+  cvs.addEventListener('mousedown',e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+  cvs.addEventListener('mousemove',e=>{if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSig=true;});
+  cvs.addEventListener('mouseup',()=>drawing=false);
+  cvs.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);},{passive:false});
+  cvs.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSig=true;},{passive:false});
+  cvs.addEventListener('touchend',()=>drawing=false);
+}
+function clrSig(){if(window._clrSig)window._clrSig();}
+function doSign(){
+  if(!window._hasSig||!window._hasSig()){document.getElementById('sigErr').textContent='Bitte zuerst unterschreiben.';return;}
+  document.getElementById('signCard').style.display='none';
+  document.getElementById('signedBox').style.display='block';
+}
+
+// ── Approve / Deny ────────────────────────────────────────
+function approve(id){const el=document.getElementById(id);if(el){el.innerHTML='<div style="color:var(--ok-t);font-size:12px;padding:4px 0;">✓ Genehmigt – Mitarbeiter wird benachrichtigt</div>';el.closest('[style*="border"]').style.borderColor='#1D9E75';}}
+function deny(id){const el=document.getElementById(id);if(el){el.innerHTML='<div style="color:#E24B4A;font-size:12px;padding:4px 0;">✕ Abgelehnt – Mitarbeiter wird benachrichtigt</div>';el.closest('[style*="border"]').style.borderColor='var(--border)';}}
+
+// ── Mitarbeiterliste ──────────────────────────────────────
+const MINIJOB=43,MINDESTLOHN=13.90,MINIJOB_EUR=603;
+const DEMO_IST={'lee-ko':98,'jennifer-haak':145,'filiz-bektik':168,'suba-srikunathan':62,'lina-will':55,'aneta-michalska':48,'leon-neubauer':38,'liubov-ovcharenko':52,'robin-berkenheide':28,'zaira-jara':38,'tissa-rajan':41,'assol-ovcharenko':18,'carina-botkin':43,'luisa-hosch':12,'altmas-khan':8};
+function buildMAList(){
+  const c=document.getElementById('maList');if(!c)return;
+  const secs={VZ:'Vollzeit',TZ:'Teilzeit',AH:'Aushilfen'};
+  let html='';
+  ['VZ','TZ','AH'].forEach(typ=>{
+    html+=`<div class="sec">${secs[typ]}</div>`;
+    Object.entries(USERS).filter(([,u])=>u.typ===typ).forEach(([uid,u])=>{
+      const ist=DEMO_IST[uid]||0;
+      const soll=typ==='AH'?MINIJOB:(u.sollStundenMonat||0);
+      const pct=Math.min(Math.round(ist/soll*100),110);
+      const col=pct>100?'#E24B4A':pct>=85?'#eab308':'#1D9E75';
+      html+=`<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${col};border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0;">${u.initials}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${u.name}</div>
+          <div style="font-size:11px;color:var(--muted);">${ist}h / ${soll}h ${typ==='AH'?'Max.':'Soll'}</div>
+          <div style="height:5px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden;"><div style="height:100%;width:${Math.min(pct,100)}%;background:${col};border-radius:3px;"></div></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${col};">${pct}%</span>
+      </div>`;
+    });
+  });
+  c.innerHTML=html;
+}
+
+// ── Stundenzettel Admin ───────────────────────────────────
+const STZ_STATUS={'lee-ko':true,'jennifer-haak':true,'filiz-bektik':true,'suba-srikunathan':true,'lina-will':true,'aneta-michalska':true,'leon-neubauer':false,'liubov-ovcharenko':true,'robin-berkenheide':true,'zaira-jara':true,'tissa-rajan':true,'assol-ovcharenko':true,'carina-botkin':false,'luisa-hosch':true,'altmas-khan':true};
+function buildStzList(){
+  const c=document.getElementById('stzList');if(!c)return;
+  let html='<div class="card">';
+  Object.entries(USERS).forEach(([uid,u])=>{
+    const ok=STZ_STATUS[uid];
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);">
+      <div style="width:26px;height:26px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${u.initials}</div>
+      <div style="flex:1;font-size:12px;font-weight:600;">${u.name}</div>
+      <span style="font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;background:${ok?'var(--ok)':'var(--err)'};color:${ok?'var(--ok-t)':'var(--err-t)'};">${ok?'Fertig':'Fehlt'}</span>
+    </div>`;
+  });
+  html+='</div>';c.innerHTML=html;
+}
+
+// ── Admin Plan ────────────────────────────────────────────
+let editMode=false,planChanges={};
+let curUID='',curDay=0;
+const SCHICHT_OPTS=[
+  {t:'-',l:'– Frei',bg:'#f8fafc',tx:'#6b7280'},
+  {t:'F',l:'🌅 Frühschicht',bg:'#FFF2CC',tx:'#7D6608'},
+  {t:'S',l:'🌙 Spätschicht',bg:'#FAE5D3',tx:'#784212'},
+  {t:'WF',l:'🏖 Wunschfrei',bg:'#FBEAF0',tx:'#72243E'},
+  {t:'U',l:'✈️ Urlaub',bg:'#FBEAF0',tx:'#72243E'},
+  {t:'KV',l:'👥 KV',bg:'#fef08a',tx:'#633806'},
+  {t:'K',l:'🤒 Krank',bg:'#FCEBEB',tx:'#791F1F'},
+  {t:'HO',l:'🏠 Home-Office',bg:'#E6F1FB',tx:'#0C447C'},
+  {t:'T',l:'📋 Tagung',bg:'#FAE5D3',tx:'#784212'},
+  {t:'O',l:'🏢 Büro',bg:'#e8ddd4',tx:'#6b4c36'},
+  {t:'BS',l:'📚 Berufsschule',bg:'#EEEDFE',tx:'#3C3489'},
+  {t:'R',l:'🧹 Reinigung',bg:'#d0f4f4',tx:'#0e6e6e'},
+];
+const ZEITEN={F:['08:00–15:30','09:30–15:30'],S:['15:30–22:00','16:00–22:00'],KV:['08:00–15:30','15:30–22:00'],R:['06:00–10:00']};
+const ROLLEN=['Vo/GL','V/SL','V','SL','GL','TO','B',''];
+let mS={t:'-',z:'',r:''};
+
+function buildAdminPlan(){
+  if(typeof renderPlan!=='function') return;
+  const tbl=document.getElementById('adminTbl');
+  if(!tbl) return;
+  // Nutze die gleiche Plan-Render-Logik aber mit Klick-Handler
+  const mon=getMonday(AppState.weekOffset);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const kw=getKW(mon);
+  const lbl=document.getElementById('adminWLbl');
+  if(lbl) lbl.textContent=`KW ${kw} · ${formatDate(mon)}–${formatDate(sun)}${mon.getFullYear()}`;
+  const dates=[];
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);dates.push(d);}
+  const today=new Date();today.setHours(0,0,0,0);
+  let html='<thead><tr><th class="nc">Name</th>';
+  dates.forEach((d,i)=>{const isT=d.toDateString()===today.toDateString();html+=`<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;});
+  html+='<th style="background:#1e3a5f;color:#e8f4fd;">F/S</th></tr></thead><tbody>';
+  let gF=0,gS=0;
+  Object.entries(USERS).forEach(([uid,user])=>{
+    const shifts=PLAN[uid]||[];
+    let wF=0,wS=0;
+    html+=`<tr><td class="nc" style="font-size:11px;">${user.name}<br><small style="color:var(--muted);">${user.typ}</small></td>`;
+    dates.forEach((d,i)=>{
+      const s=shifts[i]||{t:'-'};
+      const isT=d.toDateString()===today.toDateString();
+      const changed=planChanges[uid]?.[i];
+      let tdStyle=isT?'background:rgba(30,58,95,.04);':'';
+      if(changed) tdStyle+='background:#fffae8;';
+      const klick=editMode?`onclick="openShiftEditor('${uid}',${i})" style="${tdStyle}cursor:pointer;"`:`style="${tdStyle}"`;
+      html+=`<td ${klick}>`;
+      if(editMode) html+=`<div style="position:relative;">${shiftLabel(s)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div>`;
+      else html+=shiftLabel(s);
+      html+='</td>';
+      if(s.t==='F'){wF++;gF++;}if(s.t==='S'){wS++;gS++;}
+    });
+    html+=`<td style="background:#f8fafc;text-align:center;font-size:10px;"><span style="color:var(--early-t);display:block;">F:${wF}</span><span style="color:var(--late-t);display:block;">S:${wS}</span></td></tr>`;
+  });
+  // Tagessummen
+  html+='<tr style="background:#f8fafc;border-top:2px solid var(--border);"><td class="nc" style="background:#f8fafc;font-size:10px;font-weight:600;">Summe</td>';
+  dates.forEach((_,i)=>{let f=0,s=0;Object.values(PLAN).forEach(sh=>{const x=(sh||[])[i];if(x?.t==='F')f++;if(x?.t==='S')s++;});html+=`<td style="background:#f8fafc;text-align:center;padding:4px;font-size:10px;"><span style="color:var(--early-t);display:block;">F:${f}</span><span style="color:var(--late-t);display:block;">S:${s}</span></td>`;});
+  html+=`<td style="background:#1e3a5f;color:#e8f4fd;text-align:center;padding:6px;font-size:9px;">F${gF}<br>S${gS}<br>∑${gF+gS}</td></tr></tbody>`;
+  tbl.innerHTML=html;
+}
+
+function toggleEdit(){
+  editMode=!editMode;
+  const btn=document.getElementById('editBtn');
+  if(btn){btn.textContent=editMode?'👁 Ansicht':'✏️ Bearbeiten';btn.style.background=editMode?'#f0f5ff':'var(--card)';btn.style.color=editMode?'var(--navy)':'var(--text)';}
+  const ban=document.getElementById('editBanner');
+  if(ban) ban.style.display=editMode?'flex':'none';
+  const bar=document.getElementById('savePlanBar');
+  if(bar&&!editMode) bar.style.display='none';
+  buildAdminPlan();
+}
+
+function openShiftEditor(uid,dayIdx){
+  if(!editMode) return;
+  curUID=uid;curDay=dayIdx;
+  const user=USERS[uid];
+  const mon=getMonday(AppState.weekOffset);
+  const d=new Date(mon);d.setDate(mon.getDate()+dayIdx);
+  const s=(PLAN[uid]||[])[dayIdx]||{t:'-',z:'',r:''};
+  mS={...s};
+  document.getElementById('modalName').textContent=user.name;
+  document.getElementById('modalDatum').textContent=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'});
+  // Schicht-Optionen
+  const grid=document.getElementById('schichtOpts');
+  // Filtere nach Rolle
+  const isAdmin=['admin','vertretung'].includes(user.role);
+  const isAzubi=user.azubi===true;
+  const opts=SCHICHT_OPTS.filter(o=>{
+    if(['HO','T','O'].includes(o.t)&&!isAdmin) return false;
+    if(o.t==='BS'&&!isAzubi) return false;
+    return true;
+  });
+  grid.innerHTML=opts.map(o=>`<div onclick="selST('${o.t}')" id="sopt_${o.t}"
+    style="padding:10px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;
+      border:2px solid ${mS.t===o.t?o.tx:'var(--border)'};
+      background:${mS.t===o.t?o.bg:'var(--card)'};
+      color:${mS.t===o.t?o.tx:'var(--text)'};">${o.l}</div>`).join('');
+  buildZeitOpts();buildRollOpts();
+  document.getElementById('schichtModal').style.display='flex';
+}
+
+function selST(t){
+  mS.t=t;
+  SCHICHT_OPTS.forEach(o=>{const el=document.getElementById('sopt_'+o.t);if(el){const act=o.t===t;el.style.borderColor=act?o.tx:'var(--border)';el.style.background=act?o.bg:'var(--card)';el.style.color=act?o.tx:'var(--text)';}});
+  document.getElementById('zeitSec').style.display=['F','S','KV','R'].includes(t)?'block':'none';
+  document.getElementById('rollSec').style.display=['F','S'].includes(t)?'block':'none';
+  buildZeitOpts();buildRollOpts();
+}
+
+function buildZeitOpts(){
+  const z=ZEITEN[mS.t]||[];
+  const sec=document.getElementById('zeitSec');
+  if(!z.length){if(sec) sec.style.display='none';return;}
+  if(sec) sec.style.display='block';
+  if(!mS.z&&z[0]) mS.z=z[0];
+  document.getElementById('zeitOpts').innerHTML=z.map(zi=>`<div onclick="selZ('${zi}')" id="zopt_${zi.replace(/[^a-z0-9]/gi,'_')}"
+    style="padding:7px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;
+      border:1.5px solid ${mS.z===zi?'var(--navy)':'var(--border)'};
+      background:${mS.z===zi?'#f0f5ff':'var(--card)'};
+      color:${mS.z===zi?'var(--navy)':'var(--text)'};">${zi}</div>`).join('')
+    +`<input type="text" placeholder="Eigene…" value="${!z.includes(mS.z)?mS.z:''}" oninput="mS.z=this.value"
+      style="padding:6px 10px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;width:110px;">`;
+}
+function selZ(z){mS.z=z;buildZeitOpts();}
+
+function buildRollOpts(){
+  const sec=document.getElementById('rollSec');
+  if(!['F','S'].includes(mS.t)){if(sec) sec.style.display='none';return;}
+  if(sec) sec.style.display='block';
+  document.getElementById('rollOpts').innerHTML=ROLLEN.map(r=>`<div onclick="selR('${r}')" id="ropt_${r||'leer'}"
+    style="padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;
+      border:1.5px solid ${mS.r===r?'var(--navy)':'var(--border)'};
+      background:${mS.r===r?'#f0f5ff':'var(--card)'};
+      color:${mS.r===r?'var(--navy)':'var(--text)'};">${r||'–'}</div>`).join('')
+    +`<input type="text" placeholder="Eigene…" value="${!ROLLEN.includes(mS.r)?mS.r:''}" oninput="mS.r=this.value"
+      style="padding:6px 10px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;width:90px;">`;
+}
+function selR(r){mS.r=r;buildRollOpts();}
+
+function applyShift(){
+  if(!PLAN[curUID]) PLAN[curUID]=Array(7).fill({t:'-',z:'',r:''});
+  PLAN[curUID][curDay]={...mS};
+  if(!planChanges[curUID]) planChanges[curUID]={};
+  planChanges[curUID][curDay]={...mS};
+  closeModal();
+  buildAdminPlan();
+  const bar=document.getElementById('savePlanBar');
+  if(bar) bar.style.display='flex';
+}
+
+function closeModal(){document.getElementById('schichtModal').style.display='none';}
+function savePlan(){planChanges={};const bar=document.getElementById('savePlanBar');if(bar)bar.style.display='none';buildAdminPlan();showToast('✓ Plan gespeichert');}
+function cancelEdit(){editMode=false;planChanges={};buildAdminPlan();document.getElementById('editBtn').textContent='✏️ Bearbeiten';document.getElementById('editBtn').style.background='var(--card)';document.getElementById('editBanner').style.display='none';const bar=document.getElementById('savePlanBar');if(bar)bar.style.display='none';}
+function showToast(txt){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#085041;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:9999;';document.body.appendChild(t);}t.textContent=txt;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2500);}
+
+// ── Logout ────────────────────────────────────────────────
+function doLogout(){
+  AppState.currentUser=null;AppState.currentUserId=null;AppState.weekOffset=0;
+  lPin='';lAttempts=0;updLD();
+  document.getElementById('loginErr').textContent='';
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('ni-admin').classList.add('hidden');
+  editMode=false;planChanges={};
+}
 </script>
 </body>
 </html>
