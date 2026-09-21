@@ -670,58 +670,96 @@
 
     <!-- ── PIN ÄNDERN ────────────────────────────────────── -->
     <div class="page" id="pagePIN">
-      <div class="pin-change-wrap">
-        <div class="step-dots" id="pinStepDots">
-          <div class="step-dot active"></div>
-          <div class="step-dot"></div>
-          <div class="step-dot"></div>
+      <div style="max-width:320px;margin:0 auto;">
+        <!-- Schritt-Indikator -->
+        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;" id="pinStepDots">
+          <div class="step-dot active" style="width:8px;height:8px;border-radius:50%;background:#1e3a5f;"></div>
+          <div class="step-dot" style="width:8px;height:8px;border-radius:50%;background:#e5e7eb;"></div>
+          <div class="step-dot" style="width:8px;height:8px;border-radius:50%;background:#e5e7eb;"></div>
         </div>
         <div class="card">
           <div class="card-header">
             <div class="card-title" id="pinChangeTitle">Aktuelle PIN eingeben</div>
           </div>
           <div class="card-body">
-            <!-- PIN-Punkte hell -->
-            <div style="display:flex;justify-content:center;gap:14px;margin-bottom:24px;">
-              <div class="pin-dot-light" id="cd0"></div>
-              <div class="pin-dot-light" id="cd1"></div>
-              <div class="pin-dot-light" id="cd2"></div>
-              <div class="pin-dot-light" id="cd3"></div>
+            <!-- PIN-Punkte mit Inline-Styles -->
+            <div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;">
+              <div id="cd0" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
+              <div id="cd1" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
+              <div id="cd2" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
+              <div id="cd3" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;transition:all .15s;"></div>
             </div>
-            <div class="keypad">
-              <div class="key-light" data-changekey="1">1</div>
-              <div class="key-light" data-changekey="2">2</div>
-              <div class="key-light" data-changekey="3">3</div>
-              <div class="key-light" data-changekey="4">4</div>
-              <div class="key-light" data-changekey="5">5</div>
-              <div class="key-light" data-changekey="6">6</div>
-              <div class="key-light" data-changekey="7">7</div>
-              <div class="key-light" data-changekey="8">8</div>
-              <div class="key-light" data-changekey="9">9</div>
-              <div class="key-light empty"></div>
-              <div class="key-light" data-changekey="0">0</div>
-              <div class="key-light del" data-changekey="del">⌫</div>
+            <!-- Keypad mit Inline-Styles – kein CSS-Klassen-Problem -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;" id="changePadGrid">
+              <div data-changekey="1" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">1</div>
+              <div data-changekey="2" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">2</div>
+              <div data-changekey="3" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">3</div>
+              <div data-changekey="4" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">4</div>
+              <div data-changekey="5" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">5</div>
+              <div data-changekey="6" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">6</div>
+              <div data-changekey="7" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">7</div>
+              <div data-changekey="8" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">8</div>
+              <div data-changekey="9" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">9</div>
+              <div style="visibility:hidden;"></div>
+              <div data-changekey="0" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:22px;font-weight:600;color:#0f172a;cursor:pointer;">0</div>
+              <div data-changekey="del" style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:15px 8px;text-align:center;font-size:18px;color:#64748b;cursor:pointer;">⌫</div>
             </div>
-            <div class="login-err" id="pinChangeErr"></div>
-            <div style="color:#085041;text-align:center;font-size:13px;margin-top:8px;display:none;" id="pinChangeOk">✓ PIN erfolgreich geändert!</div>
+            <div style="color:#dc2626;font-size:13px;text-align:center;margin-top:12px;min-height:20px;" id="pinChangeErr"></div>
+            <div style="color:#059669;text-align:center;font-size:13px;margin-top:8px;display:none;" id="pinChangeOk">✓ PIN erfolgreich geändert!</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Sub-Seiten (Platzhalter – werden in js/pages.js geladen) -->
-    <div class="page" id="pageKrank"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageWunsch"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageStundenzettel"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageVerfuegbar"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageKalender"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageHomeOffice"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageAdminPlan"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageAdminWunsch"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageAdminKrank"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageAdminKV"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageAdminMitarbeiter"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
-    <div class="page" id="pageAdminStunden"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <!-- Sub-Seiten werden dynamisch durch js/pages.js befüllt -->
+    <div class="page" id="pageKrank">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageWunsch">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageStundenzettel">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageVerfuegbar">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageKalender">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageHomeOffice">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageAdminPlan">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageAdminWunsch">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageAdminKrank">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageAdminKV">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageAdminMitarbeiter">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
+    <div class="page" id="pageAdminStunden">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--muted);" onclick="switchNav('admin')">‹ <span style="font-size:13px;">Zurück</span></div>
+      <div style="text-align:center;padding:30px 20px;color:var(--muted);">Wird geladen…</div>
+    </div>
 
   </div><!-- /page-content -->
 
