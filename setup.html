@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nasch Emsdetten – Einrichtung</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f6f9; color: #1a1a2e; }
+    .header { background: #1e3a5f; padding: 20px 24px; color: #fff; }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header p  { font-size: 13px; color: #a0b8d0; margin-top: 4px; }
+    .container { max-width: 680px; margin: 0 auto; padding: 20px; }
+
+    .step { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 16px; overflow: hidden; }
+    .step-header { display: flex; align-items: center; gap: 12px; padding: 16px; cursor: pointer; }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .num-done    { background: #1D9E75; color: #fff; }
+    .num-active  { background: #1e3a5f; color: #fff; }
+    .num-pending { background: #f1f5f9; color: #6b7280; border: 1px solid #e5e7eb; }
+    .step-title  { font-size: 14px; font-weight: 600; flex: 1; }
+    .step-badge  { font-size: 11px; border-radius: 4px; padding: 3px 8px; font-weight: 600; }
+    .sb-done   { background: #E1F5EE; color: #085041; }
+    .sb-active { background: #E6F1FB; color: #0C447C; }
+    .sb-pend   { background: #f1f5f9; color: #6b7280; border: 1px solid #e5e7eb; }
+    .step-body { padding: 0 16px 16px; border-top: 1px solid #f1f5f9; display: none; }
+    .step-body.open { display: block; }
+
+    label { display: block; font-size: 12px; color: #6b7280; margin: 12px 0 4px; }
+    input[type=text], input[type=password] {
+      width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb;
+      border-radius: 8px; font-size: 13px; font-family: monospace;
+    }
+    input:focus { outline: 2px solid #1e3a5f; border-color: transparent; }
+    .hint { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+    .hint a { color: #185FA5; }
+
+    .btn { border: none; border-radius: 8px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 12px; }
+    .btn-primary { background: #1e3a5f; color: #fff; }
+    .btn-success { background: #1D9E75; color: #fff; }
+    .btn-outline { background: #fff; border: 1px solid #e5e7eb; color: #1a1a2e; }
+
+    .ok-box   { background: #E1F5EE; border: 1px solid #1D9E75; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #085041; margin-top: 10px; display: none; }
+    .err-box  { background: #FCEBEB; border: 1px solid #F09595; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #791F1F; margin-top: 10px; display: none; }
+    .info-box { background: #E6F1FB; border: 1px solid #185FA5; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #0C447C; margin-top: 10px; }
+
+    .progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; margin: 16px 0; }
+    .progress-fill { height: 100%; background: #1D9E75; border-radius: 3px; transition: width 0.4s; }
+
+    .keys-list { background: #f8fafc; border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .key-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
+    .key-row:last-child { border-bottom: none; }
+    .key-name { color: #6b7280; }
+    .key-status { font-weight: 600; }
+    .ks-ok   { color: #085041; }
+    .ks-miss { color: #791F1F; }
+
+    .download-btn { background: #1e3a5f; color: #fff; border: none; border-radius: 8px; padding: 14px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 4px; }
+    .download-btn:hover { background: #2d5285; }
+
+    .deploy-steps { counter-reset: step; }
+    .deploy-step { display: flex; gap: 10px; margin-bottom: 12px; }
+    .deploy-num { background: #1e3a5f; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .deploy-text { font-size: 13px; line-height: 1.5; }
+    code { background: #f1f5f9; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛠 Nasch Emsdetten – Einrichtung</h1>
+  <p>API-Keys konfigurieren und App live schalten</p>
+</div>
+
+<div class="container">
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <p style="font-size:12px;color:#6b7280;text-align:right;margin-top:-10px;margin-bottom:16px;" id="progressText">0 von 5 Schritten erledigt</p>
+
+  <!-- ── SCHRITT 1: Firebase ─────────────────────────────── -->
+  <div class="step" id="step1">
+    <div class="step-header" onclick="toggleStep(1)">
+      <div class="step-num num-active" id="sn1">1</div>
+      <div class="step-title">Firebase einrichten</div>
+      <span class="step-badge sb-active" id="sb1">Aktuell</span>
+    </div>
+    <div class="step-body open" id="sb1body">
+      <div class="info-box">
+        <strong>Anleitung:</strong> <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Neues Projekt "nasch-emsdetten" → Web-App registrieren → Keys kopieren
+      </div>
+      <label>API Key</label>
+      <input type="text" id="fb_apiKey" placeholder="AIzaSy..." oninput="pruefeKeys()">
+      <label>Auth Domain</label>
+      <input type="text" id="fb_authDomain" placeholder="nasch-emsdetten.firebaseapp.com" oninput="pruefeKeys()">
+      <label>Project ID</label>
+      <input type="text" id="fb_projectId" placeholder="nasch-emsdetten" oninput="pruefeKeys()">
+      <label>App ID</label>
+      <input type="text" id="fb_appId" placeholder="1:123456:web:abcdef" oninput="pruefeKeys()">
+      <label>Messaging Sender ID</label>
+      <input type="text" id="fb_senderId" placeholder="123456789" oninput="pruefeKeys()">
+      <div class="ok-box"  id="fb_ok">✓ Firebase-Keys gespeichert</div>
+      <div class="err-box" id="fb_err">Bitte alle Felder ausfüllen</div>
+      <button class="btn btn-primary" onclick="speicherFirebase()">Firebase-Keys speichern</button>
+    </div>
+  </div>
+
+  <!-- ── SCHRITT 2: Google Sheets ───────────────────────── -->
+  <div class="step" id="step2">
+    <div class="step-header" onclick="toggleStep(2)">
+      <div class="step-num num-pending" id="sn2">2</div>
+      <div class="step-title">Google Sheets API</div>
+      <span class="step-badge sb-pend" id="sb2">Ausstehend</span>
+    </div>
+    <div class="step-body" id="sb2body">
+      <div class="info-box">
+        <strong>Anleitung:</strong> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → APIs & Dienste → Google Sheets API aktivieren → API-Key erstellen
+      </div>
+      <label>Google Sheets API Key</label>
+      <input type="text" id="sheets_key" placeholder="AIzaSy..." oninput="pruefeKeys()">
+      <p class="hint">Diesen Key nur auf Google Sheets API einschränken für mehr Sicherheit.</p>
+      <label>Google Sheet ID (aus der URL deines Sheets)</label>
+      <input type="text" id="sheets_id" placeholder="1F9XbgCRx15P1VVd6ZxhAU8mGDo1IFzUCg0KIfGyVST4" oninput="pruefeKeys()">
+      <p class="hint">Die lange ID aus der Sheet-URL zwischen /d/ und /edit</p>
+      <div class="ok-box"  id="sheets_ok">✓ Sheets-Konfiguration gespeichert</div>
+      <div class="err-box" id="sheets_err">Bitte beide Felder ausfüllen</div>
+      <button class="btn btn-primary" onclick="speicherSheets()">Sheets-Keys speichern</button>
+    </div>
+  </div>
+
+  <!-- ── SCHRITT 3: EmailJS ─────────────────────────────── -->
+  <div class="step" id="step3">
+    <div class="step-header" onclick="toggleStep(3)">
+      <div class="step-num num-pending" id="sn3">3</div>
+      <div class="step-title">EmailJS für Stundenzettel-Versand</div>
+      <span class="step-badge sb-pend" id="sb3">Ausstehend</span>
+    </div>
+    <div class="step-body" id="sb3body">
+      <div class="info-box">
+        <strong>Anleitung:</strong> <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> → Kostenloses Konto → Gmail verbinden → Template erstellen (siehe EMAILJS_SETUP.md)
+      </div>
+      <label>EmailJS Public Key</label>
+      <input type="text" id="ej_key" placeholder="user_xxxxx" oninput="pruefeKeys()">
+      <label>EmailJS Service ID</label>
+      <input type="text" id="ej_service" placeholder="nasch_emsdetten" oninput="pruefeKeys()">
+      <label>EmailJS Template ID</label>
+      <input type="text" id="ej_template" placeholder="template_xxxxx" oninput="pruefeKeys()">
+      <div class="ok-box"  id="ej_ok">✓ EmailJS-Konfiguration gespeichert</div>
+      <div class="err-box" id="ej_err">Bitte alle Felder ausfüllen</div>
+      <button class="btn btn-primary" onclick="speicherEmail()">EmailJS-Keys speichern</button>
+    </div>
+  </div>
+
+  <!-- ── SCHRITT 4: Kalender ────────────────────────────── -->
+  <div class="step" id="step4">
+    <div class="step-header" onclick="toggleStep(4)">
+      <div class="step-num num-pending" id="sn4">4</div>
+      <div class="step-title">Google Kalender + Outlook (optional)</div>
+      <span class="step-badge sb-pend" id="sb4">Ausstehend</span>
+    </div>
+    <div class="step-body" id="sb4body">
+      <div class="info-box">
+        Kalender-Sync ist optional. Die App funktioniert auch ohne.<br><br>
+        <strong>Google:</strong> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → OAuth Client ID erstellen (Web-App)<br>
+        <strong>Outlook:</strong> <a href="https://portal.azure.com" target="_blank">portal.azure.com</a> → App-Registrierung → Client ID kopieren
+      </div>
+      <label>Google Client ID (für Kalender-OAuth)</label>
+      <input type="text" id="cal_googleId" placeholder="123456-xxxx.apps.googleusercontent.com" oninput="pruefeKeys()">
+      <label>Google API Key (für Kalender)</label>
+      <input type="text" id="cal_googleKey" placeholder="AIzaSy..." oninput="pruefeKeys()">
+      <label>Azure App ID (für Outlook – nur Führungskräfte)</label>
+      <input type="text" id="cal_azureId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" oninput="pruefeKeys()">
+      <p class="hint">Felder leer lassen wenn Kalender-Sync nicht genutzt werden soll.</p>
+      <div class="ok-box"  id="cal_ok">✓ Kalender-Konfiguration gespeichert</div>
+      <button class="btn btn-primary" onclick="speicherKalender()">Speichern (oder überspringen)</button>
+    </div>
+  </div>
+
+  <!-- ── SCHRITT 5: Download & GitHub ───────────────────── -->
+  <div class="step" id="step5">
+    <div class="step-header" onclick="toggleStep(5)">
+      <div class="step-num num-pending" id="sn5">5</div>
+      <div class="step-title">App herunterladen &amp; auf GitHub hochladen</div>
+      <span class="step-badge sb-pend" id="sb5">Ausstehend</span>
+    </div>
+    <div class="step-body" id="sb5body">
+
+      <div class="keys-list" id="keySummary">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Konfiguration – Übersicht:</div>
+        <div class="key-row"><span class="key-name">Firebase</span><span class="key-status ks-miss" id="sum_fb">❌ Fehlt</span></div>
+        <div class="key-row"><span class="key-name">Google Sheets</span><span class="key-status ks-miss" id="sum_sh">❌ Fehlt</span></div>
+        <div class="key-row"><span class="key-name">EmailJS</span><span class="key-status ks-miss" id="sum_ej">❌ Fehlt</span></div>
+        <div class="key-row"><span class="key-name">Kalender (optional)</span><span class="key-status" id="sum_cal" style="color:#6b7280;">– Übersprungen</span></div>
+      </div>
+
+      <button class="download-btn" id="downloadBtn" onclick="generiereUndLade()" disabled style="opacity:0.5;cursor:not-allowed;">
+        ⬇ App mit allen Keys herunterladen
+      </button>
+
+      <div style="height:1px;background:#e5e7eb;margin:20px 0;"></div>
+
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;">GitHub Deployment – Schritt für Schritt:</div>
+      <div class="deploy-steps">
+        <div class="deploy-step">
+          <div class="deploy-num">1</div>
+          <div class="deploy-text"><strong>GitHub Account erstellen:</strong> <a href="https://github.com/join" target="_blank" style="color:#185FA5;">github.com/join</a> (kostenlos)</div>
+        </div>
+        <div class="deploy-step">
+          <div class="deploy-num">2</div>
+          <div class="deploy-text"><strong>Repository anlegen:</strong> <a href="https://github.com/new" target="_blank" style="color:#185FA5;">github.com/new</a> → Name: <code>nasch-emsdetten.github.io</code> → Public → Create</div>
+        </div>
+        <div class="deploy-step">
+          <div class="deploy-num">3</div>
+          <div class="deploy-text"><strong>Dateien hochladen:</strong> Im Repository → "uploading an existing file" klicken → ZIP entpacken → Alle Dateien hineinziehen → Commit changes</div>
+        </div>
+        <div class="deploy-step">
+          <div class="deploy-num">4</div>
+          <div class="deploy-text"><strong>GitHub Pages aktivieren:</strong> Settings → Pages → Source: Deploy from branch → Branch: main → Save</div>
+        </div>
+        <div class="deploy-step">
+          <div class="deploy-num">5</div>
+          <div class="deploy-text"><strong>2–3 Minuten warten</strong> → App live unter: <code>nasch-emsdetten.github.io</code> ✅</div>
+        </div>
+        <div class="deploy-step">
+          <div class="deploy-num">6</div>
+          <div class="deploy-text"><strong>Mitarbeiter anlegen:</strong> App öffnen → Browser-Konsole (F12) → <code>await Firebase_Setup.initMitarbeiter()</code> eingeben → Enter</div>
+        </div>
+      </div>
+
+      <div style="background:#E1F5EE;border:1px solid #1D9E75;border-radius:8px;padding:12px;margin-top:16px;">
+        <div style="font-size:13px;font-weight:600;color:#085041;margin-bottom:4px;">✅ Fertig! Erste Anmeldung:</div>
+        <div style="font-size:12px;color:#085041;">PIN <strong>1001</strong> eingeben → Lee Ko (Admin)<br>Neue PIN setzen → App ist bereit!</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const config = {};
+const fertig = { fb:false, sh:false, ej:false, cal:true };
+
+function toggleStep(n) {
+  const body = document.getElementById('sb'+n+'body');
+  body.classList.toggle('open');
+}
+
+function pruefeKeys() {
+  const alle = fertig.fb && fertig.sh && fertig.ej;
+  document.getElementById('downloadBtn').disabled = !alle;
+  document.getElementById('downloadBtn').style.opacity = alle ? '1' : '0.5';
+  document.getElementById('downloadBtn').style.cursor = alle ? 'pointer' : 'not-allowed';
+  updateProgress();
+  updateSummary();
+}
+
+function updateProgress() {
+  const done = Object.values(fertig).filter(Boolean).length;
+  const pct  = Math.round(done / Object.keys(fertig).length * 100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressText').textContent = `${done} von ${Object.keys(fertig).length} Schritten erledigt`;
+}
+
+function updateSummary() {
+  const keys = {fb:'sum_fb',sh:'sum_sh',ej:'sum_ej',cal:'sum_cal'};
+  Object.entries(keys).forEach(([k,id]) => {
+    const el = document.getElementById(id);
+    if(k==='cal') { el.textContent = fertig.cal ? '✓ Konfiguriert' : '– Übersprungen'; el.style.color = fertig.cal?'#085041':'#6b7280'; }
+    else { el.textContent = fertig[k]?'✓ Fertig':'❌ Fehlt'; el.className='key-status '+(fertig[k]?'ks-ok':'ks-miss'); }
+  });
+}
+
+function markStepDone(n) {
+  document.getElementById('sn'+n).className='step-num num-done';
+  document.getElementById('sn'+n).textContent='✓';
+  document.getElementById('sb'+n).className='step-badge sb-done';
+  document.getElementById('sb'+n).textContent='Erledigt';
+  if(n<5) {
+    document.getElementById('sn'+(n+1)).className='step-num num-active';
+    document.getElementById('sb'+(n+1)).className='step-badge sb-active';
+    document.getElementById('sb'+(n+1)).textContent='Aktuell';
+    document.getElementById('sb'+(n+1)+'body').classList.add('open');
+  }
+}
+
+function speicherFirebase() {
+  const keys = ['fb_apiKey','fb_authDomain','fb_projectId','fb_appId','fb_senderId'];
+  const vals = keys.map(k => document.getElementById(k).value.trim());
+  if(vals.some(v=>!v)) { showBox('fb_err'); return; }
+  config.firebase = { apiKey:vals[0], authDomain:vals[1], projectId:vals[2], appId:vals[3], messagingSenderId:vals[4] };
+  fertig.fb = true;
+  showBox('fb_ok');
+  markStepDone(1);
+  pruefeKeys();
+}
+
+function speicherSheets() {
+  const key = document.getElementById('sheets_key').value.trim();
+  const id  = document.getElementById('sheets_id').value.trim();
+  if(!key||!id) { showBox('sheets_err'); return; }
+  config.sheets = { key, id };
+  fertig.sh = true;
+  showBox('sheets_ok');
+  markStepDone(2);
+  pruefeKeys();
+}
+
+function speicherEmail() {
+  const key = document.getElementById('ej_key').value.trim();
+  const svc = document.getElementById('ej_service').value.trim();
+  const tpl = document.getElementById('ej_template').value.trim();
+  if(!key||!svc||!tpl) { showBox('ej_err'); return; }
+  config.emailjs = { key, service:svc, template:tpl };
+  fertig.ej = true;
+  showBox('ej_ok');
+  markStepDone(3);
+  pruefeKeys();
+}
+
+function speicherKalender() {
+  config.calendar = {
+    googleClientId:  document.getElementById('cal_googleId').value.trim(),
+    googleApiKey:    document.getElementById('cal_googleKey').value.trim(),
+    azureClientId:   document.getElementById('cal_azureId').value.trim(),
+  };
+  fertig.cal = true;
+  showBox('cal_ok');
+  markStepDone(4);
+  document.getElementById('sb5body').classList.add('open');
+  pruefeKeys();
+}
+
+function showBox(id) {
+  ['fb_ok','fb_err','sheets_ok','sheets_err','ej_ok','ej_err','cal_ok'].forEach(b => {
+    document.getElementById(b).style.display = b===id?'block':'none';
+  });
+}
+
+function generiereUndLade() {
+  // Konfiguration als JSON ausgeben → wird in nächsten Schritten in App-Dateien eingefügt
+  const blob = new Blob([JSON.stringify(config, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'nasch-config.json'; a.click();
+  markStepDone(5);
+  alert('✅ Konfiguration heruntergeladen!\n\nBitte die nasch-config.json an Claude schicken – dann werden die Keys automatisch in die App eingebaut und du bekommst das finale ZIP zum Hochladen auf GitHub.');
+}
+
+updateProgress();
+</script>
+</body>
+</html>

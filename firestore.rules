@@ -1,0 +1,145 @@
+// firestore.rules
+// Diese Datei in der Firebase Console unter Firestore → Regeln eintragen
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Hilfsfunktionen ─────────────────────────────────────
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function getMitarbeiter() {
+      return get(/databases/$(database)/documents/mitarbeiter/$(request.auth.uid));
+    }
+
+    function getRole() {
+      return getMitarbeiter().data.rolle;
+    }
+
+    function isAdmin() {
+      return isLoggedIn() && getRole() == 'admin';
+    }
+
+    function isAdminOrVertretung() {
+      return isLoggedIn() && getRole() in ['admin', 'vertretung'];
+    }
+
+    function isOwner(uid) {
+      return isLoggedIn() && request.auth.uid == uid;
+    }
+
+    // ── Mitarbeiter ──────────────────────────────────────────
+    match /mitarbeiter/{uid} {
+      // Jeder Mitarbeiter darf seine eigenen Daten lesen
+      // Admin darf alle lesen
+      allow read: if isOwner(uid) || isAdminOrVertretung();
+
+      // Nur Admin darf Mitarbeiter-Daten ändern
+      // Ausnahme: PIN-Hash darf jeder selbst ändern
+      allow update: if isAdmin() ||
+        (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['pinHash', 'pinGeaendertAm', 'pinMussGeaendertWerden']));
+
+      // Nur Admin darf neue Mitarbeiter anlegen
+      allow create, delete: if isAdmin();
+    }
+
+    // ── Wochenplan ───────────────────────────────────────────
+    match /wochenplan/{kwJahr} {
+      // Alle eingeloggten Mitarbeiter dürfen lesen
+      allow read: if isLoggedIn();
+      // Nur Admin darf schreiben (aus Google Sheets Sync)
+      allow write: if isAdmin();
+    }
+
+    // ── Wunschfrei ───────────────────────────────────────────
+    match /wunschfrei/{antragsId} {
+      // Eigene Anträge lesen, Admin/Vertretung alle
+      allow read: if isLoggedIn() &&
+        (resource.data.mitarbeiterId == request.auth.uid || isAdminOrVertretung());
+
+      // Mitarbeiter darf eigene Anträge erstellen
+      allow create: if isLoggedIn() &&
+        request.resource.data.mitarbeiterId == request.auth.uid;
+
+      // Admin/Vertretung darf Status ändern, Mitarbeiter darf nur eigene löschen
+      allow update: if isAdminOrVertretung();
+      allow delete: if isAdmin();
+    }
+
+    // ── Krankmeldungen ───────────────────────────────────────
+    match /krankmeldungen/{id} {
+      allow read: if isLoggedIn() &&
+        (resource.data.mitarbeiterId == request.auth.uid || isAdminOrVertretung());
+      allow create: if isLoggedIn() &&
+        request.resource.data.mitarbeiterId == request.auth.uid;
+      allow update: if isAdminOrVertretung();
+      allow delete: if isAdmin();
+    }
+
+    // ── KV-Anfragen ──────────────────────────────────────────
+    match /kv_anfragen/{id} {
+      allow read: if isLoggedIn();
+      allow create: if isAdminOrVertretung();
+      allow update: if isLoggedIn(); // Antworten erlaubt
+      allow delete: if isAdmin();
+    }
+
+    // ── Schichttausch ────────────────────────────────────────
+    match /schichttausch/{id} {
+      allow read: if isLoggedIn() &&
+        (resource.data.vonMitarbeiterId == request.auth.uid ||
+         resource.data.zuMitarbeiterId == request.auth.uid ||
+         isAdminOrVertretung());
+      allow create: if isLoggedIn();
+      allow update: if isAdminOrVertretung() ||
+        (isLoggedIn() && resource.data.zuMitarbeiterId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // ── Verfügbarkeit ────────────────────────────────────────
+    match /verfuegbarkeit/{uid} {
+      allow read: if isOwner(uid) || isAdminOrVertretung();
+      allow write: if isAdmin(); // Nur nach Genehmigung
+    }
+
+    match /verfuegbarkeit_aenderungen/{id} {
+      allow read: if isLoggedIn() &&
+        (resource.data.mitarbeiterId == request.auth.uid || isAdminOrVertretung());
+      allow create: if isLoggedIn() &&
+        request.resource.data.mitarbeiterId == request.auth.uid;
+      allow update: if isAdminOrVertretung();
+      allow delete: if isAdmin();
+    }
+
+    // ── Home-Office ──────────────────────────────────────────
+    match /homeoffice/{id} {
+      allow read: if isLoggedIn() &&
+        (resource.data.mitarbeiterId == request.auth.uid || isAdminOrVertretung());
+      allow create: if isLoggedIn() &&
+        request.resource.data.mitarbeiterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Stundenzettel ────────────────────────────────────────
+    match /stundenzettel/{id} {
+      allow read: if isLoggedIn() &&
+        (resource.data.mitarbeiterId == request.auth.uid || isAdmin());
+      allow create, update: if isLoggedIn() &&
+        request.resource.data.mitarbeiterId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ── Benachrichtigungen ───────────────────────────────────
+    match /benachrichtigungen/{id} {
+      allow read: if isLoggedIn() &&
+        resource.data.empfaengerId == request.auth.uid;
+      allow create: if isLoggedIn(); // System + Admin
+      allow update: if isLoggedIn() &&
+        resource.data.empfaengerId == request.auth.uid; // Gelesen markieren
+      allow delete: if isAdmin();
+    }
+  }
+}

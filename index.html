@@ -105,6 +105,7 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
+    /* Login-Screen Tasten (dunkel) */
     .key {
       background: rgba(255,255,255,0.1);
       border: 1px solid rgba(255,255,255,0.15);
@@ -122,6 +123,25 @@
     .key:active { background: rgba(255,255,255,0.25); }
     .key.del { font-size: 16px; }
     .key.empty { visibility: hidden; }
+    /* PIN-Änderung Tasten (hell) – überschreiben die dunklen Stile */
+    .key-light {
+      background: #f8fafc;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px 8px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s, border-color 0.1s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .key-light:active { background: #e8edf5; border-color: var(--navy); }
+    .key-light.del { font-size: 17px; color: var(--muted); }
+    .key-light.empty { visibility: hidden; }
     .login-err {
       text-align: center;
       font-size: 13px;
@@ -418,6 +438,15 @@
 
     /* ── PIN ÄNDERN ──────────────────────────────────────── */
     .pin-change-wrap { max-width: 320px; margin: 0 auto; }
+    /* Helle PIN-Punkte (für App-Kontext auf weißem Hintergrund) */
+    .pin-dot-light {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #d1d5db; background: transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .pin-dot-light.filled { background: var(--navy); border-color: var(--navy); }
+    .pin-dot-light.error  { background: #E24B4A;    border-color: #E24B4A; }
+    .pin-dot-light.ok     { background: #1D9E75;    border-color: #1D9E75; }
     .step-dots {
       display: flex; justify-content: center; gap: 8px;
       margin-bottom: 20px;
@@ -547,6 +576,11 @@
           <span class="menu-label">Verfügbarkeit</span>
           <span class="menu-arrow">›</span>
         </div>
+        <div class="menu-item" onclick="goTo('pageKalender')">
+          <div class="menu-icon" style="background:#E6F1FB;">🗓</div>
+          <span class="menu-label">Kalender verbinden</span>
+          <span class="menu-arrow">›</span>
+        </div>
         <div class="menu-item" id="homeOfficeMenu" onclick="goTo('pageHomeOffice')">
           <div class="menu-icon" style="background:#E6F1FB;">🏠</div>
           <span class="menu-label">Home-Office eintragen</span>
@@ -647,25 +681,26 @@
             <div class="card-title" id="pinChangeTitle">Aktuelle PIN eingeben</div>
           </div>
           <div class="card-body">
-            <div class="pin-dots" id="changeDots">
-              <div class="pin-dot" id="cd0"></div>
-              <div class="pin-dot" id="cd1"></div>
-              <div class="pin-dot" id="cd2"></div>
-              <div class="pin-dot" id="cd3"></div>
+            <!-- PIN-Punkte hell -->
+            <div style="display:flex;justify-content:center;gap:14px;margin-bottom:24px;">
+              <div class="pin-dot-light" id="cd0"></div>
+              <div class="pin-dot-light" id="cd1"></div>
+              <div class="pin-dot-light" id="cd2"></div>
+              <div class="pin-dot-light" id="cd3"></div>
             </div>
             <div class="keypad">
-              <div class="key" data-changekey="1">1</div>
-              <div class="key" data-changekey="2">2</div>
-              <div class="key" data-changekey="3">3</div>
-              <div class="key" data-changekey="4">4</div>
-              <div class="key" data-changekey="5">5</div>
-              <div class="key" data-changekey="6">6</div>
-              <div class="key" data-changekey="7">7</div>
-              <div class="key" data-changekey="8">8</div>
-              <div class="key" data-changekey="9">9</div>
-              <div class="key empty"></div>
-              <div class="key" data-changekey="0">0</div>
-              <div class="key del" data-changekey="del">⌫</div>
+              <div class="key-light" data-changekey="1">1</div>
+              <div class="key-light" data-changekey="2">2</div>
+              <div class="key-light" data-changekey="3">3</div>
+              <div class="key-light" data-changekey="4">4</div>
+              <div class="key-light" data-changekey="5">5</div>
+              <div class="key-light" data-changekey="6">6</div>
+              <div class="key-light" data-changekey="7">7</div>
+              <div class="key-light" data-changekey="8">8</div>
+              <div class="key-light" data-changekey="9">9</div>
+              <div class="key-light empty"></div>
+              <div class="key-light" data-changekey="0">0</div>
+              <div class="key-light del" data-changekey="del">⌫</div>
             </div>
             <div class="login-err" id="pinChangeErr"></div>
             <div style="color:#085041;text-align:center;font-size:13px;margin-top:8px;display:none;" id="pinChangeOk">✓ PIN erfolgreich geändert!</div>
@@ -679,6 +714,7 @@
     <div class="page" id="pageWunsch"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
     <div class="page" id="pageStundenzettel"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
     <div class="page" id="pageVerfuegbar"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
+    <div class="page" id="pageKalender"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
     <div class="page" id="pageHomeOffice"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
     <div class="page" id="pageAdminPlan"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
     <div class="page" id="pageAdminWunsch"><div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div></div>
@@ -715,9 +751,58 @@
 
 </div><!-- /appScreen -->
 
+<!-- Google Identity Services (Kalender-Auth) -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<!-- Microsoft MSAL (Outlook-Auth) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library-for-js/3.14.0/msal-browser.min.js"></script>
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- jsPDF für PDF-Generierung -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script src="js/data.js"></script>
 <script src="js/plan.js"></script>
+<script src="js/sheets-sync.js"></script>
+<script src="js/calendar-sync.js"></script>
+<script src="js/calendar-ui.js"></script>
+<script src="js/pdf-generator.js"></script>
+<script src="js/email-service.js"></script>
 <script src="js/pages.js"></script>
+<script src="js/admin-plan.js"></script>
 <script src="js/app.js"></script>
+
+<!-- Firebase SDKs (nach App-Skripten) -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
+           query, where, orderBy, addDoc, updateDoc }
+    from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+  import { getAuth, signInAnonymously, onAuthStateChanged, signOut }
+    from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+
+  // Firebase Config aus firebase-config.js verwenden
+  const FIREBASE_CONFIG = {
+    apiKey:            "DEIN_API_KEY",
+    authDomain:        "nasch-emsdetten.firebaseapp.com",
+    projectId:         "nasch-emsdetten",
+    storageBucket:     "nasch-emsdetten.appspot.com",
+    messagingSenderId: "DEINE_SENDER_ID",
+    appId:             "DEINE_APP_ID"
+  };
+
+  const app  = initializeApp(FIREBASE_CONFIG);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
+
+  window.Firebase = { db, auth, doc, getDoc, setDoc, collection,
+    getDocs, query, where, orderBy, addDoc, updateDoc,
+    signInAnonymously, onAuthStateChanged, signOut };
+
+  // firebase-auth.js + firebase-data.js laden
+  await import('./js/firebase-auth.js');
+  await import('./js/firebase-data.js');
+
+  console.log('Firebase bereit ✓');
+</script>
 </body>
 </html>
