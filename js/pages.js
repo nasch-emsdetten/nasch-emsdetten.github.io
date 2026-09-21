@@ -2,22 +2,41 @@
 // Wird aufgerufen wenn goTo() eine Seite öffnet
 
 function initPage(pageId) {
-  switch(pageId) {
-    case 'pageWunsch':      renderWunsch();      break;
-    case 'pageKrank':       renderKrank();       break;
-    case 'pageStundenzettel': renderStundenzettel(); break;
-    case 'pageVerfuegbar':  renderVerfuegbar();  break;
-    case 'pageKalender':
-      document.getElementById('pageKalender').innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
-        ${renderKalenderEinstellungen()}
-      `;
-      break;
-    case 'pageAdminWunsch': renderAdminWunsch(); break;
-    case 'pageAdminKrank':  renderAdminKrank();  break;
-    case 'pageAdminKV':     renderAdminKV();     break;
-    case 'pageAdminMitarbeiter': renderAdminMitarbeiter(); break;
-    case 'pageAdminStunden': renderAdminStunden(); break;
+  try {
+    switch(pageId) {
+      case 'pageWunsch':      renderWunsch();           break;
+      case 'pageKrank':       renderKrank();            break;
+      case 'pageStundenzettel': renderStundenzettel();  break;
+      case 'pageVerfuegbar':  renderVerfuegbar();       break;
+      case 'pageHomeOffice':  renderHomeOffice();       break;
+      case 'pageKalender':    renderKalenderSeite();    break;
+      case 'pageNotif':       renderNotifSeite();       break;
+      case 'pageAdminWunsch': renderAdminWunsch();      break;
+      case 'pageAdminKrank':  renderAdminKrank();       break;
+      case 'pageAdminKV':     renderAdminKV();          break;
+      case 'pageAdminMitarbeiter': renderAdminMitarbeiter(); break;
+      case 'pageAdminStunden': renderAdminStunden();   break;
+    }
+  } catch(err) {
+    console.error('initPage Fehler für', pageId, ':', err);
+    const el = document.getElementById(pageId);
+    if(el) el.innerHTML = `<div style="padding:20px;text-align:center;color:#E24B4A;">
+      ⚠ Fehler beim Laden: ${err.message}<br>
+      <small style="color:var(--muted);">Bitte Seite neu laden</small>
+    </div>`;
+  }
+}
+
+// Kalender-Seite sicher rendern
+function renderKalenderSeite() {
+  const el = document.getElementById('pageKalender');
+  if(!el) return;
+  el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Wird geladen…</div>';
+  if(typeof renderKalenderEinstellungen === 'function') {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+      ${renderKalenderEinstellungen()}
+    `;
   }
 }
 
@@ -54,7 +73,7 @@ function rowCard(label, value) {
 //  WUNSCHFREI / URLAUB
 // ════════════════════════════════════════════════════════════
 function renderWunsch() {
-  const user = AppState.currentUser;
+  const user = AppState.currentUser || {};
   const isVZ = user.typ === 'VZ';
   const isTZ = user.typ === 'TZ';
   const kontingent = isVZ ? 3 : isTZ ? 2 : 1;
@@ -888,4 +907,151 @@ async function druckeAlleStundenzettel() {
   } catch(e) {
     alert('PDF konnte nicht erstellt werden: ' + e.message);
   }
+}
+
+// ════════════════════════════════════════════════════════════
+//  BENACHRICHTIGUNGEN MIT TABS (Posteingang / Einstellungen / Kanäle)
+// ════════════════════════════════════════════════════════════
+function renderNotifSeite() {
+  const el = document.getElementById('pageNotif');
+  if(!el) return;
+
+  el.innerHTML = `
+    <!-- Tab-Leiste -->
+    <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;">
+      <div id="ntab1" onclick="notifTab(1)"
+        style="flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:600;
+          background:var(--navy);color:#fff;cursor:pointer;">
+        Posteingang
+      </div>
+      <div id="ntab2" onclick="notifTab(2)"
+        style="flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:600;
+          background:var(--card);color:var(--muted);cursor:pointer;border-left:1px solid var(--border);">
+        Einstellungen
+      </div>
+      <div id="ntab3" onclick="notifTab(3)"
+        style="flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:600;
+          background:var(--card);color:var(--muted);cursor:pointer;border-left:1px solid var(--border);">
+        Kanäle
+      </div>
+    </div>
+
+    <!-- POSTEINGANG -->
+    <div id="npanel1">
+      <div class="section-hdr">Heute</div>
+      <div class="card">
+        <div class="notif-item unread">
+          <div class="notif-icon" style="background:#E1F5EE;">📅</div>
+          <div style="flex:1;">
+            <div class="notif-title">Neuer Wochenplan veröffentlicht</div>
+            <div class="notif-body">KW 41 ist jetzt sichtbar. Schichten wurden in deinen Kalender übertragen.</div>
+            <div class="notif-time">vor 15 Min.</div>
+          </div>
+          <div class="unread-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon" style="background:#FBEAF0;">🏖</div>
+          <div style="flex:1;">
+            <div class="notif-title">Wunschfrei genehmigt</div>
+            <div class="notif-body">Fr., 09.10. Frühschicht wurde genehmigt.</div>
+            <div class="notif-time">vor 1 Std.</div>
+          </div>
+          <div class="unread-dot"></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:#fef08a;">👥</div>
+          <div style="flex:1;">
+            <div class="notif-title">KV-Anfrage</div>
+            <div class="notif-body">Mo., 05.10. Frühschicht – kannst du einspringen? Frist bis 16:15 Uhr.</div>
+            <div class="notif-time">heute · 13:45</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:#E6F1FB;">📋</div>
+          <div style="flex:1;">
+            <div class="notif-title">Stundenzettel Oktober bereit</div>
+            <div class="notif-body">Bitte bis 31.10. um 22:00 Uhr unterschreiben.</div>
+            <div class="notif-time">Mo., 01.10. · 08:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EINSTELLUNGEN -->
+    <div id="npanel2" style="display:none;">
+      <div class="section-hdr">Welche Ereignisse benachrichtigen?</div>
+      <div class="card">
+        ${notifSettingRow('🗓', 'Neuer Wochenplan', 'Wenn Lee Ko den Plan veröffentlicht', 'ns1', true)}
+        ${notifSettingRow('🏖', 'Wunschfrei / Urlaub', 'Genehmigt, abgelehnt oder Frist', 'ns2', true)}
+        ${notifSettingRow('👥', 'KV-Anfrage', 'Wenn Vertretung gesucht wird', 'ns3', true)}
+        ${notifSettingRow('🔄', 'Schichttausch', 'Anfrage oder Genehmigung', 'ns4', true)}
+        ${notifSettingRow('🤒', 'Attest-Erinnerung', 'Ab Tag 3 der Krankmeldung', 'ns5', true)}
+        ${notifSettingRow('📋', 'Stundenzettel bereit', 'Monatlich zur Unterschrift', 'ns6', true)}
+        ${notifSettingRow('⏰', 'Abgabefristen', 'Erinnerung 5 Tage, 2 Tage vorher', 'ns7', true)}
+        ${notifSettingRow('✏️', 'Schichtänderung', 'Wenn deine Schicht geändert wird', 'ns8', true)}
+      </div>
+    </div>
+
+    <!-- KANÄLE -->
+    <div id="npanel3" style="display:none;">
+      <div class="section-hdr">Wie willst du benachrichtigt werden?</div>
+      <div class="card">
+        ${notifSettingRow('📱', 'App-Benachrichtigung', 'Direkt in der App', 'nc1', true)}
+        ${notifSettingRow('💬', 'WhatsApp Backup', 'Wenn App nicht geöffnet (nach 2h)', 'nc2', true)}
+      </div>
+
+      <div class="section-hdr" style="margin-top:8px;">Deine WhatsApp-Nummer</div>
+      <div class="card">
+        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:12px;color:var(--muted);">Für Backup-Benachrichtigungen</div>
+          <div style="display:flex;gap:8px;">
+            <input type="tel" placeholder="+49 151 12345678"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;">
+            <button onclick="alert('Nummer gespeichert ✓')"
+              style="padding:9px 16px;border:none;border-radius:var(--radius);
+                background:var(--navy);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+              Speichern
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function notifSettingRow(icon, titel, sub, id, aktiv) {
+  return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+    <div style="width:36px;height:36px;background:#f1f5f9;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icon}</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:500;color:var(--text);">${titel}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">${sub}</div>
+    </div>
+    <div id="${id}" onclick="notifToggle('${id}')"
+      style="width:40px;height:22px;border-radius:11px;cursor:pointer;position:relative;
+        background:${aktiv?'#1D9E75':'#d1d5db'};transition:background .2s;flex-shrink:0;">
+      <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;
+        top:2px;transition:left .2s;left:${aktiv?'20px':'2px'};box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+    </div>
+  </div>`;
+}
+
+function notifTab(n) {
+  [1,2,3].forEach(i => {
+    const tab = document.getElementById('ntab'+i);
+    const panel = document.getElementById('npanel'+i);
+    if(tab) {
+      tab.style.background = i===n ? 'var(--navy)' : 'var(--card)';
+      tab.style.color      = i===n ? '#fff'        : 'var(--muted)';
+    }
+    if(panel) panel.style.display = i===n ? 'block' : 'none';
+  });
+}
+
+function notifToggle(id) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  const istAn = el.style.background.includes('1D9E75');
+  el.style.background = istAn ? '#d1d5db' : '#1D9E75';
+  el.querySelector('div').style.left = istAn ? '2px' : '20px';
 }

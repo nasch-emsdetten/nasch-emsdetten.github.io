@@ -76,6 +76,13 @@ function startApp() {
   // Wochenplan rendern
   renderPlan();
 
+  // Navigationspfeile: nur für Admin/Vertretung sichtbar
+  const isAdminOrVertretung = ['admin','vertretung'].includes(user.role);
+  document.getElementById('prevWeek').style.visibility = isAdminOrVertretung ? 'visible' : 'hidden';
+  document.getElementById('nextWeek').style.visibility = isAdminOrVertretung ? 'visible' : 'hidden';
+  // weekOffset für Mitarbeiter immer auf 0 fixieren
+  if(!isAdminOrVertretung) AppState.weekOffset = 0;
+
   // Google Sheets Auto-Sync starten
   if(typeof SheetsSync !== 'undefined') SheetsSync.startAutoSync();
 
@@ -103,25 +110,33 @@ function initNav() {
     item.addEventListener('click', () => {
       const key = item.dataset.nav;
       switchNav(key);
+      if(key === 'notif') initPage('pageNotif');
     });
   });
 
   document.getElementById('prevWeek').addEventListener('click', () => {
+    if(!['admin','vertretung'].includes(AppState.currentUser?.role)) return;
     AppState.weekOffset--;
     renderPlan();
   });
   document.getElementById('nextWeek').addEventListener('click', () => {
+    if(!['admin','vertretung'].includes(AppState.currentUser?.role)) return;
     AppState.weekOffset++;
     renderPlan();
   });
 
-  document.getElementById('bellBtn').addEventListener('click', () => switchNav('notif'));
+  document.getElementById('bellBtn').addEventListener('click', () => { switchNav('notif'); initPage('pageNotif'); });
   document.getElementById('logoutBtn').addEventListener('click', logout);
 }
 
 function switchNav(key) {
   const cfg = NAV_MAP[key];
   if(!cfg) return;
+
+  // Mitarbeiter: immer auf aktuelle KW zurücksetzen
+  if(key === 'plan' && !['admin','vertretung'].includes(AppState.currentUser?.role)) {
+    AppState.weekOffset = 0;
+  }
 
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`.nav-item[data-nav="${key}"]`)?.classList.add('active');
