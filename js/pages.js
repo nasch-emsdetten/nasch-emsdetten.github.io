@@ -7,7 +7,12 @@ function initPage(pageId) {
     case 'pageKrank':       renderKrank();       break;
     case 'pageStundenzettel': renderStundenzettel(); break;
     case 'pageVerfuegbar':  renderVerfuegbar();  break;
-    case 'pageHomeOffice':  renderHomeOffice();  break;
+    case 'pageKalender':
+      document.getElementById('pageKalender').innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;color:var(--muted);" onclick="switchNav('profil')">‹ <span style="font-size:13px;">Zurück</span></div>
+        ${renderKalenderEinstellungen()}
+      `;
+      break;
     case 'pageAdminWunsch': renderAdminWunsch(); break;
     case 'pageAdminKrank':  renderAdminKrank();  break;
     case 'pageAdminKV':     renderAdminKV();     break;
@@ -452,7 +457,7 @@ function renderStundenzettel() {
         <div style="font-size:12px;color:#085041;margin-top:4px;">Unterschrieben · ${new Date().toLocaleDateString('de-DE')} · ${new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr</div>
       </div>
       ${banner('📧', 'PDF wird am 31.10. um 22:05 Uhr an das Personal Büro gesendet.', 'info')}
-      <button class="btn btn-outline mt-8" onclick="alert('PDF wird im Browser geöffnet…')">🖨 Drucken / PDF speichern</button>
+      <button class="btn btn-outline mt-8" onclick="druckeStundenzettel()">🖨 Drucken / PDF speichern</button>
     </div>
   `;
 
@@ -838,8 +843,49 @@ function renderAdminStunden() {
   html += `</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
       <button class="btn btn-outline" onclick="alert('Sperrung aufgehoben')">🔓 Sperrung aufheben</button>
-      <button class="btn btn-primary" onclick="alert('PDF wird geöffnet…')">🖨 Alle drucken (PDF)</button>
+      <button class="btn btn-primary" onclick="druckeAlleStundenzettel()">🖨 Alle drucken (PDF)</button>
     </div>
   `;
   el.innerHTML = html;
+}
+
+// ── Drucken-Funktionen ───────────────────────────────────────
+async function druckeStundenzettel() {
+  const uid = sessionStorage.getItem('nasch_uid') || AppState.currentUserId;
+  if(!uid) return;
+  const monat = new Date();
+  const monatKey = `${monat.getFullYear()}-${String(monat.getMonth()+1).padStart(2,'0')}`;
+  try {
+    const status = await window.FBData?.getAlleStundenzettelStatus(monatKey) || [];
+    await PDFGenerator.drucken(uid, monatKey, status);
+  } catch(e) {
+    alert('PDF konnte nicht erstellt werden: ' + e.message);
+  }
+}
+
+async function druckeAlleStundenzettel() {
+  const monat = new Date();
+  const monatKey = `${monat.getFullYear()}-${String(monat.getMonth()+1).padStart(2,'0')}`;
+  try {
+    const status = await window.FBData?.getAlleStundenzettelStatus(monatKey) || [];
+    const unterschrieben = Object.keys(USERS).filter(uid =>
+      status.find(s => s.mitarbeiterId === uid && s.unterschrieben)
+    );
+    if(unterschrieben.length === 0) {
+      alert('Noch keine Unterschriften vorhanden.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    let ersteSeite = true;
+    for(const uid of unterschrieben) {
+      if(!ersteSeite) doc.addPage();
+      await PDFGenerator._fuegeMitarbeiterSeiteEin(doc, uid, monatKey, status);
+      ersteSeite = false;
+    }
+    const monatLabel = `${monat.getFullYear()}_${String(monat.getMonth()+1).padStart(2,'0')}`;
+    doc.save(`Stundennachweise_${monatLabel}_Nasch_Emsdetten.pdf`);
+  } catch(e) {
+    alert('PDF konnte nicht erstellt werden: ' + e.message);
+  }
 }

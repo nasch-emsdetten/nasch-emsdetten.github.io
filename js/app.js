@@ -76,6 +76,16 @@ function startApp() {
   // Wochenplan rendern
   renderPlan();
 
+  // Google Sheets Auto-Sync starten
+  if(typeof SheetsSync !== 'undefined') SheetsSync.startAutoSync();
+
+  // Email-Service + Erinnerungen starten (nur für Admin)
+  if(typeof EmailService !== 'undefined') {
+    EmailService.init();
+    EmailService.planeErinnerungen();
+    if(user.role === 'admin') EmailService.planeMonatsversand();
+  }
+
   // Navigation
   initNav();
 }
@@ -156,7 +166,7 @@ let changePin = '';
 let changeStep = 0;
 let newPinTemp = '';
 
-document.querySelectorAll('.key[data-changekey]').forEach(k => {
+document.querySelectorAll('.key[data-changekey], .key-light[data-changekey]').forEach(k => {
   k.addEventListener('click', () => handleChangeKey(k.dataset.changekey));
 });
 
@@ -175,9 +185,10 @@ function handleChangeKey(key) {
 function updateChangeDots(state) {
   for(let i=0;i<4;i++) {
     const d = document.getElementById('cd'+i);
-    d.className = 'pin-dot' +
+    if(!d) continue;
+    d.className = 'pin-dot-light' +
       (state==='error' ? ' error' :
-       state==='ok'    ? ' filled' :
+       state==='ok'    ? ' ok'    :
        i < changePin.length ? ' filled' : '');
   }
 }
@@ -241,7 +252,9 @@ function processChangeStep() {
 }
 
 // ── Logout ───────────────────────────────────────────────────
-function logout() {
+async function logout() {
+  if(typeof SheetsSync !== 'undefined') SheetsSync.stopAutoSync();
+  if(typeof logoutFirebase === 'function') await logoutFirebase();
   AppState.currentUser = null;
   AppState.currentUserId = null;
   AppState.weekOffset = 0;
