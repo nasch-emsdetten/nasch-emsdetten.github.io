@@ -350,7 +350,8 @@ const CalendarSync = {
     };
     const typLabel = typ[schicht.t] || schicht.t;
     const zeitPart = schicht.z ? ` · ${schicht.z}` : '';
-    const rollePart = schicht.r ? ` (${schicht.r})` : '';
+    const rolleText = Array.isArray(schicht.r) ? schicht.r.join(' + ') : (schicht.r || '');
+    const rollePart = rolleText ? ` (${rolleText})` : '';
     return `${typLabel}${zeitPart}${rollePart}`;
   },
 

@@ -29,8 +29,8 @@ function updateLoginDots(state) {
 }
 
 function checkLogin() {
-  const uid = Object.keys(PINS).find(id => PINS[id] === loginPin);
-  if(uid && USERS[uid]) {
+  const uid = document.getElementById('loginEmployee')?.value || '';
+  if(uid && USERS[uid] && PINS[uid] === loginPin) {
     AppState.currentUserId = uid;
     AppState.currentUser = USERS[uid];
     loginAttempts = 0;
@@ -74,10 +74,11 @@ function startApp() {
   }
 
   // Wochenplan rendern
+  const isAdminOrVertretung = (typeof isAdminOrDeputy==='function') ? isAdminOrDeputy(AppState.currentUserId) : ['admin','vertretung'].includes(user.role);
+  if(!isAdminOrVertretung) AppState.weekOffset=0;
   renderPlan();
 
   // Navigationspfeile: nur für Admin/Vertretung sichtbar
-  const isAdminOrVertretung = ['admin','vertretung'].includes(user.role);
   document.getElementById('prevWeek').style.visibility = isAdminOrVertretung ? 'visible' : 'hidden';
   document.getElementById('nextWeek').style.visibility = isAdminOrVertretung ? 'visible' : 'hidden';
   if(!isAdminOrVertretung) AppState.weekOffset = 0;

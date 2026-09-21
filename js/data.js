@@ -42,7 +42,7 @@ const AppState = {
 
 // ── Wochenplan-Demo-Daten ────────────────────────────────────
 // Format: [Mo, Di, Mi, Do, Fr, Sa, So]
-// Shift-Typen: F=Früh, S=Spät, U=Urlaub, K=Krank, KV=KV, BS=Berufsschule,
+// Shift-Typen: F=Früh, S=Spät, TS=Teilschicht, U=Urlaub, K=Krank, KV=KV, BS=Berufsschule,
 //              O=Office, T=Tagung, HO=Home-Office, R=Reinigung, -=Frei
 const PLAN = {
   '1001': [

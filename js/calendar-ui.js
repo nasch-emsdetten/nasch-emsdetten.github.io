@@ -132,7 +132,7 @@ function naechsteSchichtenVorschau() {
       <div style="width:8px;height:36px;border-radius:4px;background:${farbe};border:1px solid ${tColor};opacity:0.7;flex-shrink:0;"></div>
       <div style="flex:1;">
         <div style="font-size:12px;font-weight:600;">${datumStr}</div>
-        <div style="font-size:11px;color:var(--muted);">${zeitStr}${s.r?' · '+s.r:''}</div>
+        <div style="font-size:11px;color:var(--muted);">${zeitStr}${s.r?' · '+(typeof activityText==='function'?activityText(s.r):(Array.isArray(s.r)?s.r.join(' + '):s.r)):''}</div>
       </div>
       <div style="font-size:11px;color:var(--muted);">→ Kalender</div>
     </div>`;

@@ -1,33 +1,14 @@
 // ── Firebase Konfiguration ───────────────────────────────────
-// Diese Werte aus der Firebase Console kopieren:
-// https://console.firebase.google.com → Projekteinstellungen → Web-App
+// Nasch Emsdetten – Projekt: nasch-emsdetten-10eb3
 
 const FIREBASE_CONFIG = {
-  apiKey:            "DEIN_API_KEY",
-  authDomain:        "nasch-emsdetten.firebaseapp.com",
-  projectId:         "nasch-emsdetten",
-  storageBucket:     "nasch-emsdetten.appspot.com",
-  messagingSenderId: "DEINE_SENDER_ID",
-  appId:             "DEINE_APP_ID"
+  apiKey:            "AIzaSyDKDxx3xolYU93URftlU_xQF2TIrW147-4",
+  authDomain:        "nasch-emsdetten-10eb3.firebaseapp.com",
+  projectId:         "nasch-emsdetten-10eb3",
+  storageBucket:     "nasch-emsdetten-10eb3.firebasestorage.app",
+  messagingSenderId: "791791893008",
+  appId:             "1:791791893008:web:0147b30cd99e4003d3a895"
 };
 
-// ── Firebase initialisieren ──────────────────────────────────
-import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-import { getFirestore, doc, getDoc,
-         setDoc, collection, getDocs,
-         query, where, orderBy,
-         addDoc, updateDoc, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-import { getAuth, signInAnonymously,
-         onAuthStateChanged, signOut }
-  from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-
-const app  = initializeApp(FIREBASE_CONFIG);
-const db   = getFirestore(app);
-const auth = getAuth(app);
-
-// ── Globale Referenzen ───────────────────────────────────────
-window.Firebase = { db, auth, doc, getDoc, setDoc,
-  collection, getDocs, query, where, orderBy,
-  addDoc, updateDoc, serverTimestamp, signInAnonymously,
-  onAuthStateChanged, signOut };
+// Firebase wird über CDN in index.html geladen
+// Initialisierung erfolgt im <script type="module"> Block
