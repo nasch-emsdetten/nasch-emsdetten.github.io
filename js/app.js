@@ -132,6 +132,7 @@ function showPage(pageId) {
 function goTo(pageId) {
   AppState.pageHistory.push(AppState.currentPage);
   showPage(pageId);
+  if(typeof initPage === 'function') initPage(pageId);
   // Titel anpassen
   const titles = {
     pageKrank:          'Krankmeldung',
