@@ -80,8 +80,24 @@ function startApp() {
   const isAdminOrVertretung = ['admin','vertretung'].includes(user.role);
   document.getElementById('prevWeek').style.visibility = isAdminOrVertretung ? 'visible' : 'hidden';
   document.getElementById('nextWeek').style.visibility = isAdminOrVertretung ? 'visible' : 'hidden';
-  // weekOffset für Mitarbeiter immer auf 0 fixieren
   if(!isAdminOrVertretung) AppState.weekOffset = 0;
+
+  // ALLE SEITEN SOFORT RENDERN (kein lazy loading)
+  // So funktioniert Navigation immer zuverlässig
+  setTimeout(() => {
+    const alleSeiten = [
+      'pageKrank','pageWunsch','pageStundenzettel','pageVerfuegbar',
+      'pageHomeOffice','pageKalender','pageNotif',
+      'pageAdminPlan','pageAdminWunsch','pageAdminKrank',
+      'pageAdminKV','pageAdminMitarbeiter','pageAdminStunden'
+    ];
+    alleSeiten.forEach(pageId => {
+      try {
+        if(typeof window.initPage === 'function') window.initPage(pageId);
+      } catch(e) { console.warn('Vorrender Fehler', pageId, e); }
+    });
+    console.log('✓ Alle Seiten vorgerendert');
+  }, 300);
 
   // Google Sheets Auto-Sync starten
   if(typeof SheetsSync !== 'undefined') SheetsSync.startAutoSync();
@@ -149,15 +165,29 @@ function switchNav(key) {
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const page = document.getElementById(pageId);
-  if(page) page.classList.add('active');
+  if(page) {
+    page.classList.add('active');
+    // Wenn Seite noch "Wird geladen…" zeigt, sofort rendern
+    if(page.innerHTML.includes('Wird geladen')) {
+      try {
+        if(typeof window.initPage === 'function') window.initPage(pageId);
+      } catch(e) { console.warn('showPage initPage:', e); }
+    }
+  }
   AppState.currentPage = pageId;
   document.querySelector('.page-content').scrollTop = 0;
 }
 
 function goTo(pageId) {
-  AppState.pageHistory.push(AppState.currentPage);
+  AppState.pageHistory.push(AppState.currentPage || 'pagePlan');
   showPage(pageId);
-  if(typeof initPage === 'function') initPage(pageId);
+  // Direkt über window aufrufen um sicherzustellen die aktuelle Version zu nutzen
+  try {
+    if(typeof window.initPage === 'function') window.initPage(pageId);
+    else if(typeof initPage === 'function') initPage(pageId);
+  } catch(err) {
+    console.error('goTo initPage Fehler:', pageId, err);
+  }
   // Titel anpassen
   const titles = {
     pageKrank:          'Krankmeldung',
@@ -165,6 +195,7 @@ function goTo(pageId) {
     pageStundenzettel:  'Stundenzettel',
     pageVerfuegbar:     'Verfügbarkeit',
     pageHomeOffice:     'Home-Office',
+    pageKalender:       'Kalender verbinden',
     pagePIN:            'PIN ändern',
     pageAdminPlan:      'Planung',
     pageAdminWunsch:    'Anträge genehmigen',
@@ -181,8 +212,13 @@ let changePin = '';
 let changeStep = 0;
 let newPinTemp = '';
 
-document.querySelectorAll('.key[data-changekey], .key-light[data-changekey]').forEach(k => {
-  k.addEventListener('click', () => handleChangeKey(k.dataset.changekey));
+// PIN-Änderung: Event-Listener auf Document-Level (fängt auch dynamische Elemente)
+document.addEventListener('click', function(e) {
+  const key = e.target.closest('[data-changekey]');
+  if(key) {
+    const val = key.getAttribute('data-changekey');
+    if(val) handleChangeKey(val);
+  }
 });
 
 function handleChangeKey(key) {
@@ -201,10 +237,19 @@ function updateChangeDots(state) {
   for(let i=0;i<4;i++) {
     const d = document.getElementById('cd'+i);
     if(!d) continue;
-    d.className = 'pin-dot-light' +
-      (state==='error' ? ' error' :
-       state==='ok'    ? ' ok'    :
-       i < changePin.length ? ' filled' : '');
+    if(state === 'error') {
+      d.style.background = '#dc2626';
+      d.style.borderColor = '#dc2626';
+    } else if(state === 'ok') {
+      d.style.background = '#059669';
+      d.style.borderColor = '#059669';
+    } else if(i < changePin.length) {
+      d.style.background = '#1e3a5f';
+      d.style.borderColor = '#1e3a5f';
+    } else {
+      d.style.background = 'transparent';
+      d.style.borderColor = '#d1d5db';
+    }
   }
 }
 

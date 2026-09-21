@@ -499,11 +499,18 @@ const AdminPlan = {
   },
 };
 
-// initPage hook
-const _origInitPageAdmin = window.initPage;
+// Admin-Plan in die globale initPage integrieren
+// Wir fügen den Admin-Plan-Case hinzu ohne die anderen Cases zu brechen
+const _adminPlanOrigInit = window.initPage;
 window.initPage = function(pageId) {
-  if(pageId === 'pageAdminPlan') renderAdminPlan();
-  else if(typeof _origInitPageAdmin === 'function') _origInitPageAdmin(pageId);
+  if(pageId === 'pageAdminPlan') {
+    renderAdminPlan();
+  } else {
+    // Alle anderen Seiten an die ursprüngliche initPage übergeben
+    if(typeof _adminPlanOrigInit === 'function') {
+      _adminPlanOrigInit(pageId);
+    }
+  }
 };
 
 window.zeigeSchichtEditor  = zeigeSchichtEditor;
