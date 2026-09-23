@@ -9,8 +9,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NASCH Emsdetten">
-<meta name="application-name" content="NASCH Emsdetten">
+<meta name="apple-mobile-web-app-title" content="NASCH Löningen">
+<meta name="application-name" content="NASCH Löningen">
 
 
 <style>
@@ -179,7 +179,6 @@ textarea{min-height:60px;resize:none;}
 .plan-t td.edit-cell{cursor:pointer;position:relative;}
 .plan-t td.edit-cell:active{background:rgba(30,58,95,.08)!important;}
 
-  .sandbox-banner{background:#fff7ed;border-bottom:1px solid #fdba74;color:#9a3412;padding:7px 12px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}
   .sandbox-reset{border:1px solid #fb923c;background:#fff;color:#9a3412;border-radius:6px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer}
   .admin-avail-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);max-height:52vh;background:#fff;}
   .admin-avail-table{border-collapse:separate;border-spacing:0;min-width:560px;width:100%;font-size:11px;}
@@ -195,10 +194,10 @@ textarea{min-height:60px;resize:none;}
 #planTbl tbody td.name-cell,#planTbl tbody td.nc,#adminTbl tbody td.name-cell,#adminTbl tbody td.nc{position:sticky!important;left:0!important;z-index:5!important;}
 
 </style>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<!-- Firebase SDK (compat) -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/firestore.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/auth.js"></script>
 <script>
 // Firebase Konfiguration
 const firebaseConfig = {
@@ -210,6 +209,8 @@ const firebaseConfig = {
   appId: "1:791791893008:web:0147b30cd99e4003d3a895"
 };
 firebase.initializeApp(firebaseConfig);
+// Anonym einloggen → Firestore-Zugriff
+firebase.auth().signInAnonymously().catch(e => console.warn('Auth:', e));
 // Filiale für diese Datei
 window.FILIAL_ID = 'FIL004';
 </script>
@@ -219,7 +220,7 @@ window.FILIAL_ID = 'FIL004';
 
 <!-- LOGIN -->
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Löningen</h1><p id="loginBrandSub">Löningen · Mitarbeiter-App</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -305,7 +306,7 @@ window.FILIAL_ID = 'FIL004';
 
 <!-- HAUPT-APP -->
 <div id="appScreen" class="screen">
-  <div class="sandbox-banner"><strong>SANDBOX V23 · MEHRFILIALEN</strong> · Änderungen sind nur lokal. <button class="sandbox-reset" onclick="resetSandbox()">Testdaten zurücksetzen</button></div>
+
   <div class="topbar">
     <div class="tb-title" id="tbTitle">Wochenplan</div>
     <div class="tb-right">
@@ -1168,6 +1169,9 @@ const FirestoreStore = (() => {
       if (decSnap.exists) _decCache = decSnap.data();
 
       console.log('✅ FirestoreStore: Daten geladen');
+      // SANDBOX-Banner durch Firebase-OK-Banner ersetzen falls vorhanden
+      const sb = document.querySelector('.sandbox-banner');
+      if(sb) sb.remove();
     } catch(e) {
       console.warn('⚠️ FirestoreStore: Ladefehler', e);
     }
@@ -1283,7 +1287,7 @@ const PublishStore = (() => {
   function branchKey() {
     // Aktive Filiale ermitteln
     if(typeof activeBranch === 'function') return activeBranch();
-    return localStorage.getItem('nasch-v23-active-branch') || 'FIL004';
+    return localStorage.getItem('nasch-v23-active-branch') || 'FIL001';
   }
   function weekKey(offset = AppState.weekOffset) {
     if(typeof WeekPlanStore !== 'undefined') return WeekPlanStore.keyForOffset(offset);
