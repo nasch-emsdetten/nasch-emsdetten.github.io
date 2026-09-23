@@ -710,6 +710,7 @@ window.FILIAL_ID = 'FIL001';
         <button id="editBtn" onclick="toggleEdit()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;">✏️ Bearbeiten</button>
       </div>
       <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Bearbeitungs-Modus – Zelle antippen zum Bearbeiten</span></div>
+      <div id="planDebug" style="font-size:10px;color:#dc2626;padding:4px 8px;white-space:pre-wrap;display:none;background:#fef2f2;border-radius:6px;margin-bottom:8px;"></div>
       <div class="plan-wrap"><table class="plan-t" id="adminTbl"></table></div>
       <div id="adminActivityLegendView" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
       <!-- Publish-Status Banner -->
@@ -1190,15 +1191,18 @@ const FirestoreStore = (() => {
             const uDoc = await docRef('config','users').get();
             if(uDoc.exists){
               Object.entries(uDoc.data()).forEach(([uid,u])=>{
-                if(USERS[uid]) Object.assign(USERS[uid], u);
-                else USERS[uid] = u;
+                if(USERS[uid]){
+                  // Rolle niemals aus Firebase überschreiben (ist im Code festgelegt)
+                  const {role:_r, ...rest} = u;
+                  Object.assign(USERS[uid], rest);
+                } else USERS[uid] = u;
               });
             }
 
             // Plan (aktuelle KW)
             const wk = _weekKey();
             const pSnap = await docRef('plan', wk).get();
-            if(pSnap.exists && pSnap.data().plan){
+            if(pSnap.exists && pSnap.data().plan && Object.keys(pSnap.data().plan).length > 0){
               const p = pSnap.data().plan;
               Object.keys(PLAN).forEach(k => delete PLAN[k]);
               Object.assign(PLAN, p);
@@ -2664,7 +2668,10 @@ function goTo(pgId, title){
   document.querySelector('.page-wrap').scrollTop=0;
   if(pgId==='pgAdminSettings' && typeof NaschAdminSettings!=='undefined') { NaschAdminSettings.buildAdminSettings(); setTimeout(renderPinAntraege, 100); if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render(); }
   if(pgId==='pgAdminMA') buildMAList();
-  if(pgId==='pgAdminPlan') buildAdminPlan();
+  if(pgId==='pgAdminPlan'){
+    const d=document.getElementById('planDebug');if(d){d.style.display='none';d.textContent='';}
+    buildAdminPlan();
+  }
   if(pgId==='pgStunden') renderPersonalDailyHours();
   if(pgId==='pgAdminStz') { buildStzList(); renderAdminDailyHours(); stzTab(1); }
 }
@@ -2672,7 +2679,9 @@ function goTo(pgId, title){
 // ── Wochenplan Navigation ─────────────────────────────────
 function wNav(d){
   const u=AppState.currentUser;
-  if(!isAdminOrDeputy(AppState.currentUserId)) return;
+  const uid=AppState.currentUserId;
+  const role=USERS[uid]?.role;
+  if(role!=='admin' && role!=='vertretung' && !isAdminOrDeputy(uid)) return;
   AppState.weekOffset+=d;
   renderPlan();
   buildAdminPlan();
@@ -2998,8 +3007,15 @@ function isSuggestedShiftType(type,availabilityCode){
 }
 
 function buildAdminPlan(){
-  if(typeof renderPlan!=='function') return;
+  // DEBUG: Zeige Status auf Bildschirm
+  const dbg=document.getElementById('planDebug');
+  if(dbg) dbg.textContent='';
+  function dlog(msg){ console.log('🔧',msg); if(dbg){ dbg.style.display='block'; dbg.textContent+=(dbg.textContent?'\n':'')+msg; } }
+  
+  dlog('buildAdminPlan start, renderPlan='+(typeof renderPlan));
+  if(typeof renderPlan!=='function'){ dlog('❌ renderPlan fehlt!'); return; }
   const tbl=document.getElementById('adminTbl');
+  dlog('adminTbl='+(tbl?'gefunden':'FEHLT'));
   if(!tbl) return;
   const mon=getMonday(AppState.weekOffset);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
@@ -3012,8 +3028,11 @@ function buildAdminPlan(){
   let html='<thead><tr><th class="nc">Name</th>';
   dates.forEach((d,i)=>{const isT=d.toDateString()===today.toDateString();html+=`<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;});
   html+='<th style="background:#1e3a5f;color:#e8f4fd;min-width:64px;">Woche</th></tr></thead><tbody>';
+  let dbgEntries=getOrderedUserEntries();
+  if(dbgEntries.length===0){ dbgEntries=Object.entries(USERS); dlog('⚠ Fallback auf USERS'); }
+  dlog('Mitarbeiter: '+dbgEntries.length+', PLAN-Keys: '+Object.keys(PLAN).length);
   let gF=0,gS=0,gHours=0;
-  getOrderedUserEntries().forEach(([uid,user])=>{
+  dbgEntries.forEach(([uid,user])=>{
     const shifts=PLAN[uid]||[];
     const week=getEmployeeWeekStats(uid); gF+=week.f; gS+=week.s; gHours+=week.hours;
     html+=`<tr><td class="nc" style="font-size:11px;">${escapeHtml(user.name)}<br><small style="color:var(--muted);">${escapeHtml(user.typ)}</small></td>`;
