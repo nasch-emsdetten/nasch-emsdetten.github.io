@@ -219,6 +219,8 @@ window.FILIAL_ID = 'FIL001';
 <body>
 
 <!-- LOGIN -->
+<div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
+
 <div id="loginScreen" class="screen active">
   <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App</p></div>
   <div class="login-card">
@@ -1133,6 +1135,12 @@ const FirestoreStore = (() => {
       // Queue abarbeiten
       _queue.forEach(fn => fn());
       _queue = [];
+
+      // PINs sofort vorladen – BEVOR der User die PIN eingibt!
+      // So funktioniert die geänderte PIN auch nach Neustart.
+      _db.collection('nasch').doc(FID()).collection('config').doc('pins').get()
+        .then(pDoc=>{ if(pDoc.exists){ Object.assign(PINS,pDoc.data()); console.log('✅ PINs vorgeladen'); } })
+        .catch(()=>{});
     }
   });
 
