@@ -210,7 +210,16 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 // Anonym einloggen → Firestore-Zugriff
-firebase.auth().signInAnonymously().catch(e => console.warn('Auth:', e));
+firebase.auth().signInAnonymously().catch(e => {
+  console.warn('Auth Fehler:', e);
+  // Fehler sichtbar anzeigen im Status-Badge
+  setTimeout(()=>{
+    const badge = document.getElementById('fbStatusBadge');
+    if(badge) badge.innerHTML = '🔴 Firebase: ' + (e.code||e.message||'Fehler');
+    const banner = document.getElementById('fbStatusBanner');
+    if(banner){ banner.style.background='#ef4444'; banner.textContent='❌ Firebase: ' + (e.code||'Verbindungsfehler'); banner.style.display='flex'; }
+  }, 500);
+});
 // Filiale für diese Datei
 window.FILIAL_ID = 'FIL001';
 </script>
@@ -222,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App</p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -984,6 +993,8 @@ const PINS = {
   '1006':'1006','1007':'1007','1008':'1008','1009':'1009','1010':'1010',
   '1011':'1011','1012':'1012','1013':'1013','1014':'1014','1015':'1015',
 };
+// PINs aus lokalem Speicher laden (persistiert auch ohne Firebase)
+try{ const lp=localStorage.getItem('nasch-pins-FIL001'); if(lp) Object.assign(PINS,JSON.parse(lp)); }catch(e){}
 
 // Gesperrte einfache PINs
 const BLOCKED_PINS = [
@@ -1129,18 +1140,28 @@ const FirestoreStore = (() => {
       _db    = firebase.firestore();
       _ready = true;
       console.log('🔥 Firebase verbunden · User:', user.uid);
-      // Zeige grünen Status
+      // Badge & Banner aktualisieren
+      const badge = document.getElementById('fbStatusBadge');
+      if(badge) badge.innerHTML = '🔥 Firebase verbunden';
       const banner = document.getElementById('fbStatusBanner');
-      if(banner){ banner.style.display='flex'; setTimeout(()=>{ banner.style.display='none'; },4000); }
+      if(banner){ banner.style.display='flex'; setTimeout(()=>{ banner.style.display='none'; },5000); }
       // Queue abarbeiten
       _queue.forEach(fn => fn());
       _queue = [];
 
-      // PINs sofort vorladen – BEVOR der User die PIN eingibt!
-      // So funktioniert die geänderte PIN auch nach Neustart.
+      // PINs aus Firebase laden (überschreibt localStorage mit autoritativem Stand)
       _db.collection('nasch').doc(FID()).collection('config').doc('pins').get()
-        .then(pDoc=>{ if(pDoc.exists){ Object.assign(PINS,pDoc.data()); console.log('✅ PINs vorgeladen'); } })
-        .catch(()=>{});
+        .then(pDoc=>{
+          if(pDoc.exists){
+            Object.assign(PINS,pDoc.data());
+            try{ localStorage.setItem('nasch-pins-FIL001', JSON.stringify(PINS)); }catch(e){}
+            console.log('✅ PINs aus Firebase geladen');
+            if(badge) badge.innerHTML = '🔥 Firebase · PINs geladen';
+          } else {
+            if(badge) badge.innerHTML = '🔥 Firebase verbunden';
+          }
+        })
+        .catch(e=>{ console.warn('PIN-Vorladen:', e); });
     }
   });
 
@@ -1212,9 +1233,12 @@ const FirestoreStore = (() => {
 
   // ── Speicher-Funktionen ───────────────────────────────────
   function savePins(){
+    // Zuerst localStorage (sofort, immer verfügbar)
+    try{ localStorage.setItem('nasch-pins-FIL001', JSON.stringify(PINS)); }catch(e){}
+    // Dann Firebase (wenn verbunden, für geräteübergreifende Sync)
     whenReady(()=>{ docRef('config','pins').set({...PINS})
-      .then(()=>console.log('✅ PINs gespeichert'))
-      .catch(e=>console.warn('savePins:',e)); });
+      .then(()=>console.log('✅ PINs in Firebase gespeichert'))
+      .catch(e=>console.warn('savePins Firebase:',e)); });
   }
   function saveEmployee(uid){
     if(!USERS[uid]) return;
