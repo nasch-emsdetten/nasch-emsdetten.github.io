@@ -9,8 +9,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NASCH Lohne">
-<meta name="application-name" content="NASCH Lohne">
+<meta name="apple-mobile-web-app-title" content="NASCH Emsdetten">
+<meta name="application-name" content="NASCH Emsdetten">
 
 
 <style>
@@ -194,10 +194,10 @@ textarea{min-height:60px;resize:none;}
 #planTbl tbody td.name-cell,#planTbl tbody td.nc,#adminTbl tbody td.name-cell,#adminTbl tbody td.nc{position:sticky!important;left:0!important;z-index:5!important;}
 
 </style>
-<!-- Firebase SDK (compat) -->
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/firestore.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/auth.js"></script>
+<!-- Firebase SDK v8 (stabil) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script>
 // Firebase Konfiguration
 const firebaseConfig = {
@@ -1112,156 +1112,156 @@ const PLAN = {
 <script>
 /* js/sandbox-store.js */
 // ══════════════════════════════════════════════════════════════
-// FIREBASE FIRESTORE STORE – Ersetzt SandboxStore (localStorage)
-// Alle Daten werden in Firestore gespeichert.
-// Filiale wird pro HTML-Datei gesetzt: window.FILIAL_ID
+// FIREBASE FIRESTORE STORE v2 – stabil, Auth-gesichert
 // ══════════════════════════════════════════════════════════════
 
 const FirestoreStore = (() => {
-  // Firestore-Referenz (Firebase SDK wird per CDN geladen)
-  function db() { return firebase.firestore(); }
-  const FID = () => window.FILIAL_ID || 'FIL001';
+  const FID   = () => window.FILIAL_ID || 'FIL001';
+  let   _db   = null;
+  let   _ready= false;
+  let   _queue= [];  // Schreibvorgänge warten bis Auth bereit
 
-  // Dokument-Referenzen
-  function docRef(col, docId) {
-    return db().collection('nasch').doc(FID()).collection(col).doc(docId);
-  }
-
-  // ── Daten laden (einmalig beim Start) ──────────────────────
-  async function load() {
-    try {
-      // PINs laden
-      const pinsSnap = await docRef('config','pins').get();
-      if (pinsSnap.exists) Object.assign(PINS, pinsSnap.data());
-
-      // Mitarbeiter-Overrides laden (z.B. neu angelegte MA)
-      const usersSnap = await docRef('config','users').get();
-      if (usersSnap.exists) {
-        Object.entries(usersSnap.data()).forEach(([uid, u]) => {
-          if (!uid || !u) return;
-          USERS[uid] = { ...(USERS[uid] || {}), ...u };
-          if (!PLAN[uid]) PLAN[uid] = Array.from({length:7}, () => ({t:'-',z:'',r:''}));
-        });
-      }
-
-      // Plan laden (aktuelle KW)
-      const wk = _weekKey();
-      const planSnap = await docRef('plan', wk).get();
-      if (planSnap.exists && planSnap.data().plan) {
-        const p = planSnap.data().plan;
-        Object.keys(PLAN).forEach(k => delete PLAN[k]);
-        Object.assign(PLAN, p);
-      }
-
-      // Verfügbarkeit laden (alle MA)
-      const availSnap = await db().collection('nasch').doc(FID()).collection('availability').get();
-      availSnap.forEach(doc => {
-        if (!_availCache) _availCache = {};
-        _availCache[doc.id] = doc.data();
-      });
-
-      // Unterschriften laden
-      const sigSnap = await docRef('config','signatures').get();
-      if (sigSnap.exists) _sigCache = sigSnap.data();
-
-      // Entscheidungen laden
-      const decSnap = await docRef('config','decisions').get();
-      if (decSnap.exists) _decCache = decSnap.data();
-
-      console.log('✅ FirestoreStore: Daten geladen');
-      // SANDBOX-Banner durch Firebase-OK-Banner ersetzen falls vorhanden
-      const sb = document.querySelector('.sandbox-banner');
-      if(sb) sb.remove();
-    } catch(e) {
-      console.warn('⚠️ FirestoreStore: Ladefehler', e);
+  // ── Auth-State: warten bis anonym eingeloggt ─────────────
+  firebase.auth().onAuthStateChanged(user => {
+    if(user){
+      _db    = firebase.firestore();
+      _ready = true;
+      console.log('🔥 Firebase verbunden · User:', user.uid);
+      // Zeige grünen Status
+      const banner = document.getElementById('fbStatusBanner');
+      if(banner){ banner.style.display='flex'; setTimeout(()=>{ banner.style.display='none'; },4000); }
+      // Queue abarbeiten
+      _queue.forEach(fn => fn());
+      _queue = [];
     }
+  });
+
+  function whenReady(fn){ _ready ? fn() : _queue.push(fn); }
+
+  function docRef(col, docId){
+    return _db.collection('nasch').doc(FID()).collection(col).doc(docId);
   }
 
-  // Interner Cache für nicht-kritische Daten
-  let _availCache = {};
-  let _sigCache   = {};
-  let _decCache   = {};
+  // ── Daten laden ───────────────────────────────────────────
+  async function load(){
+    return new Promise((resolve) => {
+      // Warten bis Auth bereit (max 8 Sekunden)
+      let tries = 0;
+      const wait = setInterval(async () => {
+        tries++;
+        if(_ready || tries > 40){
+          clearInterval(wait);
+          if(!_db){ resolve(); return; }
+          try {
+            // PINs
+            const pDoc = await docRef('config','pins').get();
+            if(pDoc.exists){ Object.assign(PINS, pDoc.data()); }
 
-  // Aktuelle Woche als Key (Mo-Datum)
-  function _weekKey() {
-    const today = new Date();
-    const day   = today.getDay();
-    const diff  = (day === 0 ? -6 : 1 - day);
-    const mon   = new Date(today); mon.setDate(today.getDate() + diff);
-    return mon.toISOString().slice(0,10);
+            // Mitarbeiter-Overrides
+            const uDoc = await docRef('config','users').get();
+            if(uDoc.exists){
+              Object.entries(uDoc.data()).forEach(([uid,u])=>{
+                if(USERS[uid]) Object.assign(USERS[uid], u);
+                else USERS[uid] = u;
+              });
+            }
+
+            // Plan (aktuelle KW)
+            const wk = _weekKey();
+            const pSnap = await docRef('plan', wk).get();
+            if(pSnap.exists && pSnap.data().plan){
+              const p = pSnap.data().plan;
+              Object.keys(PLAN).forEach(k => delete PLAN[k]);
+              Object.assign(PLAN, p);
+            }
+
+            // Verfügbarkeit
+            const avSnap = await _db.collection('nasch').doc(FID())
+              .collection('availability').get();
+            avSnap.forEach(d => { _avail[d.id] = d.data(); });
+
+            // Unterschriften + Entscheidungen
+            const sDoc = await docRef('config','signatures').get();
+            if(sDoc.exists) _sig = sDoc.data();
+            const dDoc = await docRef('config','decisions').get();
+            if(dDoc.exists) _dec = dDoc.data();
+
+            console.log('✅ Firestore: Daten geladen');
+          } catch(e){ console.warn('⚠️ Firestore load:', e); }
+          resolve();
+        }
+      }, 200);
+    });
   }
 
-  // ── Speichern ──────────────────────────────────────────────
-  function savePins() {
-    docRef('config','pins').set({...PINS}).catch(e => console.warn('savePins:', e));
+  let _avail={}, _sig={}, _dec={};
+
+  function _weekKey(){
+    const t=new Date(), d=t.getDay(), diff=(d===0?-6:1-d);
+    const m=new Date(t); m.setDate(t.getDate()+diff);
+    return m.toISOString().slice(0,10);
   }
 
-  function saveEmployee(uid) {
-    if (!USERS[uid]) return;
-    const data = {};
-    data[uid] = JSON.parse(JSON.stringify(USERS[uid]));
-    docRef('config','users').set(data, {merge:true}).catch(e => console.warn('saveEmployee:', e));
+  // ── Speicher-Funktionen ───────────────────────────────────
+  function savePins(){
+    whenReady(()=>{ docRef('config','pins').set({...PINS})
+      .then(()=>console.log('✅ PINs gespeichert'))
+      .catch(e=>console.warn('savePins:',e)); });
   }
-
-  function savePlan() {
-    const wk = _weekKey();
-    docRef('plan', wk).set({
-      plan: JSON.parse(JSON.stringify(PLAN)),
+  function saveEmployee(uid){
+    if(!USERS[uid]) return;
+    const d={}; d[uid]=JSON.parse(JSON.stringify(USERS[uid]));
+    whenReady(()=>{ docRef('config','users').set(d,{merge:true})
+      .catch(e=>console.warn('saveEmployee:',e)); });
+  }
+  function savePlan(){
+    const wk=_weekKey();
+    const data={ plan:JSON.parse(JSON.stringify(PLAN)),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: window.AppState?.currentUser?.name || 'Admin'
-    }, {merge:true}).catch(e => console.warn('savePlan:', e));
+      updatedBy: window.AppState?.currentUser?.name||'Admin' };
+    whenReady(()=>{ docRef('plan',wk).set(data,{merge:true})
+      .then(()=>console.log('✅ Plan gespeichert KW',wk))
+      .catch(e=>console.warn('savePlan:',e)); });
   }
-
-  function addRequest(type, uid, data) {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
-    db().collection('nasch').doc(FID()).collection('requests').doc(id).set({
-      id, type, uid, data,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      status: 'offen'
-    }).catch(e => console.warn('addRequest:', e));
+  function addRequest(type,uid,data){
+    const id=`${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
+    whenReady(()=>{ _db.collection('nasch').doc(FID()).collection('requests').doc(id)
+      .set({id,type,uid,data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),status:'offen'})
+      .catch(e=>console.warn('addRequest:',e)); });
   }
-
-  async function getRequests() {
-    try {
-      const snap = await db().collection('nasch').doc(FID()).collection('requests')
+  async function getRequests(){
+    if(!_db) return [];
+    try{
+      const s=await _db.collection('nasch').doc(FID()).collection('requests')
         .orderBy('createdAt','desc').limit(100).get();
-      return snap.docs.map(d => d.data());
-    } catch(e) { return []; }
+      return s.docs.map(d=>d.data());
+    }catch(e){ return []; }
   }
-
-  function saveAvailability(uid, values) {
-    _availCache[uid] = {...values};
-    db().collection('nasch').doc(FID()).collection('availability').doc(uid)
-      .set({...values, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}, {merge:true})
-      .catch(e => console.warn('saveAvailability:', e));
+  function saveAvailability(uid,values){
+    _avail[uid]={...values};
+    whenReady(()=>{ _db.collection('nasch').doc(FID()).collection('availability').doc(uid)
+      .set({...values,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
+      .catch(e=>console.warn('saveAvail:',e)); });
   }
-
-  function getAvailability(uid) {
-    return _availCache[uid] ? {..._availCache[uid]} : null;
+  function getAvailability(uid){ return _avail[uid]||null; }
+  function saveSignature(uid){
+    _sig[uid]=new Date().toISOString();
+    whenReady(()=>{ docRef('config','signatures').set(_sig,{merge:true})
+      .catch(e=>console.warn('saveSig:',e)); });
   }
-
-  function saveSignature(uid) {
-    _sigCache[uid] = new Date().toISOString();
-    docRef('config','signatures').set(_sigCache, {merge:true}).catch(e => console.warn('saveSignature:', e));
+  function getSignature(uid){ return _sig[uid]||null; }
+  function saveDecision(id,status){
+    _dec[id]=status;
+    whenReady(()=>{ docRef('config','decisions').set(_dec,{merge:true})
+      .catch(e=>console.warn('saveDec:',e)); });
   }
+  function reset(){ if(confirm('Firestore-Daten zurücksetzen?')) location.reload(); }
 
-  function getSignature(uid) { return _sigCache[uid] || null; }
-
-  function saveDecision(id, status) {
-    _decCache[id] = status;
-    docRef('config','decisions').set(_decCache, {merge:true}).catch(e => console.warn('saveDecision:', e));
-  }
-
-  function reset() {
-    if(confirm('Alle Firestore-Daten dieser Filiale zurücksetzen?')) location.reload();
-  }
-
-  // Alias: SandboxStore → FirestoreStore (überall wo SandboxStore gerufen wird)
   return { load, savePins, saveEmployee, savePlan, addRequest, getRequests,
            saveAvailability, getAvailability, saveSignature, getSignature, saveDecision, reset };
 })();
 
-// SandboxStore als Alias für Rückwärtskompatibilität
+// SandboxStore als Alias
 const SandboxStore = FirestoreStore;
 
 
