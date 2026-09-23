@@ -4931,7 +4931,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 
   const ENTRY_MODE=window.NASCH_ENTRY_MODE||'management';
   const FIXED_BRANCH=window.NASCH_FIXED_BRANCH||'';
-  const isCentral=uid=>['1001','8808'].includes(String(uid||''));
+  const isCentral=uid=>['8808'].includes(String(uid||'')); // Nur System-Admin ist central
   const isOffice=uid=>USERS[String(uid||'')]?.role==='office';
   const activeBranch=()=>FIXED_BRANCH||localStorage.getItem(ACTIVE_KEY)||'FIL001';
   function branch(id=activeBranch()){return meta.branches[id]||meta.branches.FIL001;}
@@ -5006,14 +5006,14 @@ window.NASCH_SANDBOX_VERSION='V19';
     sel.innerHTML='<option value="">Name auswählen …</option>';
     const err=document.getElementById('loginErr');if(err)err.textContent='';
     if(ENTRY_MODE==='management'){
-      Object.entries(USERS).filter(([uid])=>isCentral(uid)||isOffice(uid)).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
+      Object.entries(USERS).filter(([uid])=>isCentral(uid)||isOffice(uid)||['admin','vertretung'].includes(USERS[uid]?.role)).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
     }else{
       if(!FIXED_BRANCH||!isBranchActive(FIXED_BRANCH)){
         if(err)err.textContent='Diese Filiale wurde noch nicht vom Zentraladmin aktiviert.';
         sel.disabled=true;document.getElementById('loginKP')?.style.setProperty('pointer-events','none');document.getElementById('loginKP')?.style.setProperty('opacity','.35');return;
       }
       sel.disabled=false;document.getElementById('loginKP')?.style.removeProperty('pointer-events');document.getElementById('loginKP')?.style.removeProperty('opacity');
-      Object.entries(USERS).filter(([uid])=>workerIn(uid,FIXED_BRANCH)&&!isCentral(uid)&&!isOffice(uid)&&!(window.NaschEmployees?.isInactive?.(uid))).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
+      Object.entries(USERS).filter(([uid])=>workerIn(uid,FIXED_BRANCH)&&!isOffice(uid)&&!(window.NaschEmployees?.isInactive?.(uid))).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
     }
     if(cur&&USERS[cur])sel.value=cur;
   };
@@ -5151,7 +5151,7 @@ window.NASCH_SANDBOX_VERSION='V19';
   window.startApp=function(uid){
     uid=String(uid||'');
     if(ENTRY_MODE==='management'){if(!isCentral(uid)&&!isOffice(uid)){alert('Dieser Zugang ist nur für Admin und Personalbüro.');return;}const first=activeBranchIds()[0]||'FIL001';if(!isBranchActive(activeBranch()))localStorage.setItem(ACTIVE_KEY,first);}
-    else {if(!FIXED_BRANCH||!isBranchActive(FIXED_BRANCH)){alert('Diese Filiale ist noch nicht aktiviert.');return;}if(isCentral(uid)||isOffice(uid)||!workerIn(uid,FIXED_BRANCH)){alert('Dieser Benutzer hat keinen Zugriff auf diese Filialseite.');return;}}
+    else {if(!FIXED_BRANCH||!isBranchActive(FIXED_BRANCH)){alert('Diese Filiale ist noch nicht aktiviert.');return;}if(isOffice(uid)||(!isCentral(uid)&&!workerIn(uid,FIXED_BRANCH))){alert('Dieser Benutzer hat keinen Zugriff auf diese Filialseite.');return;}}
     if(!canAccess(uid,activeBranch())){alert('Dieser Benutzer hat keinen Zugriff auf die ausgewählte Filiale.');return;}
     oldStart(uid);showBranchBar();injectBranchesMenu();applyModuleVisibility();if(isOffice(uid)){renderOfficePage();navTo('office');}else if(!currentModules().weekPlan&&document.getElementById('pgPlan')?.classList.contains('active'))navTo('profil');setTimeout(decorateAdminSettings,0);
   };try{startApp=window.startApp}catch(_){}
