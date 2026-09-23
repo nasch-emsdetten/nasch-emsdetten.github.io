@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH Büro / Leitung</title>
+<title>NASCH Löningen</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -211,15 +211,15 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 // Filiale für diese Datei
-window.FILIAL_ID = 'BUERO';
+window.FILIAL_ID = 'FIL004';
 </script>
-<script>window.NASCH_ENTRY_MODE="management";window.NASCH_FIXED_BRANCH="";</script>
+<script>window.NASCH_ENTRY_MODE="branch";window.NASCH_FIXED_BRANCH="FIL004";</script>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Leitung</h1><p id="loginBrandSub">Büro / Leitung · Mitarbeiter-App</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Löningen</h1><p id="loginBrandSub">Löningen · Mitarbeiter-App</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -1283,7 +1283,7 @@ const PublishStore = (() => {
   function branchKey() {
     // Aktive Filiale ermitteln
     if(typeof activeBranch === 'function') return activeBranch();
-    return localStorage.getItem('nasch-v23-active-branch') || 'BUERO';
+    return localStorage.getItem('nasch-v23-active-branch') || 'FIL004';
   }
   function weekKey(offset = AppState.weekOffset) {
     if(typeof WeekPlanStore !== 'undefined') return WeekPlanStore.keyForOffset(offset);
@@ -4126,7 +4126,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
       return `${escapeHtml(c)}${l?' = '+escapeHtml(l):''}`;
     }).join(' · ');
     const title=`Wochenplan KW ${kw} - ${String(mon.getFullYear())}`;
-    return {title, html:`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>NASCH Büro / Leitung</title><style>
+    return {title, html:`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>NASCH Löningen</title><style>
       @page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;font-size:8.5px}h1{font-size:16px;margin:0 0 2px}.sub{font-size:9px;color:#566274;margin-bottom:8px}.hint{font-size:8px;color:#657386;margin:6px 0}.plan{width:100%;border-collapse:collapse;table-layout:fixed}.plan th,.plan td{border:1px solid #aeb9c7;padding:4px;vertical-align:top;word-break:break-word}.plan th{background:#1e3a5f;color:#fff;text-align:center;font-size:8px}.plan th:first-child{width:19mm}.plan .name{background:#f3f6f9;width:30mm}.plan .week{background:#f3f6f9;text-align:center;width:24mm}.plan .total{background:#f3f6f9;text-align:center}.plan .name small{font-weight:400;color:#657386}.shift{line-height:1.3}.shift.F{background:#fff4bf}.shift.S{background:#ffe3ca}.shift.TS{background:#e6f1fb}.shift.U{background:#f8dce8}.shift.WF{background:#fff1a8}.shift.K{background:#f4d6d6}.shift.R{background:#e8f4ea}.meta{margin-top:3px;font-size:6.5px;line-height:1.15;color:#ffe7a3}.legend{margin-top:6px;font-size:7.5px;color:#455468}.footer{margin-top:6px;display:flex;justify-content:space-between;color:#657386;font-size:7px}@media print{button{display:none}}
       </style></head><body><h1>${escapeHtml(title)}</h1><div class="sub">${formatFullDate(mon)} bis ${formatFullDate(sun)} · NASCH Emsdetten</div><table class="plan"><thead><tr><th>Mitarbeiter</th>${head}<th>Woche</th></tr></thead><tbody>${body}<tr><td class="name"><strong>Tag gesamt</strong></td>${totals}<td class="total"><strong>${typeof getWeekTotalHours==='function'?formatHours(getWeekTotalHours()):''}</strong></td></tr></tbody></table>${legend?`<div class="legend"><strong>Tätigkeiten:</strong> ${legend}</div>`:''}<div class="footer"><span>Erstellt aus der NASCH Sandbox ${V14_VERSION}</span><span>${new Date().toLocaleString('de-DE')}</span></div><script>setTimeout(()=>window.print(),250);<\/script></body></html>`};
   }
