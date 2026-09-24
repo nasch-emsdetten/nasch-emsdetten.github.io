@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.14</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.0</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -340,6 +340,7 @@ window.FILIAL_ID = 'FIL001';
         <span class="wlbl" id="wLbl">KW 41 · 05.10.–11.10.2026</span>
         <span class="wbtn" id="nextW" style="visibility:hidden;" onclick="wNav(1)">›</span>
       </div>
+      <div id="employeePlanCloudStatus" class="banner binfo" style="display:none;margin-bottom:8px;"><span>☁️</span><span>Dienstplan wird geladen…</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:11px;color:var(--muted);">
         <span>🟨 Früh</span><span>🟧 Spät</span><span>🔵 Teilschicht (2 Zeitblöcke)</span><span>🩷 Urlaub</span><span>🟡 KV</span>
       </div>
@@ -713,6 +714,7 @@ window.FILIAL_ID = 'FIL001';
         </div>
         <button id="editBtn" onclick="toggleEdit()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;">✏️ Bearbeiten</button>
       </div>
+      <div id="cloudPlanStatus" class="banner binfo" style="display:flex;"><span>☁️</span><span>Cloud-Dienstplan wird geprüft…</span></div>
       <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Bearbeitungs-Modus – Zelle antippen zum Bearbeiten</span></div>
       <div id="planDebug" style="font-size:10px;color:#dc2626;padding:4px 8px;white-space:pre-wrap;display:none;background:#fef2f2;border-radius:6px;margin-bottom:8px;"></div>
       <div class="plan-wrap"><table class="plan-t" id="adminTbl"></table></div>
@@ -1326,116 +1328,254 @@ const SandboxStore = FirestoreStore;
 
 // ── PUBLISH STORE: Entwurf vs. Veröffentlicht ────────────────
 const PublishStore = (() => {
-  const KEY = 'nasch-publish-state-v1';
+  /* V25 · Dienstplan-Cloud
+     - Entwürfe:      nasch/{FIL}/weekPlanDrafts/{YYYY-MM-DD}
+     - Veröffentlicht: nasch/{FIL}/weekPlans/{YYYY-MM-DD}
+     - Historie:       nasch/{FIL}/weekPlanHistory/{YYYY-MM-DD}/versions/{0001...}
+     localStorage dient nur noch als Offline-Lesecache, niemals als Veröffentlichungsquelle. */
+  const CACHE_KEY = 'nasch-v25-weekplan-cloud-cache';
   const BRANCH_LINKS = {
     FIL001: 'https://nasch-emsdetten.github.io/emsdetten.html',
     FIL002: 'https://nasch-emsdetten.github.io/lohne.html',
     FIL003: 'https://nasch-emsdetten.github.io/werlte.html',
     FIL004: 'https://nasch-emsdetten.github.io/loeningen.html',
   };
-
-  // state: { [branchId]: { [weekKey]: { published: bool, plan: {}, publishedAt: ISO, publishedBy: name, isDraft: bool } } }
   let state = {};
-  try { const r = localStorage.getItem(KEY); if(r) state = JSON.parse(r); } catch(_) {}
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(_) {} };
+  let lastCloudOK = false;
+  let lastError = '';
+  try { const raw=localStorage.getItem(CACHE_KEY); if(raw) state=JSON.parse(raw)||{}; } catch(_) {}
+  const clone = v => v==null ? v : JSON.parse(JSON.stringify(v));
+  const saveCache = () => { try{ localStorage.setItem(CACHE_KEY,JSON.stringify(state)); }catch(_){} };
+  const serverTS = () => firebase.firestore.FieldValue.serverTimestamp();
+  const iso = v => {
+    if(!v) return '';
+    try{ if(typeof v.toDate==='function') return v.toDate().toISOString(); }catch(_){}
+    if(v instanceof Date) return v.toISOString();
+    return String(v);
+  };
 
-  function branchKey() {
-    // Aktive Filiale ermitteln
-    if(typeof activeBranch === 'function') return activeBranch();
-    return localStorage.getItem('nasch-v23-active-branch') || 'FIL001';
+  function branchKey(){
+    if(typeof activeBranch==='function') return activeBranch();
+    return localStorage.getItem('nasch-v23-active-branch') || window.FILIAL_ID || 'FIL001';
   }
-  function weekKey(offset = AppState.weekOffset) {
-    if(typeof WeekPlanStore !== 'undefined') return WeekPlanStore.keyForOffset(offset);
-    const mon = typeof getMonday === 'function' ? getMonday(offset) : new Date();
+  function weekKey(offset=(typeof AppState!=='undefined'?AppState.weekOffset:0)){
+    if(typeof WeekPlanStore!=='undefined' && WeekPlanStore.keyForOffset) return WeekPlanStore.keyForOffset(offset);
+    const mon=typeof getMonday==='function'?getMonday(offset):new Date();
     return mon.toISOString().slice(0,10);
   }
+  function planner(uid){
+    uid=String(uid||'');
+    if(!uid) return false;
+    try{ if(typeof isAdminOrDeputy==='function' && isAdminOrDeputy(uid)) return true; }catch(_){}
+    const u=(typeof USERS!=='undefined'?USERS[uid]:null);
+    try{ if(typeof NaschTempDeputy!=='undefined'&&NaschTempDeputy.is?.(uid)) return true; }catch(_){}
+    try{ if(window.BranchSandbox?.isCentral?.(uid)) return true; }catch(_){}
+    return !!u && (u.role==='admin'||u.role==='vertretung');
+  }
+  function currentOrder(){
+    try{ return (typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid])=>String(uid)); }
+    catch(_){ return Object.keys(typeof USERS!=='undefined'?USERS:{}); }
+  }
+  function bucket(bid){ if(!state[bid]) state[bid]={}; return state[bid]; }
+  function setLocal(bid,wk,info){ bucket(bid)[wk]=clone(info||{}); saveCache(); return bucket(bid)[wk]; }
+  function get(bid,wk){ return state?.[bid]?.[wk] || null; }
+  function isPublished(bid,wk){ return !!get(bid,wk)?.published; }
+  function hasDraft(bid,wk){ return !!get(bid,wk)?.isDraft; }
+  function getPublishedPlan(bid,wk){ return clone(get(bid,wk)?.publishedPlan||null); }
+  function db(){ return firebase.firestore(); }
+  function pubRef(bid,wk){ return db().collection('nasch').doc(bid).collection('weekPlans').doc(wk); }
+  function draftRef(bid,wk){ return db().collection('nasch').doc(bid).collection('weekPlanDrafts').doc(wk); }
+  function legacyRef(bid,wk){ return db().collection('nasch').doc(bid).collection('plan').doc(wk); }
+  function historyRef(bid,wk,version){ return db().collection('nasch').doc(bid).collection('weekPlanHistory').doc(wk).collection('versions').doc(String(version).padStart(4,'0')); }
 
-  function get(bid, wk) {
-    return state[bid]?.[wk] || null;
+  function waitForAuth(timeout=8000){
+    const auth=firebase.auth();
+    if(auth.currentUser) return Promise.resolve(auth.currentUser);
+    return new Promise((resolve,reject)=>{
+      let done=false;
+      const off=auth.onAuthStateChanged(u=>{ if(done||!u)return; done=true; clearTimeout(timer); off(); resolve(u); });
+      const timer=setTimeout(()=>{ if(done)return; done=true; try{off();}catch(_){} reject(new Error('Firebase-Anmeldung nicht verfügbar')); },timeout);
+    });
   }
-  function isPublished(bid, wk) {
-    return !!get(bid, wk)?.published;
-  }
-  function hasDraft(bid, wk) {
-    const s = get(bid, wk);
-    return s ? s.isDraft === true : false;
-  }
-  function getPublishedPlan(bid, wk) {
-    return get(bid, wk)?.plan || null;
-  }
-
-  function saveDraft(bid, wk, plan) {
-    if(!state[bid]) state[bid] = {};
-    const cur = state[bid][wk] || {};
-    state[bid][wk] = { ...cur, isDraft: true, draftPlan: JSON.parse(JSON.stringify(plan)), draftAt: new Date().toISOString() };
-    save();
-  }
-  function publish(bid, wk, plan, publisherName) {
-    if(!state[bid]) state[bid] = {};
-    const cur = state[bid][wk] || {};
-    const wasPublished = cur.published;
-    state[bid][wk] = {
-      ...cur,
-      published: true,
-      isDraft: false,
-      plan: JSON.parse(JSON.stringify(plan)),
-      publishedAt: new Date().toISOString(),
-      publishedBy: publisherName || '',
-      version: (cur.version || 0) + 1,
-      wasChangedAfterPublish: wasPublished,
+  function normalizePublished(data){
+    if(!data) return null;
+    return {
+      published:true,
+      isDraft:false,
+      publishedPlan:clone(data.plan||data.publishedPlan||null),
+      employeeOrder:Array.isArray(data.employeeOrder)?data.employeeOrder.map(String):[],
+      version:Number(data.version||1),
+      publishedAt:iso(data.publishedAt),
+      publishedBy:String(data.publishedBy||''),
+      schemaVersion:Number(data.schemaVersion||25)
     };
-    save();
-    return state[bid][wk];
   }
-  function branchLink(bid) {
-    return BRANCH_LINKS[bid] || 'https://nasch-emsdetten.github.io';
+  function normalizeDraft(data){
+    if(!data) return null;
+    return {
+      isDraft:true,
+      draftPlan:clone(data.plan||data.draftPlan||null),
+      draftRevision:Number(data.draftRevision||1),
+      employeeOrder:Array.isArray(data.employeeOrder)?data.employeeOrder.map(String):[],
+      draftAt:iso(data.updatedAt||data.draftAt),
+      draftBy:String(data.updatedBy||data.draftBy||''),
+      basePublishedVersion:Number(data.basePublishedVersion||0),
+      schemaVersion:Number(data.schemaVersion||25)
+    };
   }
-  function buildWhatsAppText(bid, wk, branchName, isChange) {
-    const mon = typeof getMonday === 'function' ? getMonday(AppState.weekOffset) : new Date();
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    const fmt = d => d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const kw  = typeof getKW === 'function' ? getKW(mon) : '–';
-    const link = branchLink(bid);
-    if(isChange) {
-      return `⚠️ Wochenplan geändert – NASCH ${branchName}
-
-Der Wochenplan für KW ${kw} wurde aktualisiert.
-
-Bitte prüft eure Arbeitszeiten erneut in der NASCH Mitarbeiter-App.
-
-🔗 Aktualisierten Wochenplan öffnen:
-${link}`;
-    }
-    return `📅 Neuer Wochenplan – NASCH ${branchName}
-
-Der Wochenplan für KW ${kw}
-${fmt(mon)}–${fmt(sun)}
-ist jetzt online.
-
-Bitte prüft eure Arbeitszeiten in der NASCH Mitarbeiter-App.
-
-🔗 Wochenplan öffnen:
-${link}`;
+  function mergeInfo(pub,draft,extra={}){
+    return {...(pub||{}),...(draft||{}),...extra,
+      published:!!pub,
+      isDraft:!!draft,
+      publishedPlan:clone(pub?.publishedPlan||null),
+      draftPlan:clone(draft?.draftPlan||null),
+      employeeOrder:clone(draft?.employeeOrder?.length?draft.employeeOrder:(pub?.employeeOrder||[]))
+    };
   }
-  async function shareWhatsApp(bid, branchName, isChange) {
-    const wk  = weekKey();
-    const txt = buildWhatsAppText(bid, wk, branchName, isChange);
-    // 1. Web Share API (Mobil – öffnet nativen Share-Dialog)
-    if(navigator.share) {
-      try {
-        await navigator.share({ text: txt });
-        return;
-      } catch(e) {
-        if(e.name !== 'AbortError') console.warn('Web Share:', e);
-        else return; // User hat abgebrochen
+  function markCloud(ok,err=''){ lastCloudOK=!!ok; lastError=err?String(err.message||err):''; }
+
+  async function loadWeek(bid,wk,uid){
+    const isPlanner=planner(uid);
+    try{
+      await waitForAuth();
+      let pub=null,draft=null;
+      if(isPlanner){
+        const [pSnap,dSnap]=await Promise.all([
+          pubRef(bid,wk).get({source:'server'}),
+          draftRef(bid,wk).get({source:'server'})
+        ]);
+        if(pSnap.exists) pub=normalizePublished(pSnap.data());
+        if(dSnap.exists) draft=normalizeDraft(dSnap.data());
+      } else {
+        const pSnap=await pubRef(bid,wk).get({source:'server'});
+        if(pSnap.exists) pub=normalizePublished(pSnap.data());
       }
+
+      // Einmalige Übergangshilfe: alter Firestore-Plan wird nur der Leitung als ENTWURF angeboten.
+      if(isPlanner && !pub && !draft){
+        try{
+          const old=await legacyRef(bid,wk).get({source:'server'});
+          if(old.exists && old.data()?.plan && Object.keys(old.data().plan).length){
+            draft={isDraft:true,draftPlan:clone(old.data().plan),draftRevision:0,employeeOrder:currentOrder(),draftAt:'',draftBy:'',basePublishedVersion:0,schemaVersion:25};
+            const info=mergeInfo(null,draft,{migrationNeeded:true,source:'legacy'});
+            setLocal(bid,wk,info); markCloud(true);
+            return {plan:clone(draft.draftPlan),info:clone(info),source:'legacy',offline:false};
+          }
+        }catch(_){}
+      }
+
+      const info=mergeInfo(pub,draft,{source:'cloud'});
+      setLocal(bid,wk,info); markCloud(true);
+      const plan=isPlanner ? (draft?.draftPlan||pub?.publishedPlan||null) : (pub?.publishedPlan||null);
+      return {plan:clone(plan),info:clone(info),source:'cloud',offline:false};
+    }catch(err){
+      markCloud(false,err);
+      const cached=get(bid,wk);
+      if(cached){
+        const plan=isPlanner ? (cached.draftPlan||cached.publishedPlan||null) : (cached.publishedPlan||null);
+        return {plan:clone(plan),info:clone(cached),source:'cache',offline:true,error:String(err.message||err)};
+      }
+      return {plan:null,info:null,source:'none',offline:true,error:String(err.message||err)};
     }
-    // 2. Fallback: wa.me-Link (kein Empfänger → WhatsApp öffnet sich, User wählt)
-    const url = 'https://wa.me/?text=' + encodeURIComponent(txt);
-    window.open(url, '_blank');
   }
 
-  return { get, isPublished, hasDraft, getPublishedPlan, saveDraft, publish, branchLink, buildWhatsAppText, shareWhatsApp, weekKey, branchKey };
+  async function saveDraft(bid,wk,plan,publisherName){
+    const uid=String((typeof AppState!=='undefined'&&AppState.currentUserId)||'');
+    if(!planner(uid)) throw new Error('Keine Berechtigung zum Speichern des Dienstplans.');
+    if(!navigator.onLine) throw new Error('Keine Internetverbindung. Entwurf wurde nicht gespeichert.');
+    await waitForAuth();
+    const local=get(bid,wk)||{};
+    const expectedRev=Number(local.draftRevision||0);
+    const order=currentOrder();
+    const name=publisherName || (typeof AppState!=='undefined'&&AppState.currentUser?.name) || 'Admin';
+    let nextRev=1;
+    await db().runTransaction(async tx=>{
+      const ref=draftRef(bid,wk);
+      const snap=await tx.get(ref);
+      const serverRev=snap.exists?Number(snap.data().draftRevision||0):0;
+      // Konflikt nur, wenn auf diesem Gerät bereits ein Cloud-Entwurf geladen war.
+      if(serverRev!==expectedRev){
+        const e=new Error('Der Entwurf wurde inzwischen auf einem anderen Gerät geändert. Bitte KW neu laden.'); e.code='PLAN_CONFLICT'; throw e;
+      }
+      nextRev=serverRev+1;
+      tx.set(ref,{
+        schemaVersion:25,weekKey:wk,plan:clone(plan),employeeOrder:order,
+        draftRevision:nextRev,basePublishedVersion:Number(local.version||0),
+        updatedAt:serverTS(),updatedBy:name
+      });
+    });
+    const now=new Date().toISOString();
+    const info=mergeInfo(local.published?{
+      publishedPlan:local.publishedPlan,employeeOrder:local.publishedEmployeeOrder||local.employeeOrder||[],version:local.version,publishedAt:local.publishedAt,publishedBy:local.publishedBy
+    }:null,{
+      isDraft:true,draftPlan:clone(plan),draftRevision:nextRev,employeeOrder:order,draftAt:now,draftBy:name,basePublishedVersion:Number(local.version||0)
+    },{source:'cloud'});
+    // mergeInfo above cannot infer published from plain local shape reliably; preserve published metadata explicitly.
+    info.published=!!local.published; info.version=Number(local.version||0); info.publishedAt=local.publishedAt||''; info.publishedBy=local.publishedBy||''; info.publishedPlan=clone(local.publishedPlan||null);
+    setLocal(bid,wk,info); markCloud(true);
+    return clone(info);
+  }
+
+  async function publish(bid,wk,plan,publisherName){
+    const uid=String((typeof AppState!=='undefined'&&AppState.currentUserId)||'');
+    if(!planner(uid)) throw new Error('Keine Berechtigung zum Veröffentlichen des Dienstplans.');
+    if(!navigator.onLine) throw new Error('Keine Internetverbindung. Der Dienstplan wurde NICHT veröffentlicht.');
+    await waitForAuth();
+    const local=get(bid,wk)||{};
+    const expectedDraftRev=Number(local.draftRevision||0);
+    const order=currentOrder();
+    const name=publisherName || (typeof AppState!=='undefined'&&AppState.currentUser?.name) || 'Admin';
+    let nextVersion=1;
+    await db().runTransaction(async tx=>{
+      const pRef=pubRef(bid,wk), dRef=draftRef(bid,wk);
+      const [pSnap,dSnap]=await Promise.all([tx.get(pRef),tx.get(dRef)]);
+      const serverDraftRev=dSnap.exists?Number(dSnap.data().draftRevision||0):0;
+      if(serverDraftRev!==expectedDraftRev){
+        const e=new Error('Der Entwurf wurde inzwischen auf einem anderen Gerät geändert. Bitte KW neu laden.'); e.code='PLAN_CONFLICT'; throw e;
+      }
+      nextVersion=(pSnap.exists?Number(pSnap.data().version||0):0)+1;
+      const pubData={
+        schemaVersion:25,weekKey:wk,plan:clone(plan),employeeOrder:order,
+        version:nextVersion,publishedAt:serverTS(),publishedBy:name,updatedAt:serverTS()
+      };
+      tx.set(pRef,pubData);
+      tx.set(historyRef(bid,wk,nextVersion),{...pubData,archivedAt:serverTS()});
+      if(dSnap.exists) tx.delete(dRef);
+    });
+    const now=new Date().toISOString();
+    const info={
+      published:true,isDraft:false,publishedPlan:clone(plan),draftPlan:null,draftRevision:0,
+      employeeOrder:order,version:nextVersion,publishedAt:now,publishedBy:name,source:'cloud',schemaVersion:25
+    };
+    setLocal(bid,wk,info); markCloud(true);
+    return clone(info);
+  }
+
+  function branchLink(bid){ return BRANCH_LINKS[bid]||'https://nasch-emsdetten.github.io'; }
+  function buildWhatsAppText(bid,wk,branchName,isChange){
+    const mon=typeof getMonday==='function'?getMonday((typeof AppState!=='undefined'?AppState.weekOffset:0)):new Date();
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const fmt=d=>d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const kw=typeof getKW==='function'?getKW(mon):'–';
+    const link=branchLink(bid);
+    return isChange
+      ? `⚠️ Wochenplan geändert – NASCH ${branchName}\n\nDer Wochenplan für KW ${kw} wurde aktualisiert.\n\nBitte prüft eure Arbeitszeiten erneut in der NASCH Mitarbeiter-App.\n\n🔗 Aktualisierten Wochenplan öffnen:\n${link}`
+      : `📅 Neuer Wochenplan – NASCH ${branchName}\n\nDer Wochenplan für KW ${kw}\n${fmt(mon)}–${fmt(sun)}\nist jetzt online.\n\nBitte prüft eure Arbeitszeiten in der NASCH Mitarbeiter-App.\n\n🔗 Wochenplan öffnen:\n${link}`;
+  }
+  async function shareWhatsApp(bid,branchName,isChange){
+    const txt=buildWhatsAppText(bid,weekKey(),branchName,isChange);
+    if(navigator.share){ try{await navigator.share({text:txt});return;}catch(e){if(e.name==='AbortError')return;} }
+    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  }
+  function cloudOK(){return lastCloudOK;}
+  function cloudError(){return lastError;}
+  function canWrite(){
+    const uid=String((typeof AppState!=='undefined'&&AppState.currentUserId)||'');
+    return planner(uid) && !!navigator.onLine && !!firebase.auth().currentUser;
+  }
+  function clearWeekCache(bid,wk){ if(state?.[bid]){delete state[bid][wk];saveCache();} }
+
+  return {get,isPublished,hasDraft,getPublishedPlan,saveDraft,publish,loadWeek,branchLink,buildWhatsAppText,shareWhatsApp,weekKey,branchKey,planner,cloudOK,cloudError,canWrite,clearWeekCache};
 })();
 window.PublishStore = PublishStore;
 
@@ -3840,7 +3980,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js?v=24.13',{updateViaCache:'none'})
+    navigator.serviceWorker.register('./sw.js?v=25.0',{updateViaCache:'none'})
       .then(reg=>reg.update())
       .catch(e=>console.warn('Service Worker:',e));
   });
@@ -5417,15 +5557,246 @@ window.NASCH_SANDBOX_VERSION='V19';
 </script>
 
 <script>
-/* V24.14: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
+/* V25.0: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
 </script>
 <script>
-/* V24.14 · PWA/GitHub-Cache-Stabilisierung */
+/* V25.0 · PWA/GitHub-Cache-Stabilisierung */
 (() => {
   if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
   if('caches' in window){
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v24.14').map(k=>caches.delete(k)))).catch(()=>{});
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v25.0').map(k=>caches.delete(k)))).catch(()=>{});
   }
+})();
+</script>
+
+<script>
+/* V25.0 · Dienstplan produktionsnah: Firestore als zentrale Quelle für Wochenpläne */
+(() => {
+  const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+  let lastVisibleLoad=0;
+  let publishedOrder=[];
+  const baseOrderFn=window.getOrderedUserEntries;
+  const baseToggleEdit=window.toggleEdit;
+  const baseDoStart=window._doStartApp;
+
+  function planner(uid=AppState?.currentUserId){ return !!window.PublishStore?.planner?.(uid); }
+  function blankPlan(){
+    const out={};
+    Object.keys(typeof USERS!=='undefined'?USERS:{}).forEach(uid=>{
+      out[uid]=Array.from({length:7},()=>({t:'-',z:'',r:[]}));
+    });
+    return out;
+  }
+  function applyPlan(plan){
+    const p=plan||blankPlan();
+    Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+    Object.assign(PLAN,clone(p));
+    try{ window.WeekPlanStore?.persistCurrent?.(); }catch(_){}
+  }
+  function setBanner(id,kind,text){
+    const el=document.getElementById(id); if(!el)return;
+    el.style.display='flex';
+    el.classList.remove('binfo','bok','bwarn');
+    el.classList.add(kind==='ok'?'bok':kind==='warn'?'bwarn':'binfo');
+    const icon=kind==='ok'?'☁️✓':kind==='warn'?'⚠️':'☁️';
+    el.innerHTML=`<span>${icon}</span><span>${text}</span>`;
+  }
+  function hideBanner(id){const el=document.getElementById(id);if(el)el.style.display='none';}
+  function fmtPublished(info){
+    if(!info?.publishedAt) return '';
+    const d=new Date(info.publishedAt); if(Number.isNaN(d.getTime()))return '';
+    return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  }
+  function renderCloudState(info,res,uid){
+    if(planner(uid)){
+      if(res?.offline){
+        setBanner('cloudPlanStatus','warn','Offline/Cloud nicht erreichbar · nur Ansicht aus letztem Cache. Bearbeiten und Veröffentlichen sind gesperrt.');
+      }else if(info?.migrationNeeded){
+        setBanner('cloudPlanStatus','warn','Alter Dienstplan geladen · bitte diese KW einmal veröffentlichen, damit sie als zentraler V25-Plan gespeichert wird.');
+      }else if(info?.isDraft && info?.published){
+        setBanner('cloudPlanStatus','ok',`Entwurf in Firestore gespeichert · Mitarbeiter sehen weiter Version ${info.version||1}.`);
+      }else if(info?.isDraft){
+        setBanner('cloudPlanStatus','ok','Entwurf in Firestore gespeichert · noch nicht für Mitarbeiter sichtbar.');
+      }else if(info?.published){
+        setBanner('cloudPlanStatus','ok',`Cloud gespeichert · veröffentlicht${info.version?' · Version '+info.version:''}${fmtPublished(info)?' · '+fmtPublished(info):''}.`);
+      }else{
+        setBanner('cloudPlanStatus','info','Neue KW · noch kein Cloud-Entwurf und noch nicht veröffentlicht.');
+      }
+    }else{
+      if(res?.offline && info?.published){
+        setBanner('employeePlanCloudStatus','warn',`Offline · zuletzt geladener veröffentlichter Plan${info.version?' (Version '+info.version+')':''}.`);
+      }else if(info?.published){
+        setBanner('employeePlanCloudStatus','ok',`Aktueller veröffentlichter Dienstplan${info.version?' · Version '+info.version:''}${fmtPublished(info)?' · '+fmtPublished(info):''}.`);
+      }else{
+        setBanner('employeePlanCloudStatus','warn','Für diese Kalenderwoche wurde noch kein Dienstplan veröffentlicht.');
+      }
+    }
+  }
+
+  // Mitarbeiter übernehmen die Reihenfolge der veröffentlichten Version; Leitung behält ihre Admin-Reihenfolge.
+  if(typeof baseOrderFn==='function'){
+    window.getOrderedUserEntries=function(){
+      const base=baseOrderFn.apply(this,arguments);
+      if(planner() || !Array.isArray(publishedOrder) || !publishedOrder.length) return base;
+      const map=new Map(base.map(e=>[String(e[0]),e]));
+      const out=[];
+      publishedOrder.forEach(uid=>{const e=map.get(String(uid));if(e){out.push(e);map.delete(String(uid));}});
+      map.forEach(e=>out.push(e));
+      return out;
+    };
+    try{getOrderedUserEntries=window.getOrderedUserEntries;}catch(_){}
+  }
+
+  async function loadVisibleWeek(uid=AppState?.currentUserId,{rerender=false}={}){
+    uid=String(uid||''); if(!uid)return null;
+    const bid=PublishStore.branchKey(), wk=PublishStore.weekKey();
+    try{ window.WeekPlanStore?.loadOffset?.(AppState.weekOffset); }catch(_){}
+    if(planner(uid)) setBanner('cloudPlanStatus','info','Cloud-Dienstplan wird geladen…');
+    else setBanner('employeePlanCloudStatus','info','Veröffentlichter Dienstplan wird geladen…');
+    const res=await PublishStore.loadWeek(bid,wk,uid);
+    const info=res?.info||null;
+    if(res?.plan){
+      applyPlan(res.plan);
+    }else if(!planner(uid)){
+      // Mitarbeiter dürfen niemals einen lokalen Entwurf/Altplan als veröffentlichten Plan sehen.
+      applyPlan(blankPlan());
+    }
+    publishedOrder=(!planner(uid) && Array.isArray(info?.employeeOrder))?info.employeeOrder.map(String):[];
+    window.NASCH_V25_PLAN_INFO=info;
+    lastVisibleLoad=Date.now();
+    renderCloudState(info,res,uid);
+    if(rerender){
+      try{renderPlan();}catch(_){}
+      if(planner(uid)){try{buildAdminPlan();}catch(_){} try{updatePublishStatus();}catch(_){} }
+    }
+    return res;
+  }
+  window.NaschWeekCloud={loadVisibleWeek,lastLoad:()=>lastVisibleLoad};
+
+  // Vor dem eigentlichen App-Rendern den zentralen Wochenplan laden.
+  if(typeof baseDoStart==='function'){
+    window._doStartApp=async function(uid){
+      try{ await loadVisibleWeek(uid); }
+      catch(e){ console.warn('V25 Initialplan:',e); }
+      return baseDoStart(uid);
+    };
+    try{_doStartApp=window._doStartApp;}catch(_){}
+  }
+
+  // Bearbeiten nur mit aktivem Firebase/Netz. Ein Schreibfehler beendet den Edit-Modus nicht.
+  window.toggleEdit=function(){
+    if(!planner()) return;
+    if(typeof editMode!=='undefined'&&editMode){ return baseToggleEdit?.apply(this,arguments); }
+    if(!PublishStore.canWrite()){
+      alert('Dienstplan kann gerade nicht sicher bearbeitet werden. Bitte Internet/Firebase-Verbindung prüfen.');
+      return;
+    }
+    return baseToggleEdit?.apply(this,arguments);
+  };
+  try{toggleEdit=window.toggleEdit;}catch(_){}
+
+  window.updatePublishStatus=function(){
+    const bid=PublishStore.branchKey(), wk=PublishStore.weekKey();
+    const info=PublishStore.get(bid,wk);
+    const bar=document.getElementById('publishStatusBar');
+    const wa=document.getElementById('waShareBar');
+    const pBtn=document.getElementById('publishBtn');
+    if(bar){
+      if(info?.isDraft && info?.published){
+        bar.style.display='flex';bar.style.background='var(--warn)';bar.style.border='1px solid #eab308';bar.style.color='var(--warn-t)';
+        bar.innerHTML=`📝 Cloud-Entwurf gespeichert · Mitarbeiter sehen Version ${info.version||1}`;
+      }else if(info?.isDraft){
+        bar.style.display='flex';bar.style.background='var(--warn)';bar.style.border='1px solid #eab308';bar.style.color='var(--warn-t)';
+        bar.innerHTML='📝 Cloud-Entwurf gespeichert – noch nicht für Mitarbeiter sichtbar';
+      }else if(info?.published){
+        bar.style.display='flex';bar.style.background='#E1F5EE';bar.style.border='1px solid #1D9E75';bar.style.color='#085041';
+        bar.innerHTML=`✅ Veröffentlicht${fmtPublished(info)?' am '+fmtPublished(info):''} von ${info.publishedBy||'Admin'} · Version ${info.version||1}`;
+      }else bar.style.display='none';
+    }
+    if(wa)wa.style.display=(!!info?.published && !editMode)?'flex':'none';
+    if(pBtn)pBtn.textContent=info?.published?'📢 Änderung veröffentlichen':'📢 Veröffentlichen';
+  };
+  try{updatePublishStatus=window.updatePublishStatus;}catch(_){}
+
+  window.saveDraft=async function(){
+    if(!planner())return;
+    const bid=PublishStore.branchKey(),wk=PublishStore.weekKey();
+    const btn=document.querySelector('#savePlanBar button[onclick="saveDraft()"]');
+    if(btn){btn.disabled=true;btn.textContent='⏳ Speichert…';}
+    setBanner('cloudPlanStatus','info','Entwurf wird sicher in Firestore gespeichert…');
+    try{
+      try{window.WeekPlanStore?.persistCurrent?.();}catch(_){}
+      const info=await PublishStore.saveDraft(bid,wk,PLAN,AppState.currentUser?.name||'Admin');
+      planChanges={};planSnapshot=null;editMode=false;
+      const bar=document.getElementById('savePlanBar');if(bar)bar.style.display='none';
+      const ebtn=document.getElementById('editBtn');if(ebtn){ebtn.textContent='✏️ Bearbeiten';ebtn.style.background='var(--card)';ebtn.style.color='var(--text)';}
+      const ban=document.getElementById('editBanner');if(ban)ban.style.display='none';
+      try{buildAdminPlan();renderPlan();}catch(_){}
+      renderCloudState(info,{offline:false},AppState.currentUserId);updatePublishStatus();
+      showToast('☁️ Entwurf sicher in Firestore gespeichert');
+    }catch(e){
+      console.warn('V25 Entwurf:',e);
+      setBanner('cloudPlanStatus','warn','NICHT gespeichert · '+(e.message||e));
+      alert((e.code==='PLAN_CONFLICT'?'Konflikt: ':'Speichern fehlgeschlagen: ')+(e.message||e));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='💾 Entwurf speichern';}
+    }
+  };
+  try{saveDraft=window.saveDraft;}catch(_){}
+
+  window.publishPlan=async function(){
+    if(!planner())return;
+    const bid=PublishStore.branchKey(),wk=PublishStore.weekKey();
+    const old=PublishStore.get(bid,wk);const wasPublished=!!old?.published;
+    const kw=typeof getKW==='function'?getKW(getMonday(AppState.weekOffset)):'–';
+    const msg=wasPublished?`Wochenplan KW ${kw} wurde bereits veröffentlicht.\n\nÄnderung jetzt veröffentlichen?`:`Wochenplan KW ${kw} für alle Mitarbeiter sichtbar machen?`;
+    if(!confirm(msg))return;
+    const pBtn=document.getElementById('publishBtn');if(pBtn){pBtn.disabled=true;pBtn.textContent='⏳ Veröffentlicht…';}
+    setBanner('cloudPlanStatus','info','Dienstplan wird in Firestore veröffentlicht…');
+    try{
+      try{window.WeekPlanStore?.persistCurrent?.();}catch(_){}
+      const info=await PublishStore.publish(bid,wk,PLAN,AppState.currentUser?.name||'Admin');
+      planChanges={};planSnapshot=null;editMode=false;
+      const bar=document.getElementById('savePlanBar');if(bar)bar.style.display='none';
+      const ebtn=document.getElementById('editBtn');if(ebtn){ebtn.textContent='✏️ Bearbeiten';ebtn.style.background='var(--card)';ebtn.style.color='var(--text)';}
+      const ban=document.getElementById('editBanner');if(ban)ban.style.display='none';
+      try{buildAdminPlan();renderPlan();}catch(_){}
+      renderCloudState(info,{offline:false},AppState.currentUserId);updatePublishStatus();
+      const wa=document.getElementById('waShareBar');if(wa)wa.style.display='flex';
+      const wt=document.getElementById('waShareTitle');if(wt)wt.textContent=wasPublished?'✅ Änderung veröffentlicht':'✅ Wochenplan veröffentlicht';
+      const ws=document.getElementById('waShareSub');if(ws)ws.textContent=`Cloud-Version ${info.version||1} ist jetzt für Mitarbeiter sichtbar.`;
+      showToast(`✅ Dienstplan veröffentlicht · Version ${info.version||1}`);
+    }catch(e){
+      console.warn('V25 Veröffentlichung:',e);
+      setBanner('cloudPlanStatus','warn','NICHT veröffentlicht · '+(e.message||e));
+      alert((e.code==='PLAN_CONFLICT'?'Konflikt: ':'Veröffentlichung fehlgeschlagen: ')+(e.message||e));
+    }finally{
+      if(pBtn){pBtn.disabled=false;updatePublishStatus();}
+    }
+  };
+  try{publishPlan=window.publishPlan;}catch(_){}
+
+  // KW-Wechsel lädt jede Woche frisch aus Firestore. Lokaler Speicher ist nur Cache.
+  window.wNav=async function(delta){
+    if(!planner())return;
+    if(typeof editMode!=='undefined'&&editMode){alert('Bitte die laufende Bearbeitung zuerst speichern oder abbrechen.');return;}
+    const d=Number(delta)||0;if(!d)return;
+    try{window.WeekPlanStore?.persistCurrent?.();}catch(_){}
+    AppState.weekOffset=(Number(AppState.weekOffset)||0)+d;
+    await loadVisibleWeek(AppState.currentUserId);
+    try{renderPlan();buildAdminPlan();renderPersonalDailyHours();renderAdminDailyHours();updatePublishStatus();}catch(e){console.warn('V25 KW render:',e);}
+  };
+  try{wNav=window.wNav;}catch(_){}
+
+  // Wenn die App aus dem Hintergrund zurückkommt, veröffentlichte Änderungen nachladen.
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState!=='visible'||!AppState?.currentUserId)return;
+    if(Date.now()-lastVisibleLoad<30000)return;
+    loadVisibleWeek(AppState.currentUserId,{rerender:true}).catch(()=>{});
+  });
+  window.addEventListener('online',()=>{
+    if(AppState?.currentUserId)loadVisibleWeek(AppState.currentUserId,{rerender:true}).catch(()=>{});
+  });
 })();
 </script>
 </body>
