@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.2</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.3</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -3203,7 +3203,7 @@ function renderPlanTableDirect(tableId){
   if(!tbl) return 0;
   // Immer rendern wenn Sheets-Daten für diese Woche vorhanden
   const _drk=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
-  const _drs=null; // v26.2: Sheets nicht mehr hart über Cloud-Plan legen
+  const _drs=null; // v26.3: Sheets nicht mehr hart über Cloud-Plan legen
   if(!_drs){
     // Kein Sheets-Daten → nur rendern wenn Tabelle leer
     if(tbl.querySelectorAll('tbody tr').length>0) return tbl.querySelectorAll('tbody tr').length;
@@ -3223,7 +3223,7 @@ function renderPlanTableDirect(tableId){
   emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
   // Sheets-Daten für die angezeigte Woche direkt verwenden wenn verfügbar
   const _curKey=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
-  const _sheetsWeek=null; // v26.2: Renderer nutzt PLAN/Cloud
+  const _sheetsWeek=null; // v26.3: Renderer nutzt PLAN/Cloud
   emps.forEach(([uid,u])=>{
     const sh=(_sheetsWeek&&_sheetsWeek[uid])||PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
     const wk=getEmployeeWeekStats(uid);
@@ -5932,13 +5932,77 @@ if ('serviceWorker' in navigator) {
 </html></script>
 
 <script id="nasch-v262-cloud-migration">
-/* NASCH v26.2 · schrittweise Wochenplan-Cloudmigration + rückwirkende Admin-Abwesenheiten */
+/* NASCH v26.3 · Cloudmigration + Legacy-Zeitformat-Reparatur + rückwirkende Admin-Abwesenheiten */
 (()=>{
-  const VERSION='26.2';
+  const VERSION='26.3';
   const cloudState={key:'',exists:false,version:0,published:false,loading:false,lastError:'',source:'legacy'};
   const clone=o=>JSON.parse(JSON.stringify(o||{}));
   const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const FID=()=>window.FILIAL_ID||'FIL001';
+  // Legacy-Sheets-/Altplan-Konverter:
+  // Frühere Imports speicherten Tätigkeit in `z` und Anfang/Ende separat in `start`/`end`.
+  // Die aktuelle App erwartet die Uhrzeit in `z` und Tätigkeiten in `r`.
+  function clock(v){
+    const s=String(v??'').trim().replace(/\./g,':');
+    let m=s.match(/^(\d{1,2}):(\d{2})$/);
+    if(m){
+      const h=Number(m[1]),mi=Number(m[2]);
+      if(h<=23&&mi<=59)return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;
+    }
+    m=s.match(/^(\d{1,2})$/);
+    if(m){
+      const h=Number(m[1]);if(h<=23)return `${String(h).padStart(2,'0')}:00`;
+    }
+    return '';
+  }
+  function shortRange(v){
+    const s=String(v??'').trim().replace(/[–—]/g,'-');
+    const m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?$/);
+    if(!m)return '';
+    const a=clock(`${m[1]}:${m[2]||'00'}`),b=clock(`${m[3]}:${m[4]||'00'}`);
+    return a&&b?`${a}–${b}`:'';
+  }
+  function isTimeRange(v){
+    return /\d{1,2}:\d{2}\s*[–—-]\s*\d{1,2}:\d{2}/.test(String(v||''));
+  }
+  function normalizeShift(sh){
+    if(!sh||typeof sh!=='object')return sh;
+    const s=clone(sh);
+    const legacyActivity=String(s.z||'').trim();
+    const st=clock(s.start),en=clock(s.end);
+
+    // Normaler Altimport: start=08:00, end=15:30, z=Vo/GL
+    if(st&&en){
+      if(!isTimeRange(s.z)) s.z=`${st}–${en}`;
+      s.start=st;s.end=en;
+      const rEmpty=!Array.isArray(s.r)||s.r.length===0;
+      if(rEmpty&&legacyActivity&&!isTimeRange(legacyActivity))s.r=[legacyActivity];
+    } else {
+      // Sonderfall aus alten Sheets: start="12-14", end="18-21" bedeutete zwei Zeitblöcke.
+      const a=shortRange(s.start),b=shortRange(s.end);
+      if(a&&b){
+        s.t='TS';s.z1=a;s.z2=b;s.z=`${a} + ${b}`;
+        const rEmpty=!Array.isArray(s.r)||s.r.length===0;
+        if(rEmpty&&legacyActivity&&!isTimeRange(legacyActivity)){
+          s.r=[];s.r1=[legacyActivity];s.r2=[legacyActivity];
+        }
+      }
+    }
+    return s;
+  }
+  function normalizePlan(plan){
+    const out=clone(plan);
+    Object.keys(out||{}).forEach(uid=>{
+      if(Array.isArray(out[uid]))out[uid]=out[uid].map(normalizeShift);
+    });
+    return out;
+  }
+  function normalizeCurrentPlan(){
+    const fixed=normalizePlan(PLAN);
+    Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+    Object.assign(PLAN,fixed);
+    return PLAN;
+  }
   function keyForOffset(off=(window.AppState?.weekOffset||0)){
     if(window.WeekPlanStore?.keyForOffset) return WeekPlanStore.keyForOffset(off);
     const d=typeof getMonday==='function'?getMonday(off):new Date();
@@ -5951,14 +6015,14 @@ if ('serviceWorker' in navigator) {
   function usePlan(plan){
     if(!plan||typeof plan!=='object')return false;
     try{WeekPlanStore?.loadOffset?.(AppState.weekOffset);}catch(_){}
-    Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(plan));
+    const fixed=normalizePlan(plan);Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,fixed);
     return true;
   }
   function legacyPlanFor(key){
     // Bereits geladener lokaler Plan hat Vorrang. Eingebettete Sheets-Daten sind nur noch Migrationsquelle.
-    const current=clone(PLAN);
+    const current=normalizePlan(PLAN);
     if(Object.keys(current).length)return current;
-    try{if(typeof NASCH_SHEETS_IMPORT!=='undefined'&&NASCH_SHEETS_IMPORT[key])return clone(NASCH_SHEETS_IMPORT[key]);}catch(_){}
+    try{if(typeof NASCH_SHEETS_IMPORT!=='undefined'&&NASCH_SHEETS_IMPORT[key])return normalizePlan(NASCH_SHEETS_IMPORT[key]);}catch(_){}
     return {};
   }
   function ensureBar(){
@@ -5977,7 +6041,7 @@ if ('serviceWorker' in navigator) {
   }
   async function loadWeek(offset=(AppState.weekOffset||0),opts={}){
     const key=keyForOffset(offset),r=ref(key);cloudState.key=key;cloudState.loading=true;cloudState.lastError='';renderStatus();
-    try{WeekPlanStore?.loadOffset?.(offset);}catch(_){}
+    try{WeekPlanStore?.loadOffset?.(offset);normalizeCurrentPlan();}catch(_){}
     if(!r){cloudState.loading=false;cloudState.lastError='Firebase nicht bereit';renderStatus();return false;}
     try{
       const snap=await r.get();
@@ -5989,7 +6053,7 @@ if ('serviceWorker' in navigator) {
         if(plan&&Object.keys(plan).length)usePlan(plan);
       }
       renderStatus();
-      if(opts.render!==false){try{renderPlan();if(isManager())buildAdminPlan();renderPersonalDailyHours?.();renderAdminDailyHours?.();}catch(e){console.warn('v26.2 render',e)}}
+      if(opts.render!==false){try{renderPlan();if(isManager())buildAdminPlan();renderPersonalDailyHours?.();renderAdminDailyHours?.();}catch(e){console.warn('v26.3 render',e)}}
       return snap.exists;
     }catch(e){cloudState.loading=false;cloudState.lastError=e.code||e.message||String(e);renderStatus();return false;}
   }
@@ -6001,7 +6065,7 @@ if ('serviceWorker' in navigator) {
     try{
       const fresh=await r.get();
       if(fresh.exists&&(fresh.data()?.publishedPlan||fresh.data()?.plan||fresh.data()?.draftPlan)){cloudState.loading=false;alert('Diese KW ist inzwischen bereits synchronisiert. Sie wird neu geladen.');await loadWeek(AppState.weekOffset);return;}
-      const plan=legacyPlanFor(key);if(!Object.keys(plan).length)throw new Error('Für diese KW ist kein alter Plan vorhanden.');
+      normalizeCurrentPlan();const plan=legacyPlanFor(key);if(!Object.keys(plan).length)throw new Error('Für diese KW ist kein alter Plan vorhanden.');
       await r.set({
         plan:clone(plan),publishedPlan:clone(plan),draftPlan:null,published:true,version:1,
         migrationSource:'legacy-week-plan',migratedAt:firebase.firestore.FieldValue.serverTimestamp(),
@@ -6012,12 +6076,12 @@ if ('serviceWorker' in navigator) {
   }
   async function saveDraftCloud(){
     if(!isManager())return false;const key=keyForOffset(),r=ref(key);if(!r)return false;
-    try{WeekPlanStore?.persistCurrent?.();}catch(_){}
+    try{normalizeCurrentPlan();WeekPlanStore?.persistCurrent?.();}catch(_){}
     try{const snap=await r.get(),d=snap.exists?snap.data():{},v=d.version||0;await r.set({draftPlan:clone(PLAN),draftUpdatedAt:firebase.firestore.FieldValue.serverTimestamp(),draftUpdatedBy:AppState.currentUser?.name||'Admin',version:v||1},{merge:true});cloudState.exists=true;cloudState.version=v||1;cloudState.published=!!(d.publishedPlan||d.plan);cloudState.lastError='';renderStatus();return true;}catch(e){cloudState.lastError=e.code||e.message||String(e);renderStatus();return false;}
   }
   async function publishCloud(){
     if(!isManager())return false;const key=keyForOffset(),r=ref(key);if(!r)return false;
-    try{WeekPlanStore?.persistCurrent?.();}catch(_){}
+    try{normalizeCurrentPlan();WeekPlanStore?.persistCurrent?.();}catch(_){}
     try{
       const snap=await r.get(),d=snap.exists?snap.data():{},serverVersion=d.version||0;
       if(cloudState.exists&&cloudState.key===key&&cloudState.version&&serverVersion>cloudState.version){alert('Diese KW wurde auf einem anderen Gerät geändert. Bitte zuerst „Neu laden“ und anschließend erneut veröffentlichen.');await loadWeek(AppState.weekOffset);return false;}
@@ -6035,7 +6099,7 @@ if ('serviceWorker' in navigator) {
   window.wNav=async function(d){
     if(!isManager())return;if(typeof editMode!=='undefined'&&editMode){alert('Bitte die laufende Bearbeitung zuerst speichern oder abbrechen.');return;}
     try{WeekPlanStore?.persistCurrent?.();}catch(_){}AppState.weekOffset+=d;
-    try{WeekPlanStore?.loadOffset?.(AppState.weekOffset);}catch(_){}
+    try{WeekPlanStore?.loadOffset?.(AppState.weekOffset);normalizeCurrentPlan();}catch(_){}
     try{renderPlan();buildAdminPlan();renderPersonalDailyHours?.();renderAdminDailyHours?.();}catch(_){}
     await loadWeek(AppState.weekOffset);
   };try{wNav=window.wNav}catch(_){}
@@ -6068,7 +6132,7 @@ if ('serviceWorker' in navigator) {
   }
   const oldGo2=window.goTo;if(typeof oldGo2==='function'){window.goTo=function(pg,title){const r=oldGo2.apply(this,arguments);if(['pgWunsch','pgKrank','pgAdminPlanning'].includes(pg))setTimeout(dateHints,0);return r;};try{goTo=window.goTo}catch(_){}}
 
-  window.CloudWeekMigration={loadCurrent:()=>loadWeek(AppState.weekOffset),reloadCurrent:()=>loadWeek(AppState.weekOffset),migrateCurrent,saveDraft:saveDraftCloud,publish:publishCloud,state:()=>({...cloudState}),key:keyForOffset};
+  window.CloudWeekMigration={loadCurrent:()=>loadWeek(AppState.weekOffset),reloadCurrent:()=>loadWeek(AppState.weekOffset),migrateCurrent,saveDraft:saveDraftCloud,publish:publishCloud,state:()=>({...cloudState}),key:keyForOffset,normalizeCurrent:normalizeCurrentPlan};
   setTimeout(()=>{ensureBar();renderStatus();dateHints();},0);
 })();
 </script>
