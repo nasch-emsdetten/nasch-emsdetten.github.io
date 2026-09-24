@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.5</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.6</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -876,7 +876,7 @@ window.FILIAL_ID = 'FIL001';
         <div class="tab active" id="stzTab1" onclick="stzTab(1)">Stunden</div>
         <div class="tab" id="stzTab2" onclick="stzTab(2)">Vorschuss</div>
         <div class="tab" id="stzTab3" onclick="stzTab(3)">Gutschein</div>
-        <div class="tab" id="stzTab4" onclick="stzTab(4)">Schürzen</div>
+        <div class="tab" id="stzTab4" onclick="stzTab(4)">Wäsche</div>
       </div>
       <div id="stzP1">
         <div class="sec">Stundenzettel · pro Mitarbeiter</div>
@@ -897,7 +897,10 @@ window.FILIAL_ID = 'FIL001';
         <div id="gutscheinPanel"></div>
       </div>
       <div id="stzP4" style="display:none;">
-        <div class="banner bwarn"><span>👔</span><span>Schürzen-Kaution: 5 € pro Stück. Wird vom Lohn abgezogen. Bei Rückgabe Gutschrift.</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="banner binfo" style="flex:1;margin:0;"><span>👕</span><span>Schürze = 5 € Kaution. Bluse/Andere = freie Eingabe. Monat wählbar.</span></div>
+          <button id="wascheToggleBtn" onclick="toggleWaescheNamen()" style="margin-left:8px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:11px;cursor:pointer;white-space:nowrap;">🙈 Ausblenden</button>
+        </div>
         <div id="schuerzenPanel"></div>
       </div>
     </div>
@@ -1575,6 +1578,13 @@ const SchuerzenStore = (() => {
   return { getSaldo, getMonthNet, ausgabe, rueckgabe, getLog };
 })();
 window.SchuerzenStore = SchuerzenStore;
+// Direkter Log-Eintrag für Nicht-Schürzen (Bluse/Andere)
+SchuerzenStore.logEntry = function(uid, entry){
+  const st = JSON.parse(localStorage.getItem('nasch-schuerzen-v1')||'{}');
+  if(!st[uid]) st[uid]={saldo:0,betrag:0,log:[]};
+  st[uid].log = [{...entry, ts:Date.now()}, ...(st[uid].log||[])].slice(0,50);
+  localStorage.setItem('nasch-schuerzen-v1', JSON.stringify(st));
+};
 
 // ── Jennifer-Dialog: Einmalige Abfrage dauerhafter Vorschuss ──
 function checkVorschussDialog(uid) {
@@ -3750,72 +3760,115 @@ function saveGutschein(uid) {
   if(typeof showToast === 'function') showToast(`✓ Gutschein ${USERS[uid]?.name}: ${eurFmt(r.value)}`);
 }
 
-// ── SCHÜRZEN PANEL ─────────────────────────────────────────────
-let _schuerzenNamenAus = false;
-function toggleSchuerzenNamen(){
-  _schuerzenNamenAus = !_schuerzenNamenAus;
-  try{localStorage.setItem('nasch-sz-namen',_schuerzenNamenAus?'1':'0');}catch(_){}
-  renderSchuerzenPanel();
+// ── WÄSCHE-AUSGABE PANEL ───────────────────────────────────────
+let _wascheHidden = false;
+function toggleWaescheNamen(){
+  _wascheHidden = !_wascheHidden;
+  try{localStorage.setItem('nasch-sz-namen',_wascheHidden?'1':'0');}catch(_){}
+  const box = document.getElementById('schuerzenPanel');
+  if(box) box.style.display = _wascheHidden ? 'none' : '';
+  const btn = document.getElementById('wascheToggleBtn');
+  if(btn) btn.textContent = _wascheHidden ? '👁 Einblenden' : '🙈 Ausblenden';
 }
-// Zustand aus localStorage laden
-try{_schuerzenNamenAus=localStorage.getItem('nasch-sz-namen')==='1';}catch(_){}
+try{_wascheHidden=localStorage.getItem('nasch-sz-namen')==='1';}catch(_){}
+
+// Wäsche-Typ: Schürze → 5€ Kaution | Bluse/Andere → freie Eingabe
+function getWaescheTypes(){ return [{v:'schuerze',l:'Schürze (5 € Kaution/Stk)'},{v:'bluse',l:'Bluse'},{v:'andere',l:'Andere…'}]; }
 
 function renderSchuerzenPanel() {
   const box = document.getElementById('schuerzenPanel');
   if(!box || AppState.currentUser?.role !== 'admin') {
-    if(box) box.innerHTML = '<div class="banner bwarn"><span>🔒</span><span>Nur Admin kann Schürzen verwalten.</span></div>';
+    if(box) box.innerHTML = '<div class="banner bwarn"><span>🔒</span><span>Nur Admin kann die Wäsche-Ausgabe verwalten.</span></div>';
     return;
   }
+  if(_wascheHidden){ box.style.display='none'; return; }
+  box.style.display='';
   const mk = currentMonthKey();
+  // Monat-Auswahl: aktueller + 2 zurück
+  const months=[];const now=new Date();for(let i=0;i<3;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({v:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,l:`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`});}
+  const selMk = document.getElementById('wascheMonat')?.value || mk;
   const entries = typeof getOrderedUserEntries === 'function' ? getOrderedUserEntries() : Object.entries(USERS);
-  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-    <button onclick="toggleSchuerzenNamen()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:11px;cursor:pointer;">
-      ${_schuerzenNamenAus ? '👁 Namen einblenden' : '🙈 Namen ausblenden'}
-    </button>
+  let html = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+    <label style="font-size:12px;font-weight:600;color:var(--navy);">Monat:</label>
+    <select id="wascheMonat" onchange="renderSchuerzenPanel()" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">${months.map(m=>`<option value="${m.v}"${m.v===selMk?' selected':''}>${m.l}</option>`).join('')}</select>
   </div>`;
   entries.forEach(([uid,u]) => {
     const saldo  = SchuerzenStore.getSaldo(uid);
-    const netto  = SchuerzenStore.getMonthNet(uid, mk);
+    const netto  = SchuerzenStore.getMonthNet(uid, selMk);
     const betrag = netto * SCHUERZEN_PREIS;
-    const log    = SchuerzenStore.getLog(uid).slice(0,3);
+    const log    = SchuerzenStore.getLog(uid).filter(e=>(!e.mk||e.mk===selMk)).slice(0,4);
+    const types  = getWaescheTypes();
     html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${escapeHtml(u.initials)}</div>
-        <div style="flex:1;min-width:80px;">${_schuerzenNamenAus?'<span style="color:var(--muted);font-size:11px;">'+u.initials+'</span>':'<div style="font-size:13px;font-weight:600;">'+escapeHtml(u.name)+'</div>'}<div style="font-size:10px;color:var(--muted);">Bestand: ${saldo} Stück · ${eurFmt(saldo*SCHUERZEN_PREIS)}</div></div>
-        ${netto !== 0 ? `<span style="font-size:11px;border-radius:6px;padding:3px 8px;font-weight:700;background:${netto>0?'var(--err)':'var(--ok)'};color:${netto>0?'var(--err-t)':'var(--ok-t)'};">${netto>0?`−${eurFmt(betrag)}`:`+${eurFmt(Math.abs(betrag))}`}</span>` : ''}
+        <div style="flex:1;min-width:80px;"><div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div>
+          <div style="font-size:10px;color:var(--muted);">Schürzen Bestand: ${saldo} Stk · ${eurFmt(saldo*SCHUERZEN_PREIS)}${netto!==0?` · Monat: ${netto>0?'-':'+'} ${eurFmt(Math.abs(betrag))}`:''}
+        </div></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px;">
+        <div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Typ</label>
+          <select id="sz_typ_${uid}" onchange="renderWaescheKosten('${uid}')" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:11px;">
+            ${types.map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}
+          </select></div>
+        <div id="sz_menge_wrap_${uid}"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Menge</label>
+          <input type="number" min="1" step="1" value="1" id="sz_aus_${uid}" onchange="renderWaescheKosten('${uid}')" style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></div>
+        <div id="sz_notiz_wrap_${uid}" style="display:none;"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Bezeichnung</label>
+          <input type="text" placeholder="z. B. Bluse weiß" id="sz_notiz_${uid}" style="width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></div>
+        <div id="sz_kosten_wrap_${uid}" style="display:none;"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Kosten (€)</label>
+          <input type="number" min="0" step="0.50" value="" placeholder="optional" id="sz_kosten_${uid}" style="width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></div>
+        <div id="sz_info_${uid}" style="font-size:11px;color:var(--navy);font-weight:700;padding-bottom:6px;"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input type="number" min="1" step="1" value="1" id="sz_aus_${uid}" style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
-          <button onclick="doSchuerzenAusgabe('${uid}')" style="padding:7px 10px;border:none;border-radius:7px;background:#E24B4A;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">👔 Ausgeben</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input type="number" min="1" max="${saldo}" step="1" value="1" id="sz_ruck_${uid}" ${saldo<=0?'disabled':''} style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
-          <button onclick="doSchuerzenRueckgabe('${uid}')" ${saldo<=0?'disabled':''} style="padding:7px 10px;border:none;border-radius:7px;background:#1D9E75;color:#fff;font-size:11px;font-weight:600;cursor:pointer;${saldo<=0?'opacity:.4;':''}">↩ Zurück</button>
-        </div>
+        <button onclick="doSchuerzenAusgabe('${uid}')" style="padding:7px 12px;border:none;border-radius:7px;background:#E24B4A;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">👕 Ausgabe</button>
+        <button onclick="doSchuerzenRueckgabe('${uid}')" ${saldo<=0?'disabled':''} style="padding:7px 12px;border:none;border-radius:7px;background:#1D9E75;color:#fff;font-size:11px;font-weight:600;cursor:pointer;${saldo<=0?'opacity:.4;':''}">↩ Rückgabe</button>
       </div>
-      ${log.length ? `<div style="margin-top:8px;font-size:10px;color:var(--muted);">Letzte Einträge: ${log.map(e=>`${e.ausgabe?`-${e.ausgabe}Stk`:`+${e.rueckgabe}Stk`}`).join(' · ')}</div>` : ''}
+      ${log.length ? `<div style="margin-top:8px;font-size:10px;color:var(--muted);">Diesen Monat: ${log.map(e=>`${e.ausgabe?`−${e.ausgabe}Stk`:`+${e.rueckgabe}Stk`}${e.typ&&e.typ!=='schuerze'?' ('+escapeHtml(e.typ)+')':''}`).join(' · ')}</div>` : ''}
     </div>`;
   });
   box.innerHTML = html || '<div style="padding:16px;text-align:center;color:var(--muted);">Keine Mitarbeiter.</div>';
 }
 
+function renderWaescheKosten(uid){
+  const typ = document.getElementById('sz_typ_'+uid)?.value||'schuerze';
+  const mw = document.getElementById('sz_menge_wrap_'+uid);
+  const nw = document.getElementById('sz_notiz_wrap_'+uid);
+  const kw = document.getElementById('sz_kosten_wrap_'+uid);
+  const info = document.getElementById('sz_info_'+uid);
+  if(typ==='schuerze'){
+    if(mw)mw.style.display='';if(nw)nw.style.display='none';if(kw)kw.style.display='none';
+    const menge=parseInt(document.getElementById('sz_aus_'+uid)?.value)||1;
+    if(info)info.textContent=`= ${eurFmt(menge*SCHUERZEN_PREIS)} Kaution`;
+  } else {
+    if(mw)mw.style.display='none';if(nw)nw.style.display='';if(kw)kw.style.display='';
+    if(info)info.textContent='Kosten offen';
+  }
+}
+
 function doSchuerzenAusgabe(uid) {
-  const mk = currentMonthKey();
-  const inp = document.getElementById('sz_aus_'+uid);
-  const anzahl = parseInt(inp?.value) || 1;
-  const r = SchuerzenStore.ausgabe(uid, anzahl, mk);
+  const selMk = document.getElementById('wascheMonat')?.value || currentMonthKey();
+  const typ  = document.getElementById('sz_typ_'+uid)?.value || 'schuerze';
+  let toast='';
+  if(typ==='schuerze'){
+    const anzahl = parseInt(document.getElementById('sz_aus_'+uid)?.value)||1;
+    const r = SchuerzenStore.ausgabe(uid, anzahl, selMk);
+    toast = `👕 ${anzahl} Schürze(n) an ${USERS[uid]?.name} · −${eurFmt(r.betrag)}`;
+  } else {
+    const notiz = document.getElementById('sz_notiz_'+uid)?.value.trim()||typ;
+    const kosten = parseFloat(document.getElementById('sz_kosten_'+uid)?.value)||0;
+    // In Log schreiben (mit Typ und Notiz)
+    try{SchuerzenStore.logEntry(uid,{ausgabe:1,typ:notiz,mk:selMk,kosten});}catch(_){}
+    toast = `👕 ${notiz} an ${USERS[uid]?.name}${kosten?` · −${eurFmt(kosten)}`:''}`;
+  }
   renderSchuerzenPanel();
-  if(typeof showToast === 'function') showToast(`👔 ${anzahl} Schürze(n) an ${USERS[uid]?.name} · −${eurFmt(r.betrag)}`);
+  if(typeof showToast==='function') showToast(toast);
 }
 function doSchuerzenRueckgabe(uid) {
-  const mk = currentMonthKey();
-  const inp = document.getElementById('sz_ruck_'+uid);
-  const anzahl = parseInt(inp?.value) || 1;
-  const r = SchuerzenStore.rueckgabe(uid, anzahl, mk);
+  const selMk = document.getElementById('wascheMonat')?.value || currentMonthKey();
+  const anzahl = parseInt(document.getElementById('sz_aus_'+uid)?.value)||1;
+  const r = SchuerzenStore.rueckgabe(uid, anzahl, selMk);
   if(!r.ok) { alert(r.msg); return; }
   renderSchuerzenPanel();
-  if(typeof showToast === 'function') showToast(`↩ ${anzahl} Schürze(n) zurück von ${USERS[uid]?.name} · +${eurFmt(r.gutschrift)}`);
+  if(typeof showToast==='function') showToast(`↩ ${anzahl} Stück zurück von ${USERS[uid]?.name} · +${eurFmt(r.gutschrift)}`);
 }
 
 // ── Logout
@@ -5506,11 +5559,11 @@ if ('serviceWorker' in navigator) {
   }
   function injectQrPage(){
     const wrap=document.querySelector('.page-wrap');if(wrap&&!document.getElementById('pgAdminQr')){const p=document.createElement('div');p.id='pgAdminQr';p.className='page';p.innerHTML='<div class="back" onclick="goTo(\'pgAdmin\',\'Admin\')">‹ Zurück</div><div class="banner binfo"><span>📲</span><span>Nur Leitung und Personalbüro: QR-Code für den Mitarbeiter-App-Zugang der jeweiligen Filiale erstellen und weitergeben.</span></div><div id="v254QrContent"></div>';wrap.appendChild(p);}
-    const menu=document.querySelector('#pgAdmin .menu-list');if(menu&&!document.getElementById('adminQrMenu')){const row=document.createElement('div');row.className='mi';row.id='adminQrMenu';row.onclick=()=>goTo('pgAdminQr','App-QR & Versand');row.innerHTML='<div class="mi-icon" style="background:#E1F5EE;">📲</div><span class="mi-lbl">App-QR & Versand</span><span class="mi-arr">›</span>';menu.appendChild(row);}
+    const menu=document.querySelector('#pgAdmin .menu-list');if(menu&&!document.getElementById('adminQrMenu')){const row=document.createElement('div');row.className='mi';row.id='adminQrMenu';row.onclick=()=>goTo('pgAdminQr','QR Code zur App');row.innerHTML='<div class="mi-icon" style="background:#E1F5EE;">📲</div><span class="mi-lbl">QR Code zur App</span><span class="mi-arr">›</span>';menu.appendChild(row);}
   }
   function officeQrCard(){
     const box=document.getElementById('v20OfficeContent');if(!box||!window.BranchSandbox?.isOffice?.(AppState.currentUserId))return;if(document.getElementById('officeQrCard'))return;
-    const c=document.createElement('div');c.id='officeQrCard';c.className='card';c.innerHTML='<div class="card-h"><div class="card-t">📲 Mitarbeiter-App verteilen</div></div><div class="card-b"><div style="font-size:11px;color:var(--muted);">QR-Code der ausgewählten Filiale erstellen und an die Filialleitung weiterleiten.</div><button class="btn btn-outline" type="button" onclick="goTo(\'pgAdminQr\',\'App-QR & Versand\')">QR-Code öffnen</button></div>';box.appendChild(c);
+    const c=document.createElement('div');c.id='officeQrCard';c.className='card';c.innerHTML='<div class="card-h"><div class="card-t">📲 Mitarbeiter-App verteilen</div></div><div class="card-b"><div style="font-size:11px;color:var(--muted);">QR-Code der ausgewählten Filiale erstellen und an die Filialleitung weiterleiten.</div><button class="btn btn-outline" type="button" onclick="goTo(\'pgAdminQr\',\'QR Code zur App\')">QR Code zur App erzeugen</button></div>';box.appendChild(c);
   }
   function renderQrPage(){
     // Mitarbeiter-QR ins Admin-QR Tab einbauen
@@ -5527,11 +5580,16 @@ if ('serviceWorker' in navigator) {
   injectQrPage();const box=document.getElementById('v254QrContent');if(!box)return;if(!isQrAdmin()){box.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Funktion ist nur für Leitung und Personalbüro verfügbar.</span></div>';return;}
     const bs=qrAccessibleBranches(),selected=(document.getElementById('v254QrBranch')?.value)||currentBid254(),b=bs.find(x=>x.id===selected)||bs[0]||branchObj254(currentBid254()),link=appLink254(b.id),emails=loadQrEmails(),mail=emails[b.id]||'';
     const back=document.querySelector('#pgAdminQr .back');if(back){const office=window.BranchSandbox?.isOffice?.(AppState.currentUserId)===true;back.textContent=office?'‹ Zurück zum Büro':'‹ Zurück';back.onclick=()=>office?navTo('office'):goTo('pgAdmin','Admin');}
-    box.innerHTML=`<div class="card"><div class="card-b"><label>Filiale</label><select id="v254QrBranch" onchange="renderAdminQr()">${bs.map(x=>`<option value="${esc254(x.id)}" ${x.id===b.id?'selected':''}>${esc254(x.name||x.id)}${x.state?' · '+esc254(x.state):''}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:8px;">Filialleitung: <strong>${esc254(b.managerName||'nicht hinterlegt')}</strong></div><img class="v254-qr-img" src="${qrImage254(link)}" alt="QR-Code NASCH Mitarbeiter-App ${esc254(b.name||b.id)}"><div style="font-size:10px;color:var(--muted);word-break:break-all;text-align:center;">${esc254(link)}</div><label>E-Mail Filialleitung (optional)</label><input id="v254QrEmail" type="email" value="${esc254(mail)}" placeholder="name@beispiel.de" oninput="saveAdminQrEmail('${esc254(b.id)}',this.value)"><div class="v254-qr-actions"><button class="btn btn-primary" type="button" onclick="emailAdminQr('${esc254(b.id)}')">✉️ Per E-Mail</button><button class="btn btn-outline" type="button" onclick="shareAdminQr('${esc254(b.id)}')">📤 QR teilen</button></div><button class="btn btn-outline" type="button" onclick="openAdminQrPng('${esc254(b.id)}')">🖼 QR als PNG öffnen</button></div></div><div class="banner binfo"><span>ℹ️</span><span>„QR teilen“ kann auf unterstützten Handys die PNG-Datei direkt an eine Mail-App übergeben. Falls das Gerät Dateifreigabe nicht unterstützt, öffnet „Per E-Mail“ eine vorbereitete Nachricht mit App-Link und QR-Link.</span></div>`;
+    box.innerHTML=`<div class="card"><div class="card-b"><label>Filiale</label><select id="v254QrBranch" onchange="renderAdminQr()">${bs.map(x=>`<option value="${esc254(x.id)}" ${x.id===b.id?'selected':''}>${esc254(x.name||x.id)}${x.state?' · '+esc254(x.state):''}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:8px;">Filialleitung: <strong>${esc254(b.managerName||'nicht hinterlegt')}</strong></div><img class="v254-qr-img" src="${qrImage254(link)}" alt="QR-Code NASCH Mitarbeiter-App ${esc254(b.name||b.id)}"><div style="font-size:10px;color:var(--muted);word-break:break-all;text-align:center;">${esc254(link)}</div><div class="v254-qr-actions"><button class="btn btn-primary" type="button" onclick="emailAdminQr('${esc254(b.id)}')">✉️ Per E-Mail</button><button class="btn btn-outline" type="button" onclick="shareAdminQr('${esc254(b.id)}')">📤 QR teilen</button></div><button class="btn btn-outline" type="button" onclick="openAdminQrPng('${esc254(b.id)}')">🖼 QR als PNG öffnen</button></div></div><div class="banner binfo"><span>ℹ️</span><span>„QR teilen“ kann auf unterstützten Handys die PNG-Datei direkt an eine Mail-App übergeben. Falls das Gerät Dateifreigabe nicht unterstützt, öffnet „Per E-Mail“ eine vorbereitete Nachricht mit App-Link und QR-Link.</span></div>`;
   }
   window.renderAdminQr=renderQrPage;window.saveAdminQrEmail=saveQrEmail;
 
   // ── Mitarbeiter-QR: individueller QR pro Mitarbeiter ──────────────────────
+
+  window.shareWaQr=function(uid,firstName,link){
+    const msg='Hallo '+firstName+' 👋\nHier ist dein Link zur NASCH Mitarbeiter-App:\n'+link+'\n\nEinfach öffnen und auf dem Handy installieren!';
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
+  };
   window.renderMitarbeiterQr=function(uid){
     if(!isQrAdmin())return;
     const u=window.USERS?.[uid];if(!u)return;
@@ -5546,11 +5604,17 @@ if ('serviceWorker' in navigator) {
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;">
         <button class="btn btn-primary" type="button" onclick="window.open('${qr}','_blank')">🖼 PNG öffnen</button>
         <button class="btn btn-outline" type="button" onclick="navigator.share&&navigator.share({title:'NASCH App · ${esc254(u.name)}',url:'${link}'}).catch(()=>window.open('${qr}','_blank'))">📤 Teilen</button>
+        <button class="btn btn-primary" type="button" onclick="shareWaQr('${esc254(uid)}','${esc254(u.name.split(' ')[0])}','${esc254(link)}')">📱 WhatsApp</button>
       </div>
     </div></div>`;
   };
   window.openAdminQrPng=function(bid){window.open(qrImage254(appLink254(bid),700),'_blank','noopener');};
-  window.emailAdminQr=function(bid){if(!isQrAdmin())return;const b=branchObj254(bid),link=appLink254(bid),to=loadQrEmails()[bid]||'',qr=qrImage254(link,700),subject=`NASCH Mitarbeiter-App · ${b.name||bid}`,body=`Hallo,\n\nhier ist der Zugang zur NASCH Mitarbeiter-App für ${b.name||bid}.\n\nApp-Link:\n${link}\n\nQR-Code:\n${qr}\n\nBitte den Link einmal öffnen und die App anschließend auf dem Startbildschirm installieren.\n\nViele Grüße`;location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;};
+  window.emailAdminQr=function(bid){
+    if(!isQrAdmin())return;
+    const b=branchObj254(bid),link=appLink254(bid);
+    const text=`NASCH Mitarbeiter-App ${b.name||bid}:\n${link}\n\nBitte den Link öffnen und die App auf dem Startbildschirm installieren.`;
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+  };
   window.shareAdminQr=async function(bid){
     if(!isQrAdmin())return;const b=branchObj254(bid),link=appLink254(bid),url=qrImage254(link,700);
     try{const res=await fetch(url);if(!res.ok)throw new Error('QR konnte nicht geladen werden');const blob=await res.blob();const file=new File([blob],`NASCH-${String(b.name||bid).replace(/[^a-z0-9_-]+/gi,'-')}-QR.png`,{type:blob.type||'image/png'});if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({title:`NASCH Mitarbeiter-App · ${b.name||bid}`,text:`Mitarbeiter-App ${b.name||bid}\n${link}`,files:[file]});return;}}catch(e){console.warn('QR share:',e);}window.emailAdminQr(bid);
@@ -5630,7 +5694,7 @@ if ('serviceWorker' in navigator) {
     <div class="card-b" style="font-size:13px;line-height:1.7;">
       <p>PIN vergessen? → Auf dem Login-Screen <strong>„PIN vergessen?"</strong> antippen.</p>
       <p>Plan nicht sichtbar? → Seite neu laden (runterziehen) oder <strong>Browser-Cache leeren</strong> (Einstellungen → Verlauf löschen).</p>
-      <p>Sonstiges? → <strong>Lee Ko</strong> oder <strong>Jennifer</strong> ansprechen.</p>
+      <p>Sonstiges? → <strong>Lee</strong> oder <strong>Jenny</strong> ansprechen.</p>
     </div>
   </div>
 
