@@ -210,7 +210,16 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 // Anonym einloggen → Firestore-Zugriff
-firebase.auth().signInAnonymously().catch(e => console.warn('Auth:', e));
+firebase.auth().signInAnonymously().catch(e => {
+  console.warn('Auth Fehler:', e);
+  // Fehler sichtbar anzeigen im Status-Badge
+  setTimeout(()=>{
+    const badge = document.getElementById('fbStatusBadge');
+    if(badge) badge.innerHTML = '🔴 Firebase: ' + (e.code||e.message||'Fehler');
+    const banner = document.getElementById('fbStatusBanner');
+    if(banner){ banner.style.background='#ef4444'; banner.textContent='❌ Firebase: ' + (e.code||'Verbindungsfehler'); banner.style.display='flex'; }
+  }, 500);
+});
 // Filiale für diese Datei
 window.FILIAL_ID = 'FIL002';
 </script>
@@ -219,8 +228,13 @@ window.FILIAL_ID = 'FIL002';
 <body>
 
 <!-- LOGIN -->
+<div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
+
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.6</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+    <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p>
+    <button class="pwa-install-btn" onclick="triggerPwaInstall()" style="display:none;margin-top:8px;padding:7px 16px;border:none;border-radius:20px;background:#1e3a5f;color:#fff;font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:6px;"><span>📲</span><span>App installieren</span></button></div>
+  <div id="qrWelcomeBanner" style="display:none;margin-bottom:8px;"></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -265,7 +279,7 @@ window.FILIAL_ID = 'FIL002';
         <option value="">Name auswählen …</option>
       </select>
       <div style="background:#faeeda;border:1px solid #eab308;border-radius:8px;padding:9px 12px;font-size:11px;color:#633806;margin-bottom:12px;">
-        📞 Lee Ko wird benachrichtigt und setzt dir eine neue temporäre PIN.
+        📞 Lee wird benachrichtigt und setzt dir eine neue temporäre PIN.
       </div>
       <div style="color:#dc2626;font-size:12px;min-height:16px;margin-bottom:8px;" id="pvErr"></div>
       <button onclick="sendePinAntrag()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#1e3a5f;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">📨 Antrag senden</button>
@@ -274,7 +288,7 @@ window.FILIAL_ID = 'FIL002';
     <div id="pinVergessenOK" style="display:none;text-align:center;padding:10px 0;">
       <div style="font-size:32px;margin-bottom:8px;">✅</div>
       <div style="font-size:14px;font-weight:600;color:#085041;">Antrag gesendet!</div>
-      <div style="font-size:12px;color:#6b7280;margin-top:4px;">Lee Ko wurde benachrichtigt und meldet sich bei dir.</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:4px;">Lee wurde benachrichtigt und meldet sich bei dir.</div>
       <button onclick="schliessePinVergessen()" style="margin-top:14px;width:100%;padding:11px;border:none;border-radius:10px;background:#f1f5f9;font-size:13px;font-weight:600;cursor:pointer;">Schließen</button>
     </div>
   </div>
@@ -341,7 +355,7 @@ window.FILIAL_ID = 'FIL002';
       <div class="prof-h">
         <div class="prof-av" id="profAv">LK</div>
         <div>
-          <div class="prof-name" id="profName">Lee Ko</div>
+          <div class="prof-name" id="profName">Lee</div>
           <div class="prof-meta" id="profMeta">Vollzeit · Filialleiterin</div>
         </div>
       </div>
@@ -359,7 +373,8 @@ window.FILIAL_ID = 'FIL002';
         <div class="mi" onclick="goTo('pgStunden','Stundenzettel')">
           <div class="mi-icon" style="background:#E6F1FB;">📋</div><span class="mi-lbl">Stundenzettel</span><span class="mi-arr">›</span>
         </div>
-        <div class="mi" onclick="goTo('pgVerfueg','Verfügbarkeit')">
+        <div class="mi" onclick="goTo('pgHandbuch','Handbuch')"><div class="mi-icon" style="background:#E1F5EE;">📖</div><span class="mi-lbl">Hilfe & Handbuch</span><span class="mi-arr">›</span></div>
+<div class="mi" onclick="goTo('pgVerfueg','Verfügbarkeit')">
           <div class="mi-icon" style="background:#E1F5EE;">📅</div><span class="mi-lbl">Verfügbarkeit</span><span class="mi-arr">›</span>
         </div>
         <div class="mi" onclick="goTo('pgKalender','Kalender')">
@@ -448,7 +463,7 @@ window.FILIAL_ID = 'FIL002';
 
     <!-- ADMIN MENÜ -->
     <div class="page" id="pgAdmin">
-      <div class="sec">Admin · Lee Ko</div>
+      <div class="sec">Admin · Lee</div>
       <div class="card menu-list">
         <div class="mi" onclick="goTo('pgAdminPlan','Planung')">
           <div class="mi-icon" style="background:#E6F1FB;">📊</div><span class="mi-lbl">Wochenplan bearbeiten</span><span class="mi-arr">›</span>
@@ -489,7 +504,7 @@ window.FILIAL_ID = 'FIL002';
           <input type="date" id="krankBis">
           <label>Hinweis (optional)</label>
           <input type="text" id="krankHinweis" placeholder="z.B. 2–3 Tage">
-          <div class="banner bok hidden" id="krankOK">✓ Krankmeldung gesendet – Lee Ko wurde benachrichtigt.</div>
+          <div class="banner bok hidden" id="krankOK">✓ Krankmeldung gesendet – Lee wurde benachrichtigt.</div>
           <button class="btn btn-primary" onclick="sendeKrank()">Krankmeldung senden</button>
         </div>
       </div>
@@ -521,7 +536,7 @@ window.FILIAL_ID = 'FIL002';
             </select>
             <label>Hinweis (optional)</label>
             <input type="text" id="wfHinweis" placeholder="z.B. Arzttermin">
-            <div class="banner bok hidden" id="wfOK">✓ Antrag gesendet – Lee Ko wurde benachrichtigt.</div>
+            <div class="banner bok hidden" id="wfOK">✓ Antrag gesendet – Lee wurde benachrichtigt.</div>
             <button class="btn btn-primary" onclick="sendeWF()">Antrag absenden</button>
           </div>
         </div>
@@ -586,7 +601,7 @@ window.FILIAL_ID = 'FIL002';
       <div id="signedBox" style="display:none;">
         <div style="background:var(--ok);border:1px solid #1D9E75;border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:10px;">
           <div style="font-size:24px;margin-bottom:6px;">✅</div>
-          <div style="font-size:15px;font-weight:700;color:var(--ok-t);" id="signedName">Lee Ko</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ok-t);" id="signedName">Lee</div>
           <div style="font-size:12px;color:var(--ok-t);">Unterschrieben – PDF wird am 31.10. um 22:05 Uhr an das Personal Büro gesendet.</div>
         </div>
         <button class="btn btn-outline" onclick="alert('PDF wird geöffnet…')">🖨 Drucken / PDF speichern</button>
@@ -595,12 +610,12 @@ window.FILIAL_ID = 'FIL002';
 
     <div class="page" id="pgVerfueg">
       <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
-      <div class="banner bwarn"><span>🔒</span><span>Änderungen sind erst nach Genehmigung durch Lee Ko aktiv.</span></div>
+      <div class="banner bwarn"><span>🔒</span><span>Änderungen sind erst nach Genehmigung durch Lee aktiv.</span></div>
       <div class="sec">Verfügbarkeit pro Tag</div>
       <div id="verfDays"></div>
       <div id="verfGrundWrap" style="display:none;">
         <label>Begründung (Pflicht bei Änderung)</label>
-        <textarea id="verfGrund" placeholder="z.B. neuer Schulstundenplan…"></textarea>
+        <textarea id="verfGrund" tabindex="-1" placeholder="z.B. neuer Schulstundenplan…"></textarea>
       </div>
       <div class="err-msg" id="verfErr"></div>
       <div class="banner bok hidden" id="verfOK">✓ Änderung gesendet – wartet auf Genehmigung.</div>
@@ -645,7 +660,7 @@ window.FILIAL_ID = 'FIL002';
             <div><label style="font-size:10px;">Pause</label><input type="time" id="hoPause" value="00:30"></div>
           </div>
           <input type="text" id="hoTaetigkeit" placeholder="Tätigkeit (optional)">
-          <div class="banner bok hidden" id="hoOK">✓ Home-Office eingetragen – Lee Ko wurde informiert.</div>
+          <div class="banner bok hidden" id="hoOK">✓ Home-Office eingetragen – Lee wurde informiert.</div>
           <button class="btn btn-primary" onclick="sendeHO()">Home-Office eintragen</button>
         </div>
       </div>
@@ -692,14 +707,46 @@ window.FILIAL_ID = 'FIL002';
       <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div class="week-nav" style="flex:1;margin-bottom:0;">
+          <button onclick="forceSheetsSync()" title="Sheets-Plan laden" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 4px;" id="sheetsSyncBtn">🔄</button>
+          <button onclick="toggleAbwPanel()" title="Abwesenheiten eintragen" style="background:none;border:none;font-size:14px;cursor:pointer;padding:0 4px;">⚡</button>
+          <button id="teamsPostBtn" onclick="sendToTeams()" title="Plan in Teams posten" style="background:#464775;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;padding:5px 10px;">📤 Teams</button>
           <span class="wbtn" onclick="wNav(-1)">‹</span>
           <span class="wlbl" id="adminWLbl">KW 41</span>
           <span class="wbtn" onclick="wNav(1)">›</span>
         </div>
         <button id="editBtn" onclick="toggleEdit()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;">✏️ Bearbeiten</button>
       </div>
-      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Bearbeitungs-Modus – Zelle antippen zum Bearbeiten</span></div>
-      <div class="plan-wrap"><table class="plan-t" id="adminTbl"></table></div>
+      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Zelle antippen: Schicht, <strong>Urlaub (U)</strong>, <strong>Wunschfrei (WF)</strong>, Krank (K) wählen</span></div>
+      <div id="planDebug" style="font-size:10px;color:#dc2626;padding:4px 8px;white-space:pre-wrap;display:none;background:#fef2f2;border-radius:6px;margin-bottom:8px;"></div>
+      <div id="sheetsSyncBanner" style="display:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:6px;"></div>
+<div id="abwesenheitsPanel" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;">
+  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;">⚡ Schnelleingabe Abwesenheiten</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Mitarbeiter</label>
+      <select id="abwMA" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;max-width:140px;"></select>
+    </div>
+    <div>
+      <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Von</label>
+      <select id="abwVon" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></select>
+    </div>
+    <div>
+      <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Bis</label>
+      <select id="abwBis" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></select>
+    </div>
+    <div>
+      <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Typ</label>
+      <div style="display:flex;gap:5px;">
+        <button onclick="setAbwTyp('U')" id="abwU" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">✈️ Urlaub</button>
+        <button onclick="setAbwTyp('WF')" id="abwWF" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">🏖 Wunschfrei</button>
+        <button onclick="setAbwTyp('K')" id="abwK" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">🤒 Krank</button>
+      </div>
+    </div>
+    <button onclick="doAbwesenheit()" style="padding:7px 16px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:1px;">Eintragen</button>
+  </div>
+  <div id="abwMsg" style="font-size:11px;margin-top:6px;color:var(--navy);"></div>
+</div>
+<div class="plan-wrap"><table class="plan-t" id="adminTbl"></table></div>
       <div id="adminActivityLegendView" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
       <!-- Publish-Status Banner -->
       <div id="publishStatusBar" style="display:none;padding:8px 12px;border-radius:var(--radius);margin-bottom:4px;font-size:11px;display:flex;align-items:center;gap:8px;"></div>
@@ -769,7 +816,7 @@ window.FILIAL_ID = 'FIL002';
       <div class="card" style="border-color:#eab308;">
         <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;">
           <div style="width:28px;height:28px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">JH</div>
-          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Jennifer H.</div><div style="font-size:11px;color:var(--muted);">seit Mo., 14.09. · 6 Tage · ⚠ Attest fällig</div></div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Jenny H.</div><div style="font-size:11px;color:var(--muted);">seit Mo., 14.09. · 6 Tage · ⚠ Attest fällig</div></div>
           <span style="background:var(--warn);color:var(--warn-t);font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;">⚠ Attest</span>
         </div>
         <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;">
@@ -832,6 +879,9 @@ window.FILIAL_ID = 'FIL002';
           <div style="font-size:12px;color:#6b7280;padding:10px 14px;">Wird geladen…</div>
         </div>
       </div>
+      <div class="sec" style="color:#1e3a5f;">🔑 PIN-Übersicht</div>
+      <div id="pinUebersichtBox" style="margin-bottom:14px;"></div>
+
       <div class="sec">Neuen Mitarbeiter anlegen</div>
       <div id="adminNewEmployee" style="margin-bottom:14px;"></div>
 
@@ -862,7 +912,7 @@ window.FILIAL_ID = 'FIL002';
         <div class="tab active" id="stzTab1" onclick="stzTab(1)">Stunden</div>
         <div class="tab" id="stzTab2" onclick="stzTab(2)">Vorschuss</div>
         <div class="tab" id="stzTab3" onclick="stzTab(3)">Gutschein</div>
-        <div class="tab" id="stzTab4" onclick="stzTab(4)">Schürzen</div>
+        <div class="tab" id="stzTab4" onclick="stzTab(4)">Wäsche</div>
       </div>
       <div id="stzP1">
         <div class="sec">Stundenzettel · pro Mitarbeiter</div>
@@ -875,7 +925,7 @@ window.FILIAL_ID = 'FIL002';
         </div>
       </div>
       <div id="stzP2" style="display:none;">
-        <div class="banner bwarn"><span>💡</span><span>Filialleiter, Vertretung und Assistenten haben dauerhaften Vorschuss. Mitarbeiter können einen temporären Vorschuss pro Monat erhalten.</span></div>
+        <div class="banner bwarn"><span>💡</span><span>Vollzeit (VZ), Filialleitung und Vertretung: dauerhafter Vorschuss – einmalig bestätigen, dann monatlich automatisch übernommen. Teilzeit/Aushilfen: temporärer Vorschuss pro Monat.</span></div>
         <div id="vorschussPanel"></div>
       </div>
       <div id="stzP3" style="display:none;">
@@ -883,7 +933,7 @@ window.FILIAL_ID = 'FIL002';
         <div id="gutscheinPanel"></div>
       </div>
       <div id="stzP4" style="display:none;">
-        <div class="banner bwarn"><span>👔</span><span>Schürzen-Kaution: 5 € pro Stück. Wird vom Lohn abgezogen. Bei Rückgabe Gutschrift.</span></div>
+        <div class="banner binfo"><span>👕</span><span>Schürze = 5 € Kaution. Bluse/Andere = freie Eingabe. Monat wählbar.</span></div>
         <div id="schuerzenPanel"></div>
       </div>
     </div>
@@ -959,7 +1009,7 @@ window.FILIAL_ID = 'FIL002';
 // ── Mitarbeiterdaten ────────────────────────────────────────
 const USERS = {
   '1001': { name: 'Lee Ko',              initials: 'LK', typ: 'VZ', role: 'admin',    label: 'Vollzeit · Filialleiterin', urlaubRest: 12, wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1002': { name: 'Jennifer Haak',       initials: 'JH', typ: 'VZ', role: 'vertretung',label: 'Vollzeit · Vertretung',     urlaubRest: 8,  wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
+  '1002': { name: 'Jenny Haak',       initials: 'JH', typ: 'VZ', role: 'vertretung',label: 'Vollzeit · Vertretung',     urlaubRest: 8,  wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
   '1003': { name: 'Filiz Bektik',        initials: 'FB', typ: 'VZ', role: 'user',     label: 'Vollzeit',                  urlaubRest: 15, wunschKont: 3, homeoffice: false, sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 13.90, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
   '1004': { name: 'Suba Srikunathan',    initials: 'SS', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 10, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
   '1005': { name: 'Lina Will',           initials: 'LW', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 6,  wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
@@ -982,6 +1032,11 @@ const PINS = {
   '1006':'1006','1007':'1007','1008':'1008','1009':'1009','1010':'1010',
   '1011':'1011','1012':'1012','1013':'1013','1014':'1014','1015':'1015',
 };
+// PINs aus lokalem Speicher laden (persistiert auch ohne Firebase)
+try{ const lp=localStorage.getItem('nasch-pins-FIL002'); if(lp) Object.assign(PINS,JSON.parse(lp)); }catch(e){}
+// ── IMPORTIERTE WOCHENPLÄNE (aus Google Sheets KW38-41/2026) ─────────────
+const NASCH_SHEETS_IMPORT = {"2026-08-31":{"1001":[{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"23:00"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"22:00"}],"1002":[{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"21:00"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"-","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"16:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"}],"1003":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]}],"1015":[{"t":"U","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"}],"1004":[{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]}],"1008":[{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"U","z":"","r":[]}],"1009":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"11:30","end":"15:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"18:30","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1010":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:30","end":"21:00"},{"t":"-","z":"","r":[]}],"1011":[{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1007":[{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"11:30","end":"15:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1006":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"16:00"},{"t":"F","z":"Vo/GL","r":[],"start":"07:00","end":"15:30"}],"1005":[{"t":"U","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-09-07":{"1001":[{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"}],"1002":[{"t":"F","z":"V","r":[],"start":"09:30","end":"15:30"},{"t":"-","z":"","r":[]},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"Vo/GL","r":[],"start":"15:30","end":"21:00"}],"1004":[{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"K","z":"","r":[]}],"1008":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1009":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"22:00"}],"1010":[{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:30","end":"21:00"},{"t":"-","z":"","r":[]}],"1011":[{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1007":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"S","z":"","r":[],"start":"18:00","end":"21:00"},{"t":"F","z":"","r":[],"start":"12:00","end":"14:00"}],"1006":[{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"U","z":"","r":[]}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"}],"1005":[{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"08:00","end":"10:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-09-14":{"1001":[{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"21:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"22:00"}],"1002":[{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"Vo","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"Vo/GL","r":[],"start":"15:30","end":"22:00"}],"1004":[{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]},{"t":"K","z":"","r":[]}],"1008":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1009":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"U","z":"","r":[]}],"1010":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1011":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]}],"1007":[{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"U","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"}],"1006":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"22:00"}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]}],"1013":[{"t":"-","z":"","r":[]},{"t":"S","z":"STO","r":[],"start":"18:00","end":"19:30"},{"t":"S","z":"STO","r":[],"start":"19:00","end":"20:30"},{"t":"S","z":"STO","r":[],"start":"18:00","end":"19:30"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1005":[{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"U","z":"","r":[]}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"07:00","end":"10:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-09-21":{"1001":[{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"}],"1002":[{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:00"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"Vo/GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"TO/GL","r":[],"start":"17:00","end":"21:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"21:00"},{"t":"S","z":"Vo/GL","r":[],"start":"15:30","end":"22:00"}],"1004":[{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO/GL","r":[],"start":"18:00","end":"21:00"}],"1008":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"}],"1009":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"15:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:30","end":"21:00"},{"t":"-","z":"","r":[]}],"1010":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1011":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]}],"1007":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"}],"1006":[{"t":"U","z":"","r":[]},{"t":"S","z":"TO/GL","r":[],"start":"18:00","end":"22:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO/GL","r":[],"start":"17:00","end":"21:00"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"Vo/GL","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"Vo/GL","r":[],"start":"17:30","end":"22:00"}],"1005":[{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"07:00","end":"09:30"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-09-28":{"1001":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]}],"1002":[{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"GL","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"GL/SL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"Vo/GL","r":[],"start":"15:30","end":"21:00"}],"1004":[{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"}],"1008":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"}],"1009":[{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]}],"1011":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1007":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"}],"1006":[{"t":"S","z":"GL/TO","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"17:30","end":"22:00"}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]}],"1013":[{"t":"-","z":"","r":[]},{"t":"S","z":"STO","r":[],"start":"18:30","end":"20:00"},{"t":"S","z":"STO","r":[],"start":"19:00","end":"20:30"},{"t":"S","z":"STO","r":[],"start":"18:30","end":"20:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"U","z":"","r":[]}],"1005":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"07:00","end":"10:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-10-05":{"1001":[{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"21:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"}],"1002":[{"t":"U","z":"","r":[]},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"10:00","end":"15:30"},{"t":"F","z":"V","r":[],"start":"09:30","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL/TO","r":[],"start":"17:00","end":"21:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL/TO","r":[],"start":"17:00","end":"21:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"Vo/GL","r":[],"start":"15:30","end":"21:00"}],"1004":[{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]}],"1008":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]}],"1009":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"}],"1011":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"17:30","end":"21:00"}],"1007":[{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1006":[{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"18:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"18:00","end":"22:00"},{"t":"F","z":"Vo","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"17:00","end":"22:00"}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"}],"1013":[{"t":"S","z":"STO","r":[],"start":"18:00","end":"19:30"},{"t":"-","z":"","r":[]},{"t":"S","z":"STO","r":[],"start":"18:30","end":"20:00"},{"t":"S","z":"STO","r":[],"start":"18:30","end":"20:00"},{"t":"S","z":"STO","r":[],"start":"18:30","end":"20:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"STO","r":[],"start":"18:00","end":"20:00"}],"1005":[{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"07:00","end":"10:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-10-12":{"1001":[{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"21:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"}],"1002":[{"t":"U","z":"","r":[]},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V","r":[],"start":"09:30","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"TO/GL","r":[],"start":"18:00","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"17:30","end":"22:00"}],"1004":[{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]}],"1008":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"}],"1009":[{"t":"-","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"-","z":"","r":[]}],"1011":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]}],"1007":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"U","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"12-14","end":"18-21"}],"1006":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"21:00"},{"t":"F","z":"Vo","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"GL","r":[],"start":"15:30","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"15:30","end":"21:00"}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]}],"1013":[{"t":"S","z":"","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"STO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"STO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"","r":[],"start":"18:00","end":"21:00"}],"1005":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"U","z":"","r":[]}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"07:00","end":"09:30"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]},"2026-10-19":{"1001":[{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"21:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"V/SL","r":[],"start":"15:30","end":"22:00"}],"1002":[{"t":"F","z":"V","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"F","z":"V/SL","r":[],"start":"09:30","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]}],"1003":[{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"U","z":"","r":[]},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"},{"t":"F","z":"Vo/GL","r":[],"start":"08:00","end":"15:30"}],"1015":[{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"F","z":"Vo","r":[],"start":"08:00","end":"15:30"},{"t":"S","z":"TO/GL","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"15:30","end":"22:00"}],"1004":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"S","z":"GL","r":[],"start":"17:00","end":"22:00"},{"t":"U","z":"","r":[]},{"t":"S","z":"v","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"V","r":[],"start":"15:30","end":"22:00"},{"t":"S","z":"TO","r":[],"start":"17:00","end":"21:00"}],"1008":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"}],"1009":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}],"1011":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1007":[{"t":"U","z":"","r":[]},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"F","z":"TO","r":[],"start":"12:00","end":"14:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1006":[{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]},{"t":"U","z":"","r":[]}],"1012":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"V","r":[],"start":"10:00","end":"15:30"},{"t":"-","z":"","r":[]}],"1013":[{"t":"F","z":"TO","r":[],"start":"12:30","end":"14:00"},{"t":"S","z":"STO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"STO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"STO","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"}],"1005":[{"t":"S","z":"","r":[],"start":"18:00","end":"21:00"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"S","z":"TO","r":[],"start":"18:00","end":"21:00"},{"t":"U","z":"","r":[]}],"1014":[{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"F","z":"RK","r":[],"start":"07:00","end":"09:30"},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]},{"t":"-","z":"","r":[]}]}};
+
 
 // Gesperrte einfache PINs
 const BLOCKED_PINS = [
@@ -1127,12 +1182,28 @@ const FirestoreStore = (() => {
       _db    = firebase.firestore();
       _ready = true;
       console.log('🔥 Firebase verbunden · User:', user.uid);
-      // Zeige grünen Status
+      // Badge & Banner aktualisieren
+      const badge = document.getElementById('fbStatusBadge');
+      if(badge) badge.innerHTML = '🔥 Firebase verbunden';
       const banner = document.getElementById('fbStatusBanner');
-      if(banner){ banner.style.display='flex'; setTimeout(()=>{ banner.style.display='none'; },4000); }
+      if(banner){ banner.style.display='flex'; setTimeout(()=>{ banner.style.display='none'; },5000); }
       // Queue abarbeiten
       _queue.forEach(fn => fn());
       _queue = [];
+
+      // PINs aus Firebase laden (überschreibt localStorage mit autoritativem Stand)
+      _db.collection('nasch').doc(FID()).collection('config').doc('pins').get()
+        .then(pDoc=>{
+          if(pDoc.exists){
+            Object.assign(PINS,pDoc.data());
+            try{ localStorage.setItem('nasch-pins-FIL002', JSON.stringify(PINS)); }catch(e){}
+            console.log('✅ PINs aus Firebase geladen');
+            if(badge) badge.innerHTML = '🔥 Firebase · PINs geladen';
+          } else {
+            if(badge) badge.innerHTML = '🔥 Firebase verbunden';
+          }
+        })
+        .catch(e=>{ console.warn('PIN-Vorladen:', e); });
     }
   });
 
@@ -1161,15 +1232,18 @@ const FirestoreStore = (() => {
             const uDoc = await docRef('config','users').get();
             if(uDoc.exists){
               Object.entries(uDoc.data()).forEach(([uid,u])=>{
-                if(USERS[uid]) Object.assign(USERS[uid], u);
-                else USERS[uid] = u;
+                if(USERS[uid]){
+                  // Rolle niemals aus Firebase überschreiben (ist im Code festgelegt)
+                  const {role:_r, ...rest} = u;
+                  Object.assign(USERS[uid], rest);
+                } else USERS[uid] = u;
               });
             }
 
             // Plan (aktuelle KW)
             const wk = _weekKey();
             const pSnap = await docRef('plan', wk).get();
-            if(pSnap.exists && pSnap.data().plan){
+            if(pSnap.exists && pSnap.data().plan && Object.keys(pSnap.data().plan).length > 0){
               const p = pSnap.data().plan;
               Object.keys(PLAN).forEach(k => delete PLAN[k]);
               Object.assign(PLAN, p);
@@ -1187,6 +1261,8 @@ const FirestoreStore = (() => {
             if(dDoc.exists) _dec = dDoc.data();
 
             console.log('✅ Firestore: Daten geladen');
+          // WeekPlanStore zwingen, Sheets-Daten neu zu laden (nicht vom Firestore-Plan überschreiben lassen)
+          try{ if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore._resetLoaded) WeekPlanStore._resetLoaded(); }catch(_){}
           } catch(e){ console.warn('⚠️ Firestore load:', e); }
           resolve();
         }
@@ -1204,9 +1280,12 @@ const FirestoreStore = (() => {
 
   // ── Speicher-Funktionen ───────────────────────────────────
   function savePins(){
+    // Zuerst localStorage (sofort, immer verfügbar)
+    try{ localStorage.setItem('nasch-pins-FIL002', JSON.stringify(PINS)); }catch(e){}
+    // Dann Firebase (wenn verbunden, für geräteübergreifende Sync)
     whenReady(()=>{ docRef('config','pins').set({...PINS})
-      .then(()=>console.log('✅ PINs gespeichert'))
-      .catch(e=>console.warn('savePins:',e)); });
+      .then(()=>console.log('✅ PINs in Firebase gespeichert'))
+      .catch(e=>console.warn('savePins Firebase:',e)); });
   }
   function saveEmployee(uid){
     if(!USERS[uid]) return;
@@ -1391,7 +1470,19 @@ window.PublishStore = PublishStore;
 
 const GUTSCHEIN_LIMIT   = 50;   // € pro Monat pro Mitarbeiter
 const SCHUERZEN_PREIS   = 5;    // € pro Stück
-const VORSCHUSS_ROLLEN  = ['admin','vertretung']; // Dauerhafter Vorschuss
+const VORSCHUSS_ROLLEN  = ['admin','vertretung']; // Dauerhafter Vorschuss (Rollen)
+// Dauerhafter Vorschuss: nur Admin/Vertretung (ohne Wahlmöglichkeit)
+const isVorschussEligible = uid => {
+  const u = USERS[uid];
+  if(!u) return false;
+  return VORSCHUSS_ROLLEN.includes(u.role);
+};
+// VZ/TZ: wahlweise dauerhaft oder einmalig
+const isVorschussWaehlbar = uid => {
+  const u = USERS[uid];
+  if(!u) return false;
+  return !VORSCHUSS_ROLLEN.includes(u.role) && ['VZ','TZ'].includes(u.typ||'');
+};
 
 // ── Aktueller Monat Key ────────────────────────────────────────
 function currentMonthKey() {
@@ -1447,7 +1538,7 @@ const VorschussStore = (() => {
     const u = USERS[uid];
     if(!u) return false;
     // Admin/Vertretung/Assistent mit noch nicht bestätigtem Vorschuss
-    if(VORSCHUSS_ROLLEN.includes(u.role) && !isPermanentConfirmed(uid)) return true;
+    if(isVorschussEligible(uid) && !isPermanentConfirmed(uid)) return true;
     return false;
   }
   return { getPermanent, setPermanent, confirmNoPermVorschuss, isPermanentConfirmed,
@@ -1532,6 +1623,13 @@ const SchuerzenStore = (() => {
   return { getSaldo, getMonthNet, ausgabe, rueckgabe, getLog };
 })();
 window.SchuerzenStore = SchuerzenStore;
+// Direkter Log-Eintrag für Nicht-Schürzen (Bluse/Andere)
+SchuerzenStore.logEntry = function(uid, entry){
+  const st = JSON.parse(localStorage.getItem('nasch-schuerzen-v1')||'{}');
+  if(!st[uid]) st[uid]={saldo:0,betrag:0,log:[]};
+  st[uid].log = [{...entry, ts:Date.now()}, ...(st[uid].log||[])].slice(0,50);
+  localStorage.setItem('nasch-schuerzen-v1', JSON.stringify(st));
+};
 
 // ── Jennifer-Dialog: Einmalige Abfrage dauerhafter Vorschuss ──
 function checkVorschussDialog(uid) {
@@ -1562,7 +1660,7 @@ function eurFmt(v) {
 
 // ── SANDBOX: Admin-Einstellungen für Mitarbeiter und Schichtplanung ──
 const NaschAdminSettings = (() => {
-  const KEY = 'nasch-sandbox-admin-v3';
+  const KEY = 'nasch-sandbox-admin-v4';
   const SCHEMA_VERSION = 7;
   const DEFAULT_ORDER = Object.keys(USERS);
   const DEFAULT_ACTIVITIES = ['Vo/GL','V/SL','V','SL','GL','TO','B','RK'];
@@ -1913,7 +2011,14 @@ const NaschAdminSettings = (() => {
   return {getOrder, entries, activities, surchargeEligible, activityLabel, activityDisplay, times, move, addEmployee, updateProfile, addActivity, updateActivity, removeActivity, toggleEmployeeActivity, profileActivities, addTime, removeTime, availability, cycleAvailability, buildAdminSettings, reset};
 })();
 
-function getOrderedUserEntries(){ return NaschAdminSettings.entries(); }
+function getOrderedUserEntries(){
+  try{
+    const e=NaschAdminSettings.entries();
+    if(e.length>0) return e;
+  }catch(_){}
+  // Fallback: alle USERS direkt (ohne AH-only, ohne Büro/System)
+  return Object.entries(USERS).filter(([uid,u])=>u&&u.name&&!['office','system','BU','SYS'].includes(u.role||u.typ));
+}
 function getActivityOptions(){ return NaschAdminSettings.activities(); }
 function getActivityLabel(code){ return NaschAdminSettings.activityLabel(code); }
 function getActivityDisplay(code){ return NaschAdminSettings.activityDisplay(code); }
@@ -2383,6 +2488,7 @@ function getWeekTotalHours() {
 function renderPlan() {
   const viewerIsAdmin = isAdminOrDeputy();
   if(!viewerIsAdmin && AppState.weekOffset!==0) AppState.weekOffset=0;
+  sheetsSync(AppState.weekOffset);
   const monday = getMonday(AppState.weekOffset);
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
   const kw = getKW(monday);
@@ -2400,10 +2506,12 @@ function renderPlan() {
     if(!PublishStore.isPublished(bid, wk)) {
       const kw = getKW(monday);
       weekLabel.textContent = `KW ${kw}`;
+      const isAdm=typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);
       planTable.innerHTML = `<tr><td colspan="10" style="padding:32px 16px;text-align:center;color:var(--muted);">
         <div style="font-size:32px;margin-bottom:10px;">📅</div>
         <div style="font-size:14px;font-weight:600;color:var(--text);">Noch kein Wochenplan veröffentlicht</div>
-        <div style="font-size:12px;margin-top:6px;">Der Wochenplan für KW ${kw} wurde noch nicht veröffentlicht.<br>Lee Ko wird den Plan in Kürze freigeben.</div>
+        <div style="font-size:12px;margin-top:6px;">Der Wochenplan für KW ${kw} wurde noch nicht veröffentlicht.</div>
+        ${isAdm?`<button onclick="if(typeof publishPlan==='function'){publishPlan();renderPlan();}" style="margin-top:12px;padding:10px 20px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">📢 Jetzt veröffentlichen</button>`:'<div style="font-size:12px;margin-top:6px;">Lee wird den Plan in Kürze freigeben.</div>'}
       </td></tr>`;
       return;
     }
@@ -2516,6 +2624,24 @@ function loginEmployeeChanged(){
   lPin=''; updLD(); document.getElementById('loginErr').textContent='';
 }
 updateLoginEmployeeOptions();
+// QR-Scan: Install-Hinweis zeigen wenn via Link geöffnet
+try{
+  const _ref=document.referrer;
+  const _fromQr=!_ref||_ref==='';
+  if(_fromQr){
+    setTimeout(()=>{
+      const banner=document.getElementById('qrWelcomeBanner');
+      if(banner){
+        banner.innerHTML=`<div style="background:#1e3a5f;color:#fff;border-radius:10px;padding:12px 14px;margin-bottom:10px;text-align:center;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;">👋 Willkommen bei NASCH!</div>
+          <button onclick="triggerPwaInstall()" style="background:#98c01f;color:#1e3a5f;border:none;border-radius:20px;padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-bottom:5px;">📲 App installieren</button>
+          <div style="font-size:10px;opacity:.75;">Name wählen → PIN eingeben → fertig</div>
+        </div>`;
+        banner.style.display='block';
+      }
+    },500);
+  }
+}catch(_){}
 function lKey(k){
   if(lAttempts>=3) return;
   if(k==='del'){lPin=lPin.slice(0,-1);}
@@ -2558,6 +2684,15 @@ function startApp(uid){
   _doStartApp(uid);
 }
 function _doStartApp(uid){
+  // Versions-Toast beim Login
+  try{setTimeout(()=>{
+    const v='v25.4b · KW36-41 geladen';
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+    t.textContent='✅ NASCH App '+v;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),5000);
+  },500);}catch(_){}
   AppState.currentUserId=uid;
   AppState.currentUser=USERS[uid];
   const u=AppState.currentUser;
@@ -2600,6 +2735,13 @@ function _doStartApp(uid){
   document.getElementById('nextW').style.visibility=isAoV?'visible':'hidden';
 
   // Mitarbeiterliste + Stundenzettel vorbauen
+  // Sheets-Daten sofort in PLAN laden (kein Timeout nötig)
+  (function applySheetsPlan(){
+    if(typeof NASCH_SHEETS_IMPORT==='undefined') return;
+    const k=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
+    const sd=NASCH_SHEETS_IMPORT[k];
+    if(sd){Object.keys(PLAN).forEach(x=>delete PLAN[x]);Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));console.log('✅ Sheets KW geladen:',k);}
+  })();
   buildMAList();
   buildStzList();
   renderPersonalDailyHours();
@@ -2610,6 +2752,24 @@ function _doStartApp(uid){
   if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render();
   initSig();
   if(typeof updatePublishStatus==='function') setTimeout(updatePublishStatus, 200);
+
+  // Auto-Veröffentlichung: Sheets-Plan für aktuelle KW publishen wenn nix da
+  if(isAdminOrDeputy(uid)){
+    // Auto-Publish: Sheets-Wochen direkt publizieren
+      setTimeout(()=>{
+      try{
+        if(typeof NASCH_SHEETS_IMPORT==='undefined') return;
+        const curKey=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
+        const sd=NASCH_SHEETS_IMPORT[curKey];
+        if(sd){
+          Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+          Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));
+        }
+        if(typeof renderPlan==='function') renderPlan();
+        if(typeof buildAdminPlan==='function') buildAdminPlan();
+      }catch(e){console.warn('Auto-publish:',e);}
+    },1500);
+  }
 }
 
 // ── Navigation ────────────────────────────────────────────
@@ -2630,18 +2790,312 @@ function goTo(pgId, title){
   document.getElementById('tbTitle').textContent=title||'';
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.querySelector('.page-wrap').scrollTop=0;
-  if(pgId==='pgAdminSettings' && typeof NaschAdminSettings!=='undefined') { NaschAdminSettings.buildAdminSettings(); setTimeout(renderPinAntraege, 100); if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render(); }
+  if(pgId==='pgAdminSettings' && typeof NaschAdminSettings!=='undefined') { NaschAdminSettings.buildAdminSettings(); setTimeout(renderPinAntraege, 100); setTimeout(renderPinUebersicht, 150); if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render(); }
   if(pgId==='pgAdminMA') buildMAList();
-  if(pgId==='pgAdminPlan') buildAdminPlan();
+  if(pgId==='pgAdminPlan'){
+    const d=document.getElementById('planDebug');if(d){d.style.display='none';d.textContent='';}
+    injectSheetsIfPlanEmpty(true); // Immer Sheets-Daten als Basis
+    try{ buildAdminPlan(); } catch(e){ console.warn('buildAdminPlan:', e); }
+    setTimeout(()=>{ injectSheetsIfPlanEmpty(true); renderPlanTableDirect('adminTbl'); }, 100);
+  }
+  if(pgId==='pgVerfueg') if(typeof buildVerfDays==='function') buildVerfDays();
   if(pgId==='pgStunden') renderPersonalDailyHours();
   if(pgId==='pgAdminStz') { buildStzList(); renderAdminDailyHours(); stzTab(1); }
 }
 
 // ── Wochenplan Navigation ─────────────────────────────────
+// ── SHEETS SYNC & URLAUB/WUNSCHFREI HILFE ─────────────────
+
+
+// ══ PWA INSTALL ══════════════════════════════════════════════════════════════
+let _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  // Install-Button anzeigen falls vorhanden
+  document.querySelectorAll('.pwa-install-btn').forEach(b => b.style.display = 'flex');
+});
+window.addEventListener('appinstalled', () => {
+  _pwaPrompt = null;
+  document.querySelectorAll('.pwa-install-btn').forEach(b => b.style.display = 'none');
+  if(typeof showToast === 'function') showToast('✅ App erfolgreich installiert!');
+});
+async function triggerPwaInstall() {
+  if(_pwaPrompt) {
+    _pwaPrompt.prompt();
+    const result = await _pwaPrompt.userChoice;
+    if(result.outcome === 'accepted') _pwaPrompt = null;
+  } else {
+    // iOS Safari Anleitung
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS) {
+      alert('📱 iPhone/iPad:\n\n1. Safari-Menü unten antippen (□↑)\n2. „Zum Home-Bildschirm" wählen\n3. „Hinzufügen" tippen\n\nDie App erscheint dann als Icon.');
+    } else {
+      alert('📱 Android:\n\nChrome-Menü (⋮) → „App installieren" oder „Zum Startbildschirm hinzufügen"');
+    }
+  }
+}
+
+// ══ TEAMS WEBHOOK INTEGRATION ════════════════════════════════
+const TEAMS_KEY = 'nasch-teams-webhook';
+
+function getTeamsUrl(){ try{return localStorage.getItem(TEAMS_KEY)||'';}catch(_){return '';} }
+function saveTeamsUrl(url){ try{localStorage.setItem(TEAMS_KEY,url.trim());}catch(_){} }
+
+function buildPlanText(){
+  const off=AppState.weekOffset||0;
+  const mon=getMonday(off);
+  const kw=getKW(mon);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const fmt=d=>`${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`;
+  // Sheets-Daten laden
+  const k=mon.toISOString().slice(0,10);
+  const sd=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[k];
+  const planData=sd||PLAN;
+  const typeIcon={F:'☀',S:'🌙',U:'✈',WF:'🏖',K:'🤒','-':'–','TS':'◑'};
+  const emps=Object.entries(USERS).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
+  emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  let rows='';
+  let totF=0,totS=0,totFrei=0;
+  emps.forEach(([uid,u])=>{
+    const shifts=planData[uid]||Array(7).fill({t:'-'});
+    const cells=shifts.map((s,i)=>{
+      const t=s?.t||'-';
+      if(t==='F')totF++;else if(t==='S')totS++;else if(t==='-')totFrei++;
+      return typeIcon[t]||t;
+    });
+    const name=(u.name||'').split(' ')[0].padEnd(10,' ').slice(0,10);
+    rows+=`${name}  ${cells.join('  ')}
+`;
+  });
+  const header=`📋 NASCH Emsdetten · KW${kw}
+📅 ${fmt(mon)}–${fmt(sun)}.${sun.getFullYear()}
+`;
+  const daysHeader='            Mo   Di   Mi   Do   Fr   Sa   So\n';
+  const footer=`
+☀ Früh: ${totF}  🌙 Spät: ${totS}  – Frei: ${totFrei}`;
+  return header+daysHeader+rows+footer;
+}
+
+function buildTeamsCard(planText){
+  const off=AppState.weekOffset||0;
+  const mon=getMonday(off);
+  const kw=getKW(mon);
+  const baseUrl='https://nasch-emsdetten.github.io/emsdetten.html';
+  const liveUrl=baseUrl+'?plan=offen&kw='+kw;
+  const printUrl=baseUrl+'?print=1&kw='+kw;
+  const poster=USERS[AppState.currentUserId]?.name||'Admin';
+  return {
+    '@type':'MessageCard',
+    '@context':'http://schema.org/extensions',
+    'themeColor':'1e3a5f',
+    'summary':'NASCH Wochenplan KW'+kw,
+    'sections':[{
+      'activityTitle':'📋 NASCH Emsdetten · Wochenplan KW'+kw,
+      'activitySubtitle':'Veröffentlicht von '+poster,
+      'text':planText,
+    }],
+    'potentialAction':[
+      {'@type':'OpenUri','name':'🔗 Live-Plan ansehen','targets':[{'os':'default','uri':liveUrl}]},
+      {'@type':'OpenUri','name':'🖨 Druckansicht / PDF','targets':[{'os':'default','uri':printUrl}]}
+    ]
+  };
+}
+
+async function sendToTeams(){
+  const planText=buildPlanText();
+  const teamsAppUrl='msteams://l/channel/19%3A2f54cf8ee5644b02badc49bda39157ea%40thread.tacv2/Arbeitsplan?groupId=8c4dd6fb-1841-4f10-adf6-1eb0cbc9f761&tenantId=a84d15d3-71e9-4a42-ab43-377971917897';
+  const teamsWebUrl='https://teams.microsoft.com/l/channel/19%3A2f54cf8ee5644b02badc49bda39157ea%40thread.tacv2/Arbeitsplan?groupId=8c4dd6fb-1841-4f10-adf6-1eb0cbc9f761&tenantId=a84d15d3-71e9-4a42-ab43-377971917897';
+  const btn=document.getElementById('teamsPostBtn');
+
+  // 1. Text in Zwischenablage kopieren
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(planText);
+    } else {
+      const ta=document.createElement('textarea');ta.value=planText;
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  }catch(_){}
+
+  // 2. Web Share API (zeigt Teams direkt in der Auswahl auf dem Handy)
+  if(navigator.share){
+    try{
+      await navigator.share({title:'NASCH Wochenplan',text:planText});
+      if(btn){ btn.textContent='✅ Geteilt'; setTimeout(()=>{btn.textContent='📤 Teams';},3000); }
+      return;
+    }catch(e){
+      if(e.name==='AbortError') return; // Nutzer hat abgebrochen
+    }
+  }
+
+  // 3. Fallback: Teams direkt öffnen (App oder Browser)
+  showToast('📋 Plan kopiert → Teams öffnet sich → Einfügen + Senden');
+  setTimeout(()=>{
+    // Versuche Teams-App (msteams://)
+    const appLink=document.createElement('a');
+    appLink.href=teamsAppUrl;
+    appLink.style.display='none';
+    document.body.appendChild(appLink);
+    appLink.click();
+    document.body.removeChild(appLink);
+    // Fallback auf Web nach 1.5s
+    setTimeout(()=>window.open(teamsWebUrl,'_blank'),1500);
+  },300);
+  if(btn){ btn.textContent='✅ Kopiert'; setTimeout(()=>{btn.textContent='📤 Teams';},3000); }
+}
+
+function renderTeamsSettings(){
+  const box=document.getElementById('teamsSettingsBox');
+  if(!box)return;
+  box.innerHTML=`<div class="card" style="margin-top:10px;">
+    <div class="card-h"><div class="card-t">📤 Teams · Wochenplan teilen</div></div>
+    <div class="card-b" style="font-size:12px;line-height:1.7;">
+      <p>Im Wochenplan auf <strong>📤 Teams</strong> tippen:</p>
+      <p>1. Plan-Text wird automatisch kopiert</p>
+      <p>2. Teams öffnet sich · Kanal: <strong>Arbeitsplan · Emsdetten</strong></p>
+      <p>3. Text einfügen + Senden – fertig ✅</p>
+      <p style="color:var(--muted);font-size:10px;">Kanal ist fest eingebaut – kein Setup nötig.</p>
+    </div>
+  </div>`;
+}
+
+
+
+// ══ EINZIGER QR-CODE – App-Zugang für alle ═══════════════════
+function renderSimpleAppQr(){
+  const box=document.getElementById('v254QrContent');
+  if(!box) return;
+  const url='https://nasch-emsdetten.github.io/emsdetten.html';
+  const qr=typeof qrImage254==='function'?qrImage254(url,320):'';
+  box.innerHTML=`
+    <div class="card">
+      <div class="card-h"><div class="card-t">📱 App-Zugang · NASCH Emsdetten</div></div>
+      <div class="card-b" style="text-align:center;">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+          Dieser QR-Code gilt für <strong>alle Mitarbeiter</strong>.<br>
+          Nach dem Scan: Name auswählen → PIN eingeben → fertig.
+        </p>
+        ${qr?`<img src="${qr}" style="width:220px;height:220px;border-radius:10px;border:1px solid var(--border);" alt="QR NASCH App">`:''}
+        <div style="font-size:10px;color:var(--muted);margin:8px 0 16px;word-break:break-all;">${url}</div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;text-align:left;font-size:12px;margin-bottom:14px;">
+          <div style="font-weight:700;color:#166534;margin-bottom:6px;">📲 Installationsanleitung</div>
+          <div style="color:#166534;line-height:1.7;">
+            <b>Android (Chrome):</b><br>
+            QR scannen → oben rechts ⋮ → „App installieren"<br><br>
+            <b>iPhone (Safari):</b><br>
+            QR in Safari öffnen → Teilen ↑ → „Zum Home-Bildschirm"
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          ${qr?`<button onclick="window.open('${qr}','_blank')" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:12px;cursor:pointer;">🖼 QR speichern</button>`:''}
+          <button onclick="navigator.share&&navigator.share({title:'NASCH Mitarbeiter-App',url:'${url}'}).catch(()=>{})" style="padding:8px 16px;border:none;border-radius:8px;background:#1e3a5f;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">📤 Link teilen</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function showAppQr(){ goTo('pgAdminQr','QR Code zur App'); }
+
+
+
+// ══ PIN-ÜBERSICHT FÜR ADMIN ══════════════════════════════════
+function renderPinUebersicht(){
+  const box = document.getElementById('pinUebersichtBox');
+  if(!box) return;
+
+  const emps = Object.entries(USERS)
+    .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office')
+    .sort((a,b) => (a[1].name||'').localeCompare(b[1].name||'','de'));
+
+  let html = `<div class="card" style="margin-top:10px;">
+    <div class="card-h"><div class="card-t">🔑 PIN-Übersicht · Alle Mitarbeiter</div></div>
+    <div class="card-b" style="padding:0;">
+      <div style="font-size:11px;color:var(--muted);padding:8px 14px;border-bottom:1px solid var(--border);">
+        ⚠️ Standard = PIN noch nicht geändert · ✅ Geändert = Mitarbeiter hat eigene PIN gesetzt
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8fafc;font-size:11px;color:var(--muted);">
+            <th style="padding:8px 14px;text-align:left;font-weight:600;">Name</th>
+            <th style="padding:8px 6px;text-align:center;font-weight:600;">Standard-PIN</th>
+            <th style="padding:8px 6px;text-align:center;font-weight:600;">Status</th>
+            <th style="padding:8px 14px;text-align:right;font-weight:600;">Aktion</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  emps.forEach(([uid, u]) => {
+    const defaultPin = uid;
+    const currentPin = PINS[uid] || defaultPin;
+    const changed = currentPin !== defaultPin;
+    html += `<tr style="border-top:1px solid var(--border);">
+      <td style="padding:9px 14px;">
+        <div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div>
+        <div style="font-size:10px;color:var(--muted);">${escapeHtml(u.typ||'')}${u.role==='admin'?' · Admin':u.role==='vertretung'?' · Vertretung':''}</div>
+      </td>
+      <td style="padding:9px 6px;text-align:center;font-size:12px;font-family:monospace;color:var(--muted);">${defaultPin}</td>
+      <td style="padding:9px 6px;text-align:center;">
+        ${changed
+          ? '<span style="background:#E1F5EE;color:#085041;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">✅ Geändert</span>'
+          : '<span style="background:#fef9c3;color:#854d0e;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">⚠️ Standard</span>'
+        }
+      </td>
+      <td style="padding:9px 14px;text-align:right;">
+        <button onclick="resetPinToDefault('${uid}')"
+          style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;color:#dc2626;"
+          title="PIN zurücksetzen auf Standard (${defaultPin})">
+          ↺ Reset
+        </button>
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>
+    <div style="padding:8px 14px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);">
+      Reset setzt die PIN auf die Standard-Mitarbeiternummer zurück.
+    </div>
+  </div></div>`;
+  box.innerHTML = html;
+}
+
+function resetPinToDefault(uid){
+  const u = USERS[uid];
+  if(!u) return;
+  if(!confirm('PIN von ' + u.name + ' auf Standard (' + uid + ') zurücksetzen?')) return;
+  PINS[uid] = uid;
+  if(typeof SandboxStore !== 'undefined' && SandboxStore.savePins) SandboxStore.savePins();
+  renderPinUebersicht();
+  if(typeof showToast === 'function') showToast('✅ PIN von ' + u.name + ' zurückgesetzt auf ' + uid);
+}
+
+function forceSheetsSync(){
+  if(typeof NASCH_SHEETS_IMPORT==='undefined'){showToast('❌ Keine Sheets-Daten verfügbar');return;}
+  const k=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
+  const sd=NASCH_SHEETS_IMPORT[k];
+  if(!sd){showToast('⚠ Keine Sheets-Daten für diese Woche ('+k+')');return;}
+  Object.keys(PLAN).forEach(x=>delete PLAN[x]);
+  Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));
+  if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore._resetLoaded) WeekPlanStore._resetLoaded();
+  buildAdminPlan();
+  renderPlan();
+  showToast('✅ Sheets-Plan für '+k+' geladen · '+Object.keys(sd).length+' Mitarbeiter');
+}
 function wNav(d){
   const u=AppState.currentUser;
-  if(!isAdminOrDeputy(AppState.currentUserId)) return;
+  const uid=AppState.currentUserId;
+  const role=USERS[uid]?.role;
+  if(role!=='admin' && role!=='vertretung' && !isAdminOrDeputy(uid)) return;
   AppState.weekOffset+=d;
+  // Sheets-Daten für neue Woche einlesen
+  if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
+    const _k=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset):'';
+    if(_k&&NASCH_SHEETS_IMPORT[_k]){
+      const _p=JSON.parse(JSON.stringify(NASCH_SHEETS_IMPORT[_k]));
+      Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,_p);
+    }
+  }
   renderPlan();
   buildAdminPlan();
   renderPersonalDailyHours();
@@ -2728,6 +3182,8 @@ const vOrig={...vSel};
 function buildVerfDays(){
   const c=document.getElementById('verfDays');
   if(!c) return;
+  const pw=document.querySelector('.page-wrap');
+  const sy=pw?pw.scrollTop:0;
   c.innerHTML=TAGE.map(tag=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:6px;">
       <div style="display:flex;align-items:center;padding:7px 12px;background:#f8fafc;">
@@ -2744,12 +3200,19 @@ function buildVerfDays(){
     </div>`).join('');
 }
 function selVerf(tag,key){
+  // Scroll-Position speichern (verhindert Sprung nach oben)
+  const pw=document.querySelector('.page-wrap');
+  const sy=pw?pw.scrollTop:0;
+
   vSel[tag]=key;
   TAGE.forEach(t=>{VOPTS.forEach(o=>{const el=document.getElementById('vo_'+t+'_'+o.k);if(el){const act=vSel[t]===o.k;el.style.background=act?VFARBE[o.k][0]:'var(--card)';el.style.borderColor=act?VFARBE[o.k][1]:'var(--border)';el.style.color=act?VFARBE[o.k][1]:'var(--muted)';}});});
   document.getElementById('vst_'+tag).textContent=VOPTS.find(o=>o.k===key)?.l;
   const changed=TAGE.some(t=>vSel[t]!==vOrig[t]);
   document.getElementById('verfGrundWrap').style.display=changed?'block':'none';
   document.getElementById('verfSendBtn').classList.toggle('hidden',!changed);
+
+  // Scroll-Position wiederherstellen (nach Layout-Update)
+  if(pw) requestAnimationFrame(()=>{ pw.scrollTop=sy; });
 }
 
 // ── PIN Ändern ────────────────────────────────────────────
@@ -2841,6 +3304,7 @@ function buildMAList(){
           <div style="height:5px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden;"><div style="height:100%;width:${pct===null?0:Math.min(pct,100)}%;background:${col};border-radius:3px;"></div></div>
         </div>
         <span style="font-size:11px;font-weight:700;color:${col};">${pct===null?'–':pct+'%'}</span>
+        </div>
       </div>`;
     });
   });
@@ -2966,8 +3430,15 @@ function isSuggestedShiftType(type,availabilityCode){
 }
 
 function buildAdminPlan(){
-  if(typeof renderPlan!=='function') return;
+  // DEBUG: Zeige Status auf Bildschirm
+  const dbg=document.getElementById('planDebug');
+  if(dbg) dbg.textContent='';
+  function dlog(msg){ console.log('🔧',msg); if(dbg){ dbg.style.display='block'; dbg.textContent+=(dbg.textContent?'\n':'')+msg; } }
+  
+  dlog('buildAdminPlan start, renderPlan='+(typeof renderPlan));
+  if(typeof renderPlan!=='function'){ dlog('❌ renderPlan fehlt!'); return; }
   const tbl=document.getElementById('adminTbl');
+  dlog('adminTbl='+(tbl?'gefunden':'FEHLT'));
   if(!tbl) return;
   const mon=getMonday(AppState.weekOffset);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
@@ -2980,8 +3451,11 @@ function buildAdminPlan(){
   let html='<thead><tr><th class="nc">Name</th>';
   dates.forEach((d,i)=>{const isT=d.toDateString()===today.toDateString();html+=`<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;});
   html+='<th style="background:#1e3a5f;color:#e8f4fd;min-width:64px;">Woche</th></tr></thead><tbody>';
+  let dbgEntries=getOrderedUserEntries();
+  if(dbgEntries.length===0){ dbgEntries=Object.entries(USERS); dlog('⚠ Fallback auf USERS'); }
+  dlog('Mitarbeiter: '+dbgEntries.length+', PLAN-Keys: '+Object.keys(PLAN).length);
   let gF=0,gS=0,gHours=0;
-  getOrderedUserEntries().forEach(([uid,user])=>{
+  dbgEntries.forEach(([uid,user])=>{
     const shifts=PLAN[uid]||[];
     const week=getEmployeeWeekStats(uid); gF+=week.f; gS+=week.s; gHours+=week.hours;
     html+=`<tr><td class="nc" style="font-size:11px;">${escapeHtml(user.name)}<br><small style="color:var(--muted);">${escapeHtml(user.typ)}</small></td>`;
@@ -3007,6 +3481,168 @@ function buildAdminPlan(){
   if(typeof updatePublishStatus==='function') setTimeout(updatePublishStatus, 0);
 }
 
+// ── DIREKTER PLAN-RENDERER (Fallback wenn buildAdminPlan leer lässt) ─────────
+function renderPlanTableDirect(tableId){
+  const tbl=document.getElementById(tableId||'adminTbl');
+  if(!tbl) return 0;
+  // Immer rendern wenn Sheets-Daten für diese Woche vorhanden
+  const _drk=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
+  const _drs=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[_drk];
+  if(!_drs){
+    // Kein Sheets-Daten → nur rendern wenn Tabelle leer
+    if(tbl.querySelectorAll('tbody tr').length>0) return tbl.querySelectorAll('tbody tr').length;
+  }
+  // Direkt rendern (Sheets-Daten verfügbar oder Tabelle leer)
+  const mon=getMonday(AppState.weekOffset||0);
+  const kw=getKW(mon);
+  const lbl=document.getElementById(tableId==='adminTbl'?'adminWLbl':'wLbl');
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  if(lbl) lbl.textContent=`KW ${kw} · ${formatDate(mon)}–${formatDate(sun)}`;
+  const today=new Date();today.setHours(0,0,0,0);
+  const dates=Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+  let h='<thead><tr><th class="nc">Name</th>';
+  dates.forEach((d,i)=>{const isT=d.toDateString()===today.toDateString();h+=`<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;});
+  h+='<th style="background:#1e3a5f;color:#e8f4fd;min-width:64px;">Woche</th></tr></thead><tbody>';
+  const emps=Object.entries(USERS).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
+  emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  // Sheets-Daten für die angezeigte Woche direkt verwenden wenn verfügbar
+  const _curKey=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
+  const _sheetsWeek=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[_curKey];
+  emps.forEach(([uid,u])=>{
+    const sh=(_sheetsWeek&&_sheetsWeek[uid])||PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
+    const wk=getEmployeeWeekStats(uid);
+    h+=`<tr><td class="nc" style="font-size:11px;">${escapeHtml(u.name)}<br><small style="color:var(--muted);">${escapeHtml(u.typ||'')}</small></td>`;
+    dates.forEach((_,i)=>{
+      const s=sh[i]||{t:'-'};const isT=dates[i].toDateString()===today.toDateString();
+      const changed=typeof planChanges!=='undefined'&&planChanges[uid]?.[i];
+      let style=isT?'background:rgba(30,58,95,.04);':'';if(changed)style+='background:#fffae8;';
+      if(typeof editMode!=='undefined'&&editMode){
+        h+=`<td onclick="openShiftEditor('${uid}',${i})" style="${style}cursor:pointer;"><div style="position:relative;">${shiftLabel(s)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div></td>`;
+      } else { h+=`<td style="${style}">${shiftLabel(s)}</td>`; }
+    });
+    h+=`<td style="background:#f8fafc;text-align:center;font-size:9px;"><span style="color:var(--early-t);display:block;">F:${wk.f}</span><span style="color:var(--late-t);display:block;">S:${wk.s}</span><strong style="color:var(--navy);display:block;">${formatHours(wk.hours)}</strong></td></tr>`;
+  });
+  h+='<tr style="background:#f8fafc;border-top:2px solid var(--border);"><td class="nc" style="font-size:10px;font-weight:600;">Summe</td>';
+  dates.forEach((_,i)=>{const st=getDayPlanStats(i);h+=`<td style="background:#f8fafc;text-align:center;font-size:10px;"><span style="color:var(--early-t);">F:${st.f}</span><br><span style="color:var(--late-t);">S:${st.s}</span></td>`;});
+  h+=`<td style="background:#1e3a5f;color:#e8f4fd;text-align:center;font-size:9px;padding:6px;"><strong>${formatHours(getWeekTotalHours())}</strong></td></tr>`;
+  h+='</tbody>';
+  tbl.innerHTML=h;
+  return emps.length;
+}
+
+// ── NOTFALL: Sheets-Daten direkt in PLAN wenn leer ──────────────────────────
+function injectSheetsIfPlanEmpty(force=false){
+  if(typeof NASCH_SHEETS_IMPORT==='undefined') return;
+  if(!force){
+    const hasReal=Object.values(PLAN).some(sh=>Array.isArray(sh)&&sh.some(s=>s&&s.t&&s.t!=='-'));
+    if(hasReal) return;
+  }
+  const key=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
+  const wd=NASCH_SHEETS_IMPORT[key];
+  if(!wd||!Object.keys(wd).length) return;
+  const p=JSON.parse(JSON.stringify(wd));
+  Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+  Object.assign(PLAN,p);
+  console.log('🔧 Notfall-Injektion:',key,Object.keys(p).length,'MA');
+  try{if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore._resetLoaded)WeekPlanStore._resetLoaded();}catch(_){}
+}
+
+// ══════════════════════════════════════════════════════════
+// SHEETS DIREKT-SYNC · läuft bei jedem renderPlan/buildAdminPlan
+// ══════════════════════════════════════════════════════════
+function sheetsSync(offset){
+  if(typeof NASCH_SHEETS_IMPORT==='undefined') return false;
+  const off = (offset===undefined ? (AppState?.weekOffset||0) : offset);
+  const mon = getMonday(off);
+  const k   = mon.toISOString().slice(0,10);
+  const sd  = NASCH_SHEETS_IMPORT[k];
+  if(!sd||!Object.keys(sd).length) return false;
+  // PLAN hart überschreiben
+  Object.keys(PLAN).forEach(x=>delete PLAN[x]);
+  Object.assign(PLAN, JSON.parse(JSON.stringify(sd)));
+  // WeekPlanStore-State ebenfalls updaten damit kein Rücksetzen passiert
+  try{if(typeof WeekPlanStore!=='undefined'){
+    if(WeekPlanStore._resetLoaded) WeekPlanStore._resetLoaded();
+    // Wochen-Daten im Store updaten
+    if(WeekPlanStore.loadOffset) setTimeout(()=>{},0); // State-Update vermeiden
+  }}catch(_){}
+  return true;
+}
+
+function updateSheetsBanner(k, ma){
+  const b=document.getElementById('sheetsSyncBanner');
+  if(!b) return;
+  if(k && ma>0){
+    b.style.background='#E1F5EE'; b.style.color='#085041';
+    b.textContent='📋 Sheets-Plan: KW geladen · '+ma+' Mitarbeiter';
+  } else {
+    b.style.background='#fef2f2'; b.style.color='#991b1b';
+    b.textContent='⚠️ Keine Sheets-Daten für diese Woche – Demo-Daten';
+  }
+  b.style.display='block';
+}
+
+
+
+
+// ══ SCHNELLEINGABE ABWESENHEITEN ═══════════════════════════
+let _abwTyp = 'U';
+function setAbwTyp(t){
+  _abwTyp=t;
+  ['U','WF','K'].forEach(x=>{
+    const btn=document.getElementById('abw'+x);
+    if(!btn)return;
+    const active=x===t;
+    btn.style.borderColor=active?'var(--navy)':'var(--border)';
+    btn.style.background=active?'var(--navy)':'var(--card)';
+    btn.style.color=active?'#fff':'var(--text)';
+  });
+}
+function buildAbwPanel(){
+  // Mitarbeiter-Dropdown füllen
+  const sel=document.getElementById('abwMA');
+  if(!sel) return;
+  const emps=Object.entries(USERS).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
+  emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  sel.innerHTML=emps.map(([uid,u])=>`<option value="${uid}">${u.name}</option>`).join('');
+  // Tage-Dropdowns füllen (Mo–So der aktuellen Woche)
+  const mon=getMonday(AppState.weekOffset||0);
+  const vonSel=document.getElementById('abwVon');
+  const bisSel=document.getElementById('abwBis');
+  if(!vonSel||!bisSel) return;
+  const opts=Array.from({length:7},(_,i)=>{
+    const d=new Date(mon);d.setDate(mon.getDate()+i);
+    const label=DAYS[i]+' '+formatDate(d);
+    return `<option value="${i}">${label}</option>`;
+  }).join('');
+  vonSel.innerHTML=opts; bisSel.innerHTML=opts;
+  // Standard: So=6 für Bis
+  bisSel.value='6';
+  setAbwTyp(_abwTyp);
+}
+function doAbwesenheit(){
+  const uid=document.getElementById('abwMA')?.value;
+  const von=parseInt(document.getElementById('abwVon')?.value??'0');
+  const bis=parseInt(document.getElementById('abwBis')?.value??'6');
+  const msg=document.getElementById('abwMsg');
+  if(!uid||!USERS[uid]){if(msg)msg.textContent='❌ Mitarbeiter fehlt';return;}
+  if(von>bis){if(msg)msg.textContent='❌ "Von" muss vor "Bis" liegen';return;}
+  if(!Array.isArray(PLAN[uid])) PLAN[uid]=Array.from({length:7},()=>({t:'-',z:'',r:[]}));
+  for(let i=von;i<=bis;i++) PLAN[uid][i]={t:_abwTyp,z:'',r:[]};
+  // Im WeekPlanStore persistieren
+  try{if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore.persistCurrent)WeekPlanStore.persistCurrent();}catch(_){}
+  buildAdminPlan();
+  const labels={'U':'Urlaub','WF':'Wunschfrei','K':'Krank'};
+  if(msg)msg.textContent='✅ '+labels[_abwTyp]+' für '+USERS[uid].name+' (Tag '+(von+1)+'–'+(bis+1)+') eingetragen';
+  setTimeout(()=>{if(msg)msg.textContent='';},3000);
+}
+function toggleAbwPanel(){
+  const p=document.getElementById('abwesenheitsPanel');
+  if(!p)return;
+  const visible=p.style.display!=='none';
+  p.style.display=visible?'none':'block';
+  if(!visible) buildAbwPanel();
+}
 function toggleEdit(){
   if(editMode){ cancelEdit(); return; }
   editMode=true;
@@ -3016,6 +3652,7 @@ function toggleEdit(){
   const ban=document.getElementById('editBanner');
   if(ban) ban.style.display='flex';
   buildAdminPlan();
+  setTimeout(()=>renderPlanTableDirect('adminTbl'), 50);
 }
 
 function openShiftEditor(uid,dayIdx){
@@ -3468,7 +4105,7 @@ function renderVorschussPanel() {
   let html = '';
   // Dauerhafter Vorschuss: Admin/Vertretung
   html += '<div class="sec">Dauerhafter Vorschuss · Filialleiter & Vertretung</div>';
-  const leitungMA = entries.filter(([uid,u]) => VORSCHUSS_ROLLEN.includes(u.role));
+  const leitungMA = entries.filter(([uid]) => isVorschussEligible(uid));
   if(!leitungMA.length) html += '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Keine Führungskräfte gefunden.</div>';
   leitungMA.forEach(([uid,u]) => {
     checkVorschussDialog(uid); // Jennifer-Dialog falls nötig
@@ -3490,9 +4127,45 @@ function renderVorschussPanel() {
     </div>`;
   });
 
-  // Temporärer Vorschuss: alle Mitarbeiter
-  html += '<div class="sec" style="margin-top:8px;">Temporärer Vorschuss · dieser Monat</div>';
-  const allMA = entries.filter(([uid,u]) => !VORSCHUSS_ROLLEN.includes(u.role));
+  // Vollzeit & Teilzeit: wahlweise dauerhaft oder einmalig
+  const vztzMA = entries.filter(([uid]) => isVorschussWaehlbar(uid));
+  if(vztzMA.length){
+    html += '<div class="sec" style="margin-top:8px;">Vorschuss · Vollzeit & Teilzeit</div>';
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Für jeden Mitarbeiter wählen: dauerhaft (jeden Monat) oder einmalig (nur dieser Monat).</div>';
+    vztzMA.forEach(([uid,u]) => {
+      const perm = VorschussStore.getPermanent(uid);
+      const tmp = VorschussStore.getMonthly(uid, mk);
+      const mode = VorschussStore.isPermanentConfirmed(uid) ? (perm > 0 ? 'perm' : 'tmp') : 'tmp';
+      html += `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${escapeHtml(u.initials)}</div>
+          <div><div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div><div style="font-size:10px;color:var(--muted);">${escapeHtml(u.typ)} · ${escapeHtml(u.label||'')}</div></div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="vp_mode_${uid}" value="perm" ${mode==='perm'?'checked':''} onchange="toggleVpMode('${uid}','perm')"> Dauerhaft
+          </label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="vp_mode_${uid}" value="tmp" ${mode!=='perm'?'checked':''} onchange="toggleVpMode('${uid}','tmp')"> Einmalig (dieser Monat)
+          </label>
+        </div>
+        <div id="vp_perm_wrap_${uid}" style="${mode==='perm'?'':'display:none;'}display:flex;align-items:center;gap:8px;">
+          <input type="number" min="0" step="1" value="${perm||''}" placeholder="0" id="vp_perm_${uid}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;">
+          <button onclick="savePermVorschuss('${uid}')" style="padding:7px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Speichern</button>
+          ${perm>0?`<span style="font-size:11px;color:#085041;font-weight:700;">${eurFmt(perm)}/Monat dauerhaft</span>`:''}
+        </div>
+        <div id="vp_tmp_wrap_${uid}" style="${mode!=='perm'?'':'display:none;'}display:flex;align-items:center;gap:8px;">
+          <input type="number" min="0" step="1" value="${tmp||''}" placeholder="0" id="vp_tmp_${uid}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;">
+          <button onclick="saveTmpVorschuss('${uid}')" style="padding:7px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:11px;font-weight:600;cursor:pointer;">OK</button>
+          ${tmp>0?`<span style="font-size:11px;color:#085041;font-weight:700;">${eurFmt(tmp)} einmalig</span>`:''}
+        </div>
+      </div>`;
+    });
+  }
+
+  // Aushilfen: nur einmalig
+  html += '<div class="sec" style="margin-top:8px;">Vorschuss · Aushilfen (einmalig)</div>';
+  const allMA = entries.filter(([uid,u]) => !isVorschussEligible(uid) && !isVorschussWaehlbar(uid));
   allMA.forEach(([uid,u]) => {
     const tmp = VorschussStore.getMonthly(uid, mk);
     html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;flex-wrap:wrap;">
@@ -3510,6 +4183,12 @@ function renderVorschussPanel() {
   box.innerHTML = html;
 }
 
+function toggleVpMode(uid, mode){
+  const pw=document.getElementById('vp_perm_wrap_'+uid);
+  const tw=document.getElementById('vp_tmp_wrap_'+uid);
+  if(pw)pw.style.display=mode==='perm'?'flex':'none';
+  if(tw)tw.style.display=mode!=='perm'?'flex':'none';
+}
 function savePermVorschuss(uid) {
   const inp = document.getElementById('vp_perm_'+uid);
   const betrag = parseFloat(inp?.value) || 0;
@@ -3586,59 +4265,105 @@ function saveGutschein(uid) {
   if(typeof showToast === 'function') showToast(`✓ Gutschein ${USERS[uid]?.name}: ${eurFmt(r.value)}`);
 }
 
-// ── SCHÜRZEN PANEL ─────────────────────────────────────────────
+// ── WÄSCHE-AUSGABE PANEL ───────────────────────────────────────
+
+
+// Wäsche-Typ: Schürze → 5€ Kaution | Bluse/Andere → freie Eingabe
+function getWaescheTypes(){ return [{v:'schuerze',l:'Schürze (5 € Kaution/Stk)'},{v:'bluse',l:'Bluse'},{v:'andere',l:'Andere…'}]; }
+
 function renderSchuerzenPanel() {
   const box = document.getElementById('schuerzenPanel');
   if(!box || AppState.currentUser?.role !== 'admin') {
-    if(box) box.innerHTML = '<div class="banner bwarn"><span>🔒</span><span>Nur Admin kann Schürzen verwalten.</span></div>';
+    if(box) box.innerHTML = '<div class="banner bwarn"><span>🔒</span><span>Nur Admin kann die Wäsche-Ausgabe verwalten.</span></div>';
     return;
   }
+
   const mk = currentMonthKey();
+  // Monat-Auswahl: aktueller + 2 zurück
+  const months=[];const now=new Date();for(let i=0;i<3;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({v:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,l:`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`});}
+  const selMk = document.getElementById('wascheMonat')?.value || mk;
   const entries = typeof getOrderedUserEntries === 'function' ? getOrderedUserEntries() : Object.entries(USERS);
-  let html = '';
+  let html = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+    <label style="font-size:12px;font-weight:600;color:var(--navy);">Monat:</label>
+    <select id="wascheMonat" onchange="renderSchuerzenPanel()" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">${months.map(m=>`<option value="${m.v}"${m.v===selMk?' selected':''}>${m.l}</option>`).join('')}</select>
+  </div>`;
   entries.forEach(([uid,u]) => {
     const saldo  = SchuerzenStore.getSaldo(uid);
-    const netto  = SchuerzenStore.getMonthNet(uid, mk);
+    const netto  = SchuerzenStore.getMonthNet(uid, selMk);
     const betrag = netto * SCHUERZEN_PREIS;
-    const log    = SchuerzenStore.getLog(uid).slice(0,3);
+    const log    = SchuerzenStore.getLog(uid).filter(e=>(!e.mk||e.mk===selMk)).slice(0,4);
+    const types  = getWaescheTypes();
     html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${escapeHtml(u.initials)}</div>
-        <div style="flex:1;min-width:80px;"><div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div><div style="font-size:10px;color:var(--muted);">Bestand: ${saldo} Stück · ${eurFmt(saldo*SCHUERZEN_PREIS)}</div></div>
-        ${netto !== 0 ? `<span style="font-size:11px;border-radius:6px;padding:3px 8px;font-weight:700;background:${netto>0?'var(--err)':'var(--ok)'};color:${netto>0?'var(--err-t)':'var(--ok-t)'};">${netto>0?`−${eurFmt(betrag)}`:`+${eurFmt(Math.abs(betrag))}`}</span>` : ''}
+        <div style="flex:1;min-width:80px;"><div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div>
+          <div style="font-size:10px;color:var(--muted);">Schürzen Bestand: ${saldo} Stk · ${eurFmt(saldo*SCHUERZEN_PREIS)}${netto!==0?` · Monat: ${netto>0?'-':'+'} ${eurFmt(Math.abs(betrag))}`:''}
+        </div></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px;">
+        <div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Typ</label>
+          <select id="sz_typ_${uid}" onchange="renderWaescheKosten('${uid}')" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:11px;">
+            ${types.map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}
+          </select></div>
+        <div id="sz_menge_wrap_${uid}"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Menge</label>
+          <input type="number" min="1" step="1" value="1" id="sz_aus_${uid}" onchange="renderWaescheKosten('${uid}')" style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></div>
+        <div id="sz_notiz_wrap_${uid}" style="display:none;"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Bezeichnung</label>
+          <input type="text" placeholder="z. B. Bluse weiß" id="sz_notiz_${uid}" style="width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></div>
+        <div id="sz_kosten_wrap_${uid}" style="display:none;"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Kosten (€)</label>
+          <input type="number" min="0" step="0.50" value="" placeholder="optional" id="sz_kosten_${uid}" style="width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></div>
+        <div id="sz_info_${uid}" style="font-size:11px;color:var(--navy);font-weight:700;padding-bottom:6px;"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input type="number" min="1" step="1" value="1" id="sz_aus_${uid}" style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
-          <button onclick="doSchuerzenAusgabe('${uid}')" style="padding:7px 10px;border:none;border-radius:7px;background:#E24B4A;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">👔 Ausgeben</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input type="number" min="1" max="${saldo}" step="1" value="1" id="sz_ruck_${uid}" ${saldo<=0?'disabled':''} style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
-          <button onclick="doSchuerzenRueckgabe('${uid}')" ${saldo<=0?'disabled':''} style="padding:7px 10px;border:none;border-radius:7px;background:#1D9E75;color:#fff;font-size:11px;font-weight:600;cursor:pointer;${saldo<=0?'opacity:.4;':''}">↩ Zurück</button>
-        </div>
+        <button onclick="doSchuerzenAusgabe('${uid}')" style="padding:7px 12px;border:none;border-radius:7px;background:#E24B4A;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">👕 Ausgabe</button>
+        <button onclick="doSchuerzenRueckgabe('${uid}')" ${saldo<=0?'disabled':''} style="padding:7px 12px;border:none;border-radius:7px;background:#1D9E75;color:#fff;font-size:11px;font-weight:600;cursor:pointer;${saldo<=0?'opacity:.4;':''}">↩ Rückgabe</button>
       </div>
-      ${log.length ? `<div style="margin-top:8px;font-size:10px;color:var(--muted);">Letzte Einträge: ${log.map(e=>`${e.ausgabe?`-${e.ausgabe}Stk`:`+${e.rueckgabe}Stk`}`).join(' · ')}</div>` : ''}
+      ${log.length ? `<div style="margin-top:8px;font-size:10px;color:var(--muted);">Diesen Monat: ${log.map(e=>`${e.ausgabe?`−${e.ausgabe}Stk`:`+${e.rueckgabe}Stk`}${e.typ&&e.typ!=='schuerze'?' ('+escapeHtml(e.typ)+')':''}`).join(' · ')}</div>` : ''}
     </div>`;
   });
   box.innerHTML = html || '<div style="padding:16px;text-align:center;color:var(--muted);">Keine Mitarbeiter.</div>';
 }
 
+function renderWaescheKosten(uid){
+  const typ = document.getElementById('sz_typ_'+uid)?.value||'schuerze';
+  const mw = document.getElementById('sz_menge_wrap_'+uid);
+  const nw = document.getElementById('sz_notiz_wrap_'+uid);
+  const kw = document.getElementById('sz_kosten_wrap_'+uid);
+  const info = document.getElementById('sz_info_'+uid);
+  if(typ==='schuerze'){
+    if(mw)mw.style.display='';if(nw)nw.style.display='none';if(kw)kw.style.display='none';
+    const menge=parseInt(document.getElementById('sz_aus_'+uid)?.value)||1;
+    if(info)info.textContent=`= ${eurFmt(menge*SCHUERZEN_PREIS)} Kaution`;
+  } else {
+    if(mw)mw.style.display='none';if(nw)nw.style.display='';if(kw)kw.style.display='';
+    if(info)info.textContent='Kosten offen';
+  }
+}
+
 function doSchuerzenAusgabe(uid) {
-  const mk = currentMonthKey();
-  const inp = document.getElementById('sz_aus_'+uid);
-  const anzahl = parseInt(inp?.value) || 1;
-  const r = SchuerzenStore.ausgabe(uid, anzahl, mk);
+  const selMk = document.getElementById('wascheMonat')?.value || currentMonthKey();
+  const typ  = document.getElementById('sz_typ_'+uid)?.value || 'schuerze';
+  let toast='';
+  if(typ==='schuerze'){
+    const anzahl = parseInt(document.getElementById('sz_aus_'+uid)?.value)||1;
+    const r = SchuerzenStore.ausgabe(uid, anzahl, selMk);
+    toast = `👕 ${anzahl} Schürze(n) an ${USERS[uid]?.name} · −${eurFmt(r.betrag)}`;
+  } else {
+    const notiz = document.getElementById('sz_notiz_'+uid)?.value.trim()||typ;
+    const kosten = parseFloat(document.getElementById('sz_kosten_'+uid)?.value)||0;
+    // In Log schreiben (mit Typ und Notiz)
+    try{SchuerzenStore.logEntry(uid,{ausgabe:1,typ:notiz,mk:selMk,kosten});}catch(_){}
+    toast = `👕 ${notiz} an ${USERS[uid]?.name}${kosten?` · −${eurFmt(kosten)}`:''}`;
+  }
   renderSchuerzenPanel();
-  if(typeof showToast === 'function') showToast(`👔 ${anzahl} Schürze(n) an ${USERS[uid]?.name} · −${eurFmt(r.betrag)}`);
+  if(typeof showToast==='function') showToast(toast);
 }
 function doSchuerzenRueckgabe(uid) {
-  const mk = currentMonthKey();
-  const inp = document.getElementById('sz_ruck_'+uid);
-  const anzahl = parseInt(inp?.value) || 1;
-  const r = SchuerzenStore.rueckgabe(uid, anzahl, mk);
+  const selMk = document.getElementById('wascheMonat')?.value || currentMonthKey();
+  const anzahl = parseInt(document.getElementById('sz_aus_'+uid)?.value)||1;
+  const r = SchuerzenStore.rueckgabe(uid, anzahl, selMk);
   if(!r.ok) { alert(r.msg); return; }
   renderSchuerzenPanel();
-  if(typeof showToast === 'function') showToast(`↩ ${anzahl} Schürze(n) zurück von ${USERS[uid]?.name} · +${eurFmt(r.gutschrift)}`);
+  if(typeof showToast==='function') showToast(`↩ ${anzahl} Stück zurück von ${USERS[uid]?.name} · +${eurFmt(r.gutschrift)}`);
 }
 
 // ── Logout
@@ -3689,7 +4414,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
 <script>
 // ── V13: echte Wochenpläne, Vorlagen, Kalenderhinweise und wichtige Termine ──
 (function(){
-  const V13_WEEK_KEY='nasch-sandbox-weekplans-v13';
+  const V13_WEEK_KEY='nasch-sandbox-weekplans-v15';
   const V13_EVENT_KEY='nasch-important-events-v13';
   const DAY_NAMES=['So','Mo','Di','Mi','Do','Fr','Sa'];
   const WEEKDAY_OPTIONS=[['1','Montag'],['2','Dienstag'],['3','Mittwoch'],['4','Donnerstag'],['5','Freitag'],['6','Samstag'],['0','Sonntag']];
@@ -3833,7 +4558,16 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     }
     function init(){
       loadState();const key=keyForOffset(0),mon=getMonday(0);
-      if(!state.weeks[key]){state.weeks[key]=deepClone(PLAN);applyConstraints(state.weeks[key],mon,{newWeek:false});}
+      // Sheets-Import IMMER als Basis (Übergangsbetrieb: Sheets = Quelle der Wahrheit)
+      if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
+        Object.entries(NASCH_SHEETS_IMPORT).forEach(([wk,planData])=>{
+          const p=deepClone(planData);ensureUserRows(p);state.weeks[wk]=p;
+        });
+        console.log('✅ Sheets-Seed: alle',Object.keys(NASCH_SHEETS_IMPORT).length,'Wochen');
+      }
+      // Aktuelle Woche mit Demo-Plan füllen wenn noch leer
+      const weekEmpty=!state.weeks[key]||Object.keys(state.weeks[key]).length===0;
+      if(weekEmpty){state.weeks[key]=deepClone(PLAN);applyConstraints(state.weeks[key],mon,{newWeek:false});}
       state.loadedKey=null;loadOffset(AppState.weekOffset);
     }
     function copyEmployeeToNext(uid){
@@ -3847,7 +4581,8 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     }
     function currentKey(){return state.loadedKey||keyForOffset();}
     init();
-    return {loadOffset,persistCurrent,copyEmployeeToNext,currentKey,keyForOffset,syncAllConstraints};
+    function _resetLoaded(){state.loadedKey=null;}
+  return {loadOffset,persistCurrent,copyEmployeeToNext,currentKey,keyForOffset,syncAllConstraints,_resetLoaded};
   })();
   window.WeekPlanStore=WeekPlanStore;
 
@@ -3895,7 +4630,14 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   const originalRenderPlan=window.renderPlan;
   window.renderPlan=function(){if(!isAdminOrDeputy(AppState.currentUserId)&&AppState.weekOffset!==0)AppState.weekOffset=0;WeekPlanStore.loadOffset(AppState.weekOffset);originalRenderPlan();decoratePlanHeaders('planTbl',isAdminOrDeputy());};renderPlan=window.renderPlan;
   const originalBuildAdminPlan=window.buildAdminPlan;
-  window.buildAdminPlan=function(){WeekPlanStore.loadOffset(AppState.weekOffset);originalBuildAdminPlan();decoratePlanHeaders('adminTbl',true);addCopyButtons();};buildAdminPlan=window.buildAdminPlan;
+  window.buildAdminPlan=function(){
+    const synced=sheetsSync(AppState.weekOffset);
+    if(!synced) WeekPlanStore.loadOffset(AppState.weekOffset);
+    originalBuildAdminPlan();
+    const k=getMonday(AppState.weekOffset).toISOString().slice(0,10);
+    updateSheetsBanner(synced?k:'',synced?Object.keys(PLAN).length:0);
+    decoratePlanHeaders('adminTbl',true);addCopyButtons();
+  };buildAdminPlan=window.buildAdminPlan;
 
   // Wochennavigation lädt/speichert jetzt echte unterschiedliche Wochenpläne.
   window.wNav=function(d){
@@ -4882,7 +5624,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 /* NASCH Sandbox V23 · getrennte Zugänge / Aktivierung
    WICHTIG: lokale UI-Simulation. Produktionssicherheit kommt erst mit Firebase Auth + Firestore Rules. */
 (() => {
-  const META_KEY='nasch-v23-multibranch-meta';
+  const META_KEY='nasch-v24-multibranch-meta';
   const ACTIVE_KEY='nasch-v23-active-branch';
   const SNAP_PREFIX='nasch-v23-snapshot-';
   const FRESH_KEY='nasch-v23-fresh-branch';
@@ -4931,7 +5673,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 
   const ENTRY_MODE=window.NASCH_ENTRY_MODE||'management';
   const FIXED_BRANCH=window.NASCH_FIXED_BRANCH||'';
-  const isCentral=uid=>['1001','8808'].includes(String(uid||''));
+  const isCentral=uid=>['8808'].includes(String(uid||'')); // Nur System-Admin ist central
   const isOffice=uid=>USERS[String(uid||'')]?.role==='office';
   const activeBranch=()=>FIXED_BRANCH||localStorage.getItem(ACTIVE_KEY)||'FIL001';
   function branch(id=activeBranch()){return meta.branches[id]||meta.branches.FIL001;}
@@ -5006,14 +5748,14 @@ window.NASCH_SANDBOX_VERSION='V19';
     sel.innerHTML='<option value="">Name auswählen …</option>';
     const err=document.getElementById('loginErr');if(err)err.textContent='';
     if(ENTRY_MODE==='management'){
-      Object.entries(USERS).filter(([uid])=>isCentral(uid)||isOffice(uid)).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
+      Object.entries(USERS).filter(([uid])=>isCentral(uid)||isOffice(uid)||['admin','vertretung'].includes(USERS[uid]?.role)).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
     }else{
       if(!FIXED_BRANCH||!isBranchActive(FIXED_BRANCH)){
         if(err)err.textContent='Diese Filiale wurde noch nicht vom Zentraladmin aktiviert.';
         sel.disabled=true;document.getElementById('loginKP')?.style.setProperty('pointer-events','none');document.getElementById('loginKP')?.style.setProperty('opacity','.35');return;
       }
       sel.disabled=false;document.getElementById('loginKP')?.style.removeProperty('pointer-events');document.getElementById('loginKP')?.style.removeProperty('opacity');
-      Object.entries(USERS).filter(([uid])=>workerIn(uid,FIXED_BRANCH)&&!isCentral(uid)&&!isOffice(uid)&&!(window.NaschEmployees?.isInactive?.(uid))).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
+      Object.entries(USERS).filter(([uid])=>workerIn(uid,FIXED_BRANCH)&&!isOffice(uid)&&!(window.NaschEmployees?.isInactive?.(uid))).sort((a,b)=>a[1].name.localeCompare(b[1].name,'de')).forEach(([uid,u])=>{const o=document.createElement('option');o.value=uid;o.textContent=`${u.name}`;sel.appendChild(o);});
     }
     if(cur&&USERS[cur])sel.value=cur;
   };
@@ -5151,7 +5893,7 @@ window.NASCH_SANDBOX_VERSION='V19';
   window.startApp=function(uid){
     uid=String(uid||'');
     if(ENTRY_MODE==='management'){if(!isCentral(uid)&&!isOffice(uid)){alert('Dieser Zugang ist nur für Admin und Personalbüro.');return;}const first=activeBranchIds()[0]||'FIL001';if(!isBranchActive(activeBranch()))localStorage.setItem(ACTIVE_KEY,first);}
-    else {if(!FIXED_BRANCH||!isBranchActive(FIXED_BRANCH)){alert('Diese Filiale ist noch nicht aktiviert.');return;}if(isCentral(uid)||isOffice(uid)||!workerIn(uid,FIXED_BRANCH)){alert('Dieser Benutzer hat keinen Zugriff auf diese Filialseite.');return;}}
+    else {if(!FIXED_BRANCH||!isBranchActive(FIXED_BRANCH)){alert('Diese Filiale ist noch nicht aktiviert.');return;}if(isOffice(uid)||(!isCentral(uid)&&!workerIn(uid,FIXED_BRANCH))){alert('Dieser Benutzer hat keinen Zugriff auf diese Filialseite.');return;}}
     if(!canAccess(uid,activeBranch())){alert('Dieser Benutzer hat keinen Zugriff auf die ausgewählte Filiale.');return;}
     oldStart(uid);showBranchBar();injectBranchesMenu();applyModuleVisibility();if(isOffice(uid)){renderOfficePage();navTo('office');}else if(!currentModules().weekPlan&&document.getElementById('pgPlan')?.classList.contains('active'))navTo('profil');setTimeout(decorateAdminSettings,0);
   };try{startApp=window.startApp}catch(_){}
@@ -5207,5 +5949,264 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker:', err)));
 }
 </script>
+
+<script>
+/* NASCH V25.4 · automatische Pausen + Firebase-Sichtbarkeit + Admin-QR */
+(() => {
+  const esc254=v=>typeof escapeHtml==='function'?escapeHtml(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const minOf=t=>{const m=String(t||'').match(/^(\d{1,2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):null;};
+  function requiredPauseMinutesFromMinutes(grossMin){grossMin=Math.max(0,Number(grossMin)||0);return grossMin>=540?60:grossMin>=300?30:0;}
+  function requiredPauseMinutesFromHours(grossHours){return requiredPauseMinutesFromMinutes((Number(grossHours)||0)*60);}
+  function intervalGrossMinutes(start,end){let a=minOf(start),b=minOf(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return Math.max(0,b-a);}
+  function shiftGrossHours(sh){try{return typeof getShiftHours==='function'?Math.max(0,Number(getShiftHours(sh))||0):0;}catch(_){return 0;}}
+  function shiftAutoPause(sh){return requiredPauseMinutesFromHours(shiftGrossHours(sh));}
+  function shiftNetHours(sh){return Math.max(0,shiftGrossHours(sh)-shiftAutoPause(sh)/60);}
+  function recordPause(rec){const auto=requiredPauseMinutesFromMinutes(intervalGrossMinutes(rec?.start,rec?.end));return Math.max(auto,Math.max(0,Number(rec?.pauseMin)||0));}
+  function recordNetHours(rec){if(!rec)return 0;return Math.max(0,(intervalGrossMinutes(rec.start,rec.end)-recordPause(rec))/60);}
+  function pauseLabel(min,auto=true){min=Math.max(0,Number(min)||0);return min?`${min} Min.${auto?' · auto':''}`:'0 Min.';}
+  window.NaschPauseRules={requiredPauseMinutesFromMinutes,requiredPauseMinutesFromHours,shiftAutoPause,shiftNetHours,recordPause,recordNetHours};
+
+  // Korrekturen können nie unter dem automatischen Mindestabzug gespeichert werden.
+  if(window.TimeCorrectionStore && !window.TimeCorrectionStore.__v254pause){
+    const oldSubmit=window.TimeCorrectionStore.submit.bind(window.TimeCorrectionStore);
+    window.TimeCorrectionStore.submit=async function(data){
+      const minimum=requiredPauseMinutesFromMinutes(intervalGrossMinutes(data?.start,data?.end));
+      return oldSubmit({...data,pauseMin:Math.max(minimum,Number(data?.pauseMin)||0)});
+    };
+    window.TimeCorrectionStore.__v254pause=true;
+  }
+
+  function updateCorrectionPauseMinimum(){
+    const p=document.getElementById('tcPause'),s=document.getElementById('tcStart'),e=document.getElementById('tcEnd');if(!p||!s||!e)return;
+    const minimum=requiredPauseMinutesFromMinutes(intervalGrossMinutes(s.value,e.value));
+    p.min=String(minimum);if((Number(p.value)||0)<minimum)p.value=String(minimum);
+    let note=document.getElementById('tcPauseRule');if(!note){note=document.createElement('div');note.id='tcPauseRule';note.style.cssText='font-size:10px;color:#64748b;margin-top:4px;';p.insertAdjacentElement('afterend',note);}
+    note.textContent=minimum?`Automatischer Mindestabzug: ${minimum} Min. (${minimum===60?'ab 9 Std.':'ab 5 Std.'})`:'Automatischer Mindestabzug: 0 Min. unter 5 Std.';
+  }
+  const oldOpenCorrection=window.openTimeCorrection;
+  if(typeof oldOpenCorrection==='function'){
+    window.openTimeCorrection=function(){const r=oldOpenCorrection.apply(this,arguments);setTimeout(()=>{updateCorrectionPauseMinimum();['tcStart','tcEnd'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.dataset.v254Pause){el.dataset.v254Pause='1';el.addEventListener('input',updateCorrectionPauseMinimum);}});},0);return r;};
+  }
+
+  function plannedSurchargeNet(uid,sh,d,net){
+    const z=typeof getShiftSurchargeHours==='function'?getShiftSurchargeHours(uid,sh,d):{pct25:0,pct50:0};
+    const raw=(Number(z.pct25)||0)+(Number(z.pct50)||0);if(raw<=net)return z;const scale=raw>0?net/raw:0;
+    return {...z,pct25:Math.round((Number(z.pct25)||0)*scale*100)/100,pct50:Math.round((Number(z.pct50)||0)*scale*100)/100};
+  }
+  function correctedSurchargeNet(uid,rec,d,net){
+    const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;if(!eligible||!rec?.start||!rec?.end)return {eligible,pct25:0,pct50:0};
+    const z=typeof surchargeHoursForTimeText==='function'?surchargeHoursForTimeText(`${rec.start}–${rec.end}`,d):{pct25:0,pct50:0};const raw=(Number(z.pct25)||0)+(Number(z.pct50)||0);if(raw<=net)return {eligible,...z};const scale=raw>0?net/raw:0;
+    return {eligible,pct25:Math.round((Number(z.pct25)||0)*scale*100)/100,pct50:Math.round((Number(z.pct50)||0)*scale*100)/100};
+  }
+  function dayStatus(uid,dk){try{const p=TimeCorrectionStore.pending(uid,dk);if(p)return {cls:'time-corr-open',text:'Korrektur offen'};const r=TimeCorrectionStore.getRecord(uid,dk);if(r)return {cls:'time-corr-ok',text:'Korrigiert'};const l=TimeCorrectionStore.latest(uid,dk);if(l?.status==='abgelehnt')return {cls:'time-corr-no',text:'Abgelehnt'};}catch(_){}return null;}
+  const dateKey254=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  // Stundenzettel: Pause als eigene Spalte + Nettozeit nach automatischem Abzug.
+  window.renderPersonalDailyHours=function(){
+    const box=document.getElementById('personalDailyHours');if(!box||!AppState.currentUserId)return;const uid=AppState.currentUserId,mon=getMonday(AppState.weekOffset),shifts=PLAN[uid]||[],eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;
+    if(window.TimeCorrectionStore&&!TimeCorrectionStore.isLoaded())TimeCorrectionStore.ensureLoaded().then(()=>renderPersonalDailyHours()).catch(()=>{});
+    let total=0,totalPause=0,total25=0,total50=0;
+    let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Pausen werden automatisch abgezogen: <strong>ab 5 Std. 30 Min.</strong> · <strong>ab 9 Std. 60 Min.</strong> Angezeigt werden Netto-Arbeitsstunden.</span></div>';
+    if(eligible)html+='<div class="banner binfo" style="margin-bottom:8px;"><span>💶</span><span>Zuschläge aktiv. Bei unbekannter Pausenlage werden Zuschlagsstunden auf die Netto-Arbeitszeit begrenzt.</span></div>';
+    html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:680px;"><thead><tr style="background:#f8fafc;"><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th>'+(eligible?'<th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th>':'')+'<th style="padding:7px 9px;text-align:right;">Korrektur</th></tr></thead><tbody>';
+    for(let i=0;i<7;i++){
+      const d=new Date(mon);d.setDate(mon.getDate()+i);const dk=dateKey254(d),sh=shifts[i]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null;
+      const pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;
+      const holiday=typeof getNRWPublicHolidayName==='function'?getNRWPublicHolidayName(d):'',dayHint=d.getDay()===0?' · Sonntag':holiday?` · ${holiday}`:'';
+      const times=rec?`${rec.start}–${rec.end}`:(typeof dailyShiftTimes==='function'?dailyShiftTimes(sh):'–');const pend=window.TimeCorrectionStore?.pending?.(uid,dk);const today=new Date();today.setHours(0,0,0,0);const future=d>today;
+      html+=`<tr style="border-top:1px solid var(--border);"><td style="padding:8px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}<span style="font-size:9px;color:var(--muted);">${esc254(dayHint)}</span></td><td style="padding:8px 9px;white-space:nowrap;">${esc254(times)}${st?`<br><span class="time-corr-badge ${st.cls}">${st.text}</span>`:''}</td><td style="padding:8px 9px;text-align:right;"><span class="v254-pause">${esc254(pauseLabel(pause,!rec||pause===requiredPauseMinutesFromMinutes(intervalGrossMinutes(rec?.start,rec?.end))))}</span></td><td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(h)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:8px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}<td style="padding:8px 9px;text-align:right;"><button class="time-corr-btn" ${pend||future?'disabled':''} onclick="openTimeCorrection('${uid}',${i})">${pend?'Offen':future?'Noch nicht':'✏️ Korrektur'}</button></td></tr>`;
+    }
+    html+=`<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;color:var(--navy);">${formatHours(total)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total25)}</td><td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total50)}</td>`:''}<td></td></tr></tbody></table></div>`;
+    box.innerHTML=html;const ist=document.getElementById('stzIst');if(ist)ist.textContent=formatHours(total);
+  };
+  try{renderPersonalDailyHours=window.renderPersonalDailyHours;}catch(_){}
+
+  window.renderAdminDailyHours=function(){
+    const box=document.getElementById('adminDailyHours');if(!box)return;const allowed=(typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId))||window.BranchSandbox?.isOffice?.(AppState.currentUserId);if(!allowed){box.innerHTML='';return;}
+    if(window.TimeCorrectionStore&&!TimeCorrectionStore.isLoaded())TimeCorrectionStore.ensureLoaded().then(()=>renderAdminDailyHours()).catch(()=>{});
+    const mon=getMonday(AppState.weekOffset),entries=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS);let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Automatische Pause: ab 5 Std. 30 Min. · ab 9 Std. 60 Min. Die Spalte Netto enthält bereits den Abzug.</span></div>';
+    entries.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,currentBid254()))).forEach(([uid,u])=>{
+      const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;let total=0,totalPause=0,total25=0,total50=0,rows='';
+      for(let day=0;day<7;day++){
+        const d=new Date(mon);d.setDate(mon.getDate()+day);const dk=dateKey254(d),sh=(PLAN[uid]||[])[day]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null,pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;const times=rec?`${rec.start}–${rec.end}`:(typeof dailyShiftTimes==='function'?dailyShiftTimes(sh):'–');
+        rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}${st?`<div><span class="time-corr-badge ${st.cls}">${st.text}</span></div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${esc254(times)}</td><td style="padding:7px 9px;text-align:right;">${pause} Min.</td><td style="padding:7px 9px;text-align:right;font-weight:800;">${formatHours(h)}</td><td style="padding:7px 9px;text-align:right;">${eligible?formatHours(z.pct25||0):'–'}</td><td style="padding:7px 9px;text-align:right;">${eligible?formatHours(z.pct50||0):'–'}</td></tr>`;
+      }
+      const badge=eligible?'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:var(--ok);color:var(--ok-t);font-weight:700;">Zuschläge: Ja</span>':'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:#f1f5f9;color:#64748b;font-weight:700;">Zuschläge: Nein</span>';
+      html+=`<div class="card" style="margin-bottom:10px;overflow:hidden;"><div style="padding:10px 11px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${esc254(u.initials)}</div><strong style="font-size:12px;flex:1;min-width:140px;">${esc254(u.name)}</strong>${badge}<span style="font-size:11px;color:var(--navy);font-weight:800;">Netto ${formatHours(total)}</span></div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:650px;"><thead><tr><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th><th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th></tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;">${formatHours(total)}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${eligible?formatHours(total25):'–'}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${eligible?formatHours(total50):'–'}</td></tr></tbody></table></div></div>`;
+    });box.innerHTML=html;
+  };
+  try{renderAdminDailyHours=window.renderAdminDailyHours;}catch(_){}
+
+  // Firebase-Status: am Login und für normale Mitarbeiter unsichtbar. Leitung/Büro dürfen ihn sehen.
+  function firebasePrivileged(){const uid=window.AppState?.currentUserId,u=uid&&window.USERS?.[uid];return !!u&&(u.role==='admin'||window.BranchSandbox?.isOffice?.(uid)===true||window.BranchSandbox?.isCentral?.(uid)===true);}
+  function applyFirebaseVisibility(){
+    const badge=document.getElementById('fbStatusBadge');if(badge)badge.style.display='none';
+    const banner=document.getElementById('fbStatusBanner');if(banner&&!firebasePrivileged())banner.style.setProperty('display','none','important');
+  }
+  setTimeout(applyFirebaseVisibility,0);
+  const fbBanner=document.getElementById('fbStatusBanner');if(fbBanner){new MutationObserver(()=>{if(!firebasePrivileged()&&fbBanner.style.display!=='none')fbBanner.style.setProperty('display','none','important');}).observe(fbBanner,{attributes:true,attributeFilter:['style']});}
+
+  // ── APP-QR: ausschließlich Leitung / Personalbüro ─────────
+  const qrEmailsKey='nasch-v254-qr-emails';
+  function loadQrEmails(){try{return JSON.parse(localStorage.getItem(qrEmailsKey)||'{}')||{};}catch(_){return {};}}
+  function saveQrEmail(bid,val){const x=loadQrEmails();x[bid]=String(val||'').trim();try{localStorage.setItem(qrEmailsKey,JSON.stringify(x));}catch(_){}}
+  function isQrAdmin(){const uid=window.AppState?.currentUserId,u=uid&&window.USERS?.[uid];return !!u&&(u.role==='admin'||window.BranchSandbox?.isOffice?.(uid)===true||window.BranchSandbox?.isCentral?.(uid)===true);}
+  function branchObj254(bid){try{return window.BranchSandbox?.branch?.(bid)||{id:bid,name:bid,state:''};}catch(_){return {id:bid,name:bid,state:''};}}
+  function currentBid254(){try{return window.BranchSandbox?.active?.()||window.PublishStore?.branchKey?.()||window.FILIAL_ID||'FIL001';}catch(_){return window.FILIAL_ID||'FIL001';}}
+  function appLink254(bid){try{return window.PublishStore?.branchLink?.(bid)||location.origin+location.pathname;}catch(_){return location.origin+location.pathname;}}
+  function qrImage254(link,size=420){return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=12&data=${encodeURIComponent(link)}`;}
+  function qrAccessibleBranches(){
+    const uid=window.AppState?.currentUserId;if(window.BranchSandbox?.isOffice?.(uid)||window.BranchSandbox?.isCentral?.(uid)){try{return Object.values(window.BranchSandbox.meta()?.branches||{}).filter(b=>b&&b.active!==false);}catch(_){}}
+    return [branchObj254(currentBid254())];
+  }
+  function injectQrPage(){
+    const wrap=document.querySelector('.page-wrap');if(wrap&&!document.getElementById('pgAdminQr')){const p=document.createElement('div');p.id='pgAdminQr';p.className='page';p.innerHTML='<div class="back" onclick="goTo(\'pgAdmin\',\'Admin\')">‹ Zurück</div><div class="banner binfo"><span>📲</span><span>Nur Leitung und Personalbüro: QR-Code für den Mitarbeiter-App-Zugang der jeweiligen Filiale erstellen und weitergeben.</span></div><div id="v254QrContent"></div>';wrap.appendChild(p);}
+    const menu=document.querySelector('#pgAdmin .menu-list');if(menu&&!document.getElementById('adminQrMenu')){const row=document.createElement('div');row.className='mi';row.id='adminQrMenu';row.onclick=()=>goTo('pgAdminQr','QR Code zur App');row.innerHTML='<div class="mi-icon" style="background:#E1F5EE;">📲</div><span class="mi-lbl">QR Code zur App</span><span class="mi-arr">›</span>';menu.appendChild(row);}
+  }
+  function officeQrCard(){
+    const box=document.getElementById('v20OfficeContent');if(!box||!window.BranchSandbox?.isOffice?.(AppState.currentUserId))return;if(document.getElementById('officeQrCard'))return;
+    const c=document.createElement('div');c.id='officeQrCard';c.className='card';c.innerHTML='<div class="card-h"><div class="card-t">📲 Mitarbeiter-App verteilen</div></div><div class="card-b"><div style="font-size:11px;color:var(--muted);">QR-Code der ausgewählten Filiale erstellen und an die Filialleitung weiterleiten.</div><button class="btn btn-outline" type="button" onclick="goTo(\'pgAdminQr\',\'QR Code zur App\')">QR Code zur App erzeugen</button></div>';box.appendChild(c);
+  }
+  function renderQrPage(){
+    // Mitarbeiter-QR ins Admin-QR Tab einbauen
+  const origQrPage=window.renderAdminQr||renderQrPage;
+  window.renderAdminQr=function(){ renderSimpleAppQr(); };
+  injectQrPage();const box=document.getElementById('v254QrContent');if(!box)return;if(!isQrAdmin()){box.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Funktion ist nur für Leitung und Personalbüro verfügbar.</span></div>';return;}
+    const bs=qrAccessibleBranches(),selected=(document.getElementById('v254QrBranch')?.value)||currentBid254(),b=bs.find(x=>x.id===selected)||bs[0]||branchObj254(currentBid254()),link=appLink254(b.id),emails=loadQrEmails(),mail=emails[b.id]||'';
+    const back=document.querySelector('#pgAdminQr .back');if(back){const office=window.BranchSandbox?.isOffice?.(AppState.currentUserId)===true;back.textContent=office?'‹ Zurück zum Büro':'‹ Zurück';back.onclick=()=>office?navTo('office'):goTo('pgAdmin','Admin');}
+    box.innerHTML=`<div class="card"><div class="card-b"><label>Filiale</label><select id="v254QrBranch" onchange="renderAdminQr()">${bs.map(x=>`<option value="${esc254(x.id)}" ${x.id===b.id?'selected':''}>${esc254(x.name||x.id)}${x.state?' · '+esc254(x.state):''}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:8px;">Filialleitung: <strong>${esc254(b.managerName||'nicht hinterlegt')}</strong></div><img class="v254-qr-img" src="${qrImage254(link)}" alt="QR-Code NASCH Mitarbeiter-App ${esc254(b.name||b.id)}"><div style="font-size:10px;color:var(--muted);word-break:break-all;text-align:center;">${esc254(link)}</div><div class="v254-qr-actions"><button class="btn btn-primary" type="button" onclick="emailAdminQr('${esc254(b.id)}')">✉️ Per E-Mail</button><button class="btn btn-outline" type="button" onclick="shareAdminQr('${esc254(b.id)}')">📤 QR teilen</button></div><button class="btn btn-outline" type="button" onclick="openAdminQrPng('${esc254(b.id)}')">🖼 QR als PNG öffnen</button></div></div><div class="banner binfo"><span>ℹ️</span><span>„QR teilen“ kann auf unterstützten Handys die PNG-Datei direkt an eine Mail-App übergeben. Falls das Gerät Dateifreigabe nicht unterstützt, öffnet „Per E-Mail“ eine vorbereitete Nachricht mit App-Link und QR-Link.</span></div>`;
+  }
+  window.renderAdminQr=renderQrPage;window.saveAdminQrEmail=saveQrEmail;
+
+  // ── Mitarbeiter-QR: individueller QR pro Mitarbeiter ──────────────────────
+
+  window.shareWaQr=function(uid,firstName,link){
+    const msg='Hallo '+firstName+' 👋\nHier ist dein Link zur NASCH Mitarbeiter-App:\n'+link+'\n\nEinfach öffnen und auf dem Handy installieren!';
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
+  };
+  window.renderMitarbeiterQr=function(uid){
+    if(!isQrAdmin())return;
+    const u=window.USERS?.[uid];if(!u)return;
+    const baseLink=appLink254(currentBid254());
+    const link=baseLink+(baseLink.includes('?')?'&':'?')+'preselect='+encodeURIComponent(uid);
+    const qr=qrImage254(link,360);
+    const box=document.getElementById('v254MaQrBox');if(!box)return;
+    box.innerHTML=`<div class="card" style="margin-top:10px;"><div class="card-b" style="text-align:center;">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">${esc254(u.name)}</div>
+      <img src="${qr}" style="width:180px;height:180px;border-radius:8px;">
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;">QR scannen → App öffnet mit vorausgewähltem Namen</div>
+      <div style="margin-top:10px;background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:11px;text-align:left;">
+        <div style="font-weight:700;margin-bottom:5px;color:#1e3a5f;">📲 Installationsanleitung</div>
+        <div style="color:#374151;line-height:1.6;"><b>Android (Chrome):</b> ⋮ Menü → „App installieren"<br><b>iPhone (Safari):</b> Teilen ↑ → „Zum Home-Bildschirm"</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;">
+        <button class="btn btn-primary" type="button" onclick="window.open('${qr}','_blank')">🖼 PNG öffnen</button>
+        <button class="btn btn-outline" type="button" onclick="navigator.share&&navigator.share({title:'NASCH App · ${esc254(u.name)}',url:'${link}'}).catch(()=>window.open('${qr}','_blank'))">📤 Teilen</button>
+        <button class="btn btn-primary" type="button" onclick="shareWaQr('${esc254(uid)}','${esc254(u.name.split(' ')[0])}','${esc254(link)}')">📱 WhatsApp</button>
+      </div>
+      <div style="margin-top:10px;background:#f0f9ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#0c4a6e;line-height:1.7;">
+        <strong>📋 Anleitung für ${esc254(u.name.split(' ')[0])}:</strong><br>
+        1. QR-Code scannen → App öffnet im Browser<br>
+        2. Android: Chrome-Menü (⋮) → <em>„App installieren"</em><br>
+        &nbsp;&nbsp;&nbsp;iPhone: Teilen (□↑) → <em>„Zum Home-Bildschirm"</em><br>
+        3. App erscheint als Icon auf dem Handy ✅
+      </div
+      </div>
+    </div></div>`;
+  };
+  window.openAdminQrPng=function(bid){window.open(qrImage254(appLink254(bid),700),'_blank','noopener');};
+  window.emailAdminQr=function(bid){
+    if(!isQrAdmin())return;
+    const b=branchObj254(bid),link=appLink254(bid);
+    const text=`NASCH Mitarbeiter-App ${b.name||bid}:\n${link}\n\nBitte den Link öffnen und die App auf dem Startbildschirm installieren.`;
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+  };
+  window.shareAdminQr=async function(bid){
+    if(!isQrAdmin())return;const b=branchObj254(bid),link=appLink254(bid),url=qrImage254(link,700);
+    try{const res=await fetch(url);if(!res.ok)throw new Error('QR konnte nicht geladen werden');const blob=await res.blob();const file=new File([blob],`NASCH-${String(b.name||bid).replace(/[^a-z0-9_-]+/gi,'-')}-QR.png`,{type:blob.type||'image/png'});if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({title:`NASCH Mitarbeiter-App · ${b.name||bid}`,text:`Mitarbeiter-App ${b.name||bid}\n${link}`,files:[file]});return;}}catch(e){console.warn('QR share:',e);}window.emailAdminQr(bid);
+  };
+
+  injectQrPage();
+  const oldGo254=window.goTo;if(typeof oldGo254==='function'){window.goTo=function(pg,title){const r=oldGo254.apply(this,arguments);if(pg==='pgAdminQr')renderQrPage();return r;};try{goTo=window.goTo}catch(_){}}
+  const oldNav254=window.navTo;if(typeof oldNav254==='function'){window.navTo=function(key){const r=oldNav254.apply(this,arguments);if(key==='office')setTimeout(officeQrCard,0);return r;};try{navTo=window.navTo}catch(_){}}
+  const oldStart254=window.startApp;if(typeof oldStart254==='function'){window.startApp=function(){const r=oldStart254.apply(this,arguments);setTimeout(()=>{applyFirebaseVisibility();injectQrPage();if(firebasePrivileged()){const banner=document.getElementById('fbStatusBanner');if(banner&&firebase.auth?.().currentUser){banner.style.removeProperty('display');banner.style.display='flex';setTimeout(()=>{if(banner)banner.style.display='none';},2500);}}if(window.BranchSandbox?.isOffice?.(AppState.currentUserId))officeQrCard();},250);return r;};try{startApp=window.startApp}catch(_){}}
+})();
+</script>
+
+<div class="page" id="pgHandbuch">
+  <div class="back" onclick="history.back()">‹ Zurück</div>
+  <div style="padding:0 4px;">
+  <h2 style="font-size:18px;color:var(--navy);margin:0 0 16px;">📖 Mitarbeiter-Handbuch</h2>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🔐 Anmelden</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>1. Seite öffnen: <strong>nasch-emsdetten.github.io/emsdetten.html</strong></p>
+      <p>2. Deinen Namen in der Liste auswählen.</p>
+      <p>3. Deine 4-stellige PIN eingeben und auf <strong>Anmelden</strong> tippen.</p>
+      <p style="color:var(--muted);font-size:11px;">Erste PIN = deine Mitarbeiternummer (z. B. 1003). Bitte beim ersten Login sofort ändern.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">📅 Wochenplan ansehen</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Unten auf <strong>Plan</strong> tippen → dein Dienstplan für die aktuelle Woche wird angezeigt.</p>
+      <p>Mit <strong>‹ ›</strong> kannst du zwischen Wochen wechseln.</p>
+      <p>Bedeutung der Kürzel:</p>
+      <p>🟦 <strong>F</strong> = Frühschicht · 🟧 <strong>S</strong> = Spätschicht<br>
+         🟩 <strong>U</strong> = Urlaub · 🟥 <strong>K</strong> = Krank · ⬜ <strong>–</strong> = frei</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🕐 Stundenzettel</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Unter <strong>Mein Bereich → Stundenzettel</strong> siehst du deine Arbeitszeiten für die aktuelle Woche.</p>
+      <p>Pausen werden automatisch abgezogen: <strong>ab 5 Std. → 30 Min.</strong>, <strong>ab 9 Std. → 60 Min.</strong></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">📋 Verfügbarkeit eintragen</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Unter <strong>Mein Bereich → Verfügbarkeit</strong> kannst du eintragen, wann du in der kommenden Woche arbeiten kannst.</p>
+      <p>Optionen: <strong>Ganztags · Nur Früh · Nur Spät · Nicht verfügbar</strong></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🔑 PIN ändern</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Nach dem Anmelden: <strong>Mein Bereich → PIN ändern</strong>.</p>
+      <p>Wähle eine 4-stellige Zahl die du dir gut merken kannst.</p>
+      <p style="color:#dc2626;font-size:11px;">⚠️ Teile deine PIN nie mit anderen!</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">📲 App auf dem Handy installieren</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p><strong>Android (Chrome):</strong><br>
+      Drei-Punkte-Menü oben rechts → <em>„Zum Startbildschirm hinzufügen"</em></p>
+      <p><strong>iPhone (Safari):</strong><br>
+      Teilen-Symbol unten → <em>„Zum Home-Bildschirm"</em></p>
+      <p style="color:var(--muted);font-size:11px;">Danach erscheint die App als Icon auf deinem Handy – genauso wie eine normale App.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🆘 Probleme & Hilfe</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>PIN vergessen? → Auf dem Login-Screen <strong>„PIN vergessen?"</strong> antippen.</p>
+      <p>Plan nicht sichtbar? → Seite neu laden (runterziehen) oder <strong>Browser-Cache leeren</strong> (Einstellungen → Verlauf löschen).</p>
+      <p>Sonstiges? → <strong>Lee</strong> oder <strong>Jenny</strong> ansprechen.</p>
+    </div>
+  </div>
+
+  </div>
+</div>
+</body>
+</html></script>
 </body>
 </html>
