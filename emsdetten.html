@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.9</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.0</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -705,13 +705,14 @@ window.FILIAL_ID = 'FIL001';
       <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div class="week-nav" style="flex:1;margin-bottom:0;">
+          <button onclick="forceSheetsSync()" title="Sheets-Plan laden" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 4px;" id="sheetsSyncBtn">🔄</button>
           <span class="wbtn" onclick="wNav(-1)">‹</span>
           <span class="wlbl" id="adminWLbl">KW 41</span>
           <span class="wbtn" onclick="wNav(1)">›</span>
         </div>
         <button id="editBtn" onclick="toggleEdit()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;">✏️ Bearbeiten</button>
       </div>
-      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Bearbeitungs-Modus – Zelle antippen zum Bearbeiten</span></div>
+      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Zelle antippen: Schicht, <strong>Urlaub (U)</strong>, <strong>Wunschfrei (WF)</strong>, Krank (K) wählen</span></div>
       <div id="planDebug" style="font-size:10px;color:#dc2626;padding:4px 8px;white-space:pre-wrap;display:none;background:#fef2f2;border-radius:6px;margin-bottom:8px;"></div>
       <div class="plan-wrap"><table class="plan-t" id="adminTbl"></table></div>
       <div id="adminActivityLegendView" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
@@ -2452,6 +2453,13 @@ function getWeekTotalHours() {
 function renderPlan() {
   const viewerIsAdmin = isAdminOrDeputy();
   if(!viewerIsAdmin && AppState.weekOffset!==0) AppState.weekOffset=0;
+  // Sheets-Daten direkt laden
+  if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
+    const _k=getMonday(AppState.weekOffset).toISOString().slice(0,10);
+    const _sd=NASCH_SHEETS_IMPORT[_k];
+    if(_sd){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,JSON.parse(JSON.stringify(_sd)));window._sheetsLoaded=true;}
+    else window._sheetsLoaded=false;
+  }
   const monday = getMonday(AppState.weekOffset);
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
   const kw = getKW(monday);
@@ -2681,6 +2689,13 @@ function _doStartApp(uid){
   document.getElementById('nextW').style.visibility=isAoV?'visible':'hidden';
 
   // Mitarbeiterliste + Stundenzettel vorbauen
+  // Sheets-Daten sofort in PLAN laden (kein Timeout nötig)
+  (function applySheetsPlan(){
+    if(typeof NASCH_SHEETS_IMPORT==='undefined') return;
+    const k=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
+    const sd=NASCH_SHEETS_IMPORT[k];
+    if(sd){Object.keys(PLAN).forEach(x=>delete PLAN[x]);Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));console.log('✅ Sheets KW geladen:',k);}
+  })();
   buildMAList();
   buildStzList();
   renderPersonalDailyHours();
@@ -2743,6 +2758,19 @@ function goTo(pgId, title){
 }
 
 // ── Wochenplan Navigation ─────────────────────────────────
+// ── SHEETS SYNC & URLAUB/WUNSCHFREI HILFE ─────────────────
+function forceSheetsSync(){
+  if(typeof NASCH_SHEETS_IMPORT==='undefined'){showToast('❌ Keine Sheets-Daten verfügbar');return;}
+  const k=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
+  const sd=NASCH_SHEETS_IMPORT[k];
+  if(!sd){showToast('⚠ Keine Sheets-Daten für diese Woche ('+k+')');return;}
+  Object.keys(PLAN).forEach(x=>delete PLAN[x]);
+  Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));
+  if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore._resetLoaded) WeekPlanStore._resetLoaded();
+  buildAdminPlan();
+  renderPlan();
+  showToast('✅ Sheets-Plan für '+k+' geladen · '+Object.keys(sd).length+' Mitarbeiter');
+}
 function wNav(d){
   const u=AppState.currentUser;
   const uid=AppState.currentUserId;
