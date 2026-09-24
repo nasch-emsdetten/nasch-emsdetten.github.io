@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.11</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.12</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -1213,6 +1213,16 @@ const FirestoreStore = (() => {
               .collection('availability').get();
             avSnap.forEach(d => { _avail[d.id] = d.data(); });
 
+            // Anträge in synchronen Cache laden (Planung greift synchron darauf zu)
+            try {
+              const rSnap = await _db.collection('nasch').doc(FID()).collection('requests')
+                .orderBy('createdAt','desc').limit(200).get();
+              _requests = rSnap.docs.map(d=>({id:d.id,...d.data()}));
+            } catch(e) {
+              console.warn('Requests laden:', e);
+              _requests = [];
+            }
+
             // Unterschriften + Entscheidungen
             const sDoc = await docRef('config','signatures').get();
             if(sDoc.exists) _sig = sDoc.data();
@@ -1227,7 +1237,9 @@ const FirestoreStore = (() => {
     });
   }
 
-  let _avail={}, _sig={}, _dec={};
+  // V24.12 FIX: Requests werden synchron aus einem lokalen Cache gelesen.
+  // Die Planungslogik (V13/V15) erwartet getRequests() als Array und nicht als Promise.
+  let _avail={}, _sig={}, _dec={}, _requests=[];
 
   function _weekKey(){
     const t=new Date(), d=t.getDay(), diff=(d===0?-6:1-d);
@@ -1251,7 +1263,10 @@ const FirestoreStore = (() => {
       .catch(e=>console.warn('saveEmployee:',e)); });
   }
   function savePlan(){
-    const wk=_weekKey();
+    // V24.12 FIX: immer die aktuell angezeigte Kalenderwoche speichern.
+    const wk=(window.WeekPlanStore && typeof window.WeekPlanStore.currentKey==='function')
+      ? window.WeekPlanStore.currentKey()
+      : (()=>{ const off=(typeof AppState!=='undefined'?AppState.weekOffset:0)||0; const m=(typeof getMonday==='function'?getMonday(off):new Date()); return m.toISOString().slice(0,10); })();
     const data={ plan:JSON.parse(JSON.stringify(PLAN)),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: window.AppState?.currentUser?.name||'Admin' };
@@ -1261,17 +1276,17 @@ const FirestoreStore = (() => {
   }
   function addRequest(type,uid,data){
     const id=`${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
+    const localEntry={id,type,uid,data:JSON.parse(JSON.stringify(data||{})),createdAt:new Date().toISOString(),status:'offen'};
+    // Sofort lokal sichtbar – wichtig für Wunschfrei/Urlaub in der Planung.
+    _requests.unshift(localEntry);
     whenReady(()=>{ _db.collection('nasch').doc(FID()).collection('requests').doc(id)
       .set({id,type,uid,data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),status:'offen'})
       .catch(e=>console.warn('addRequest:',e)); });
+    return id;
   }
-  async function getRequests(){
-    if(!_db) return [];
-    try{
-      const s=await _db.collection('nasch').doc(FID()).collection('requests')
-        .orderBy('createdAt','desc').limit(100).get();
-      return s.docs.map(d=>d.data());
-    }catch(e){ return []; }
+  function getRequests(){
+    // Bewusst synchron: V13/V15 verwenden .filter()/.map() direkt auf dem Rückgabewert.
+    return _requests.map(r=>JSON.parse(JSON.stringify(r)));
   }
   function saveAvailability(uid,values){
     _avail[uid]={...values};
@@ -2678,8 +2693,12 @@ function goTo(pgId, title){
   if(pgId==='pgAdminPlan'){
     const d=document.getElementById('planDebug');if(d){d.style.display='none';d.textContent='';}
     try{ buildAdminPlan(); } catch(e){ console.warn('buildAdminPlan:', e); }
-    // Fallback: direkt rendern wenn Tabelle noch leer
-    setTimeout(()=>renderPlanTableDirect('adminTbl'), 50);
+    // V24.12 FIX: Fallback nur verwenden, wenn buildAdminPlan wirklich nichts gerendert hat.
+    // Vorher überschieb der Fallback nach 50 ms die korrekte Mitarbeiter-Reihenfolge.
+    setTimeout(()=>{
+      const t=document.getElementById('adminTbl');
+      if(t && !t.querySelector('tbody tr')) renderPlanTableDirect('adminTbl');
+    }, 50);
   }
   if(pgId==='pgVerfueg') if(typeof buildVerfDays==='function') buildVerfDays();
   if(pgId==='pgStunden') renderPersonalDailyHours();
@@ -3084,8 +3103,8 @@ function renderPlanTableDirect(tableId){
   let h='<thead><tr><th class="nc">Name</th>';
   dates.forEach((d,i)=>{const isT=d.toDateString()===today.toDateString();h+=`<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;});
   h+='<th style="background:#1e3a5f;color:#e8f4fd;min-width:64px;">Woche</th></tr></thead><tbody>';
-  const emps=Object.entries(USERS).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
-  emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  const emps=(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS))
+    .filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
   emps.forEach(([uid,u])=>{
     const sh=PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
     const wk=getEmployeeWeekStats(uid);
@@ -5068,8 +5087,15 @@ window.NASCH_SANDBOX_VERSION='V19';
     location.reload();
   }
 
-  // Mitarbeiterlisten final filialbezogen filtern.
-  window.getOrderedUserEntries=function(){return Object.entries(USERS).filter(([uid])=>workerIn(uid,activeBranch())&&!(window.NaschEmployees?.isInactive?.(uid)));};
+  // V24.12 FIX: filialbezogen filtern, aber die in den Admin-Einstellungen
+  // gespeicherte Mitarbeiter-Reihenfolge beibehalten.
+  window.getOrderedUserEntries=function(){
+    let base=[];
+    try{ base=(typeof NaschAdminSettings!=='undefined'&&NaschAdminSettings.entries)?NaschAdminSettings.entries():[]; }catch(_){}
+    const seen=new Set(base.map(([uid])=>String(uid)));
+    Object.entries(USERS).forEach(entry=>{ if(!seen.has(String(entry[0]))) base.push(entry); });
+    return base.filter(([uid])=>workerIn(uid,activeBranch())&&!(window.NaschEmployees?.isInactive?.(uid)));
+  };
   try{getOrderedUserEntries=window.getOrderedUserEntries;}catch(_){}
 
   function branchLabel(b){return `${b.name} · ${b.state}`;}
@@ -5305,6 +5331,39 @@ window.NASCH_SANDBOX_VERSION='V19';
 })();
 </script>
 
+
+<script>
+/* V24.12 · Planung/KW-Navigation Stabilitätsfix */
+(() => {
+  // Finale Navigation absichern: Admin, feste/temporäre Vertretung und System-Admin dürfen KW wechseln.
+  const canNavigateWeeks = () => {
+    const uid=String((typeof AppState!=='undefined'&&AppState.currentUserId)||'');
+    const u=(typeof USERS!=='undefined'?USERS[uid]:null);
+    const temp=(typeof NaschTempDeputy!=='undefined' && NaschTempDeputy.is)?NaschTempDeputy.is(uid):false;
+    const central=(window.BranchSandbox?.isCentral)?window.BranchSandbox.isCentral(uid):false;
+    return !!u && (u.role==='admin' || u.role==='vertretung' || temp || central);
+  };
+
+  window.wNav=function(delta){
+    if(!canNavigateWeeks()) return;
+    if(typeof editMode!=='undefined' && editMode){
+      alert('Bitte die laufende Bearbeitung zuerst speichern oder abbrechen.');
+      return;
+    }
+    const d=Number(delta)||0;
+    if(!d) return;
+    try{ window.WeekPlanStore?.persistCurrent?.(); }catch(e){ console.warn('KW persist:',e); }
+    AppState.weekOffset=(Number(AppState.weekOffset)||0)+d;
+    try{ window.WeekPlanStore?.loadOffset?.(AppState.weekOffset); }catch(e){ console.warn('KW laden:',e); }
+    try{ renderPlan(); }catch(e){ console.warn('KW renderPlan:',e); }
+    try{ buildAdminPlan(); }catch(e){ console.warn('KW buildAdminPlan:',e); }
+    try{ renderPersonalDailyHours(); }catch(_){}
+    try{ renderAdminDailyHours(); }catch(_){}
+    try{ if(typeof updatePublishStatus==='function') updatePublishStatus(); }catch(_){}
+  };
+  try{wNav=window.wNav;}catch(_){}
+})();
+</script>
 
 <script>
 if ('serviceWorker' in navigator) {
