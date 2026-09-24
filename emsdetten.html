@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.1</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.2</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1248,6 +1248,12 @@ const FirestoreStore = (() => {
               .collection('availability').get();
             avSnap.forEach(d => { _avail[d.id] = d.data(); });
 
+            // Anträge / Abwesenheiten (synchroner Cache für Planungslogik)
+            try {
+              const rSnap = await _db.collection('nasch').doc(FID()).collection('requests').orderBy('createdAt','desc').limit(500).get();
+              _req = rSnap.docs.map(d=>({id:d.id,...d.data()}));
+            } catch(e){ console.warn('Requests laden:', e); }
+
             // Unterschriften + Entscheidungen
             const sDoc = await docRef('config','signatures').get();
             if(sDoc.exists) _sig = sDoc.data();
@@ -1264,7 +1270,7 @@ const FirestoreStore = (() => {
     });
   }
 
-  let _avail={}, _sig={}, _dec={};
+  let _avail={}, _sig={}, _dec={}, _req=[];
 
   function _weekKey(){
     const t=new Date(), d=t.getDay(), diff=(d===0?-6:1-d);
@@ -1296,19 +1302,27 @@ const FirestoreStore = (() => {
       .then(()=>console.log('✅ Plan gespeichert KW',wk))
       .catch(e=>console.warn('savePlan:',e)); });
   }
-  function addRequest(type,uid,data){
+  function addRequest(type,uid,data,status='offen'){
     const id=`${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
+    const local={id,type,uid,data:JSON.parse(JSON.stringify(data||{})),createdAt:new Date().toISOString(),status};
+    _req.unshift(local);
     whenReady(()=>{ _db.collection('nasch').doc(FID()).collection('requests').doc(id)
-      .set({id,type,uid,data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),status:'offen'})
+      .set({id,type,uid,data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),status})
       .catch(e=>console.warn('addRequest:',e)); });
+    return id;
   }
-  async function getRequests(){
-    if(!_db) return [];
-    try{
-      const s=await _db.collection('nasch').doc(FID()).collection('requests')
-        .orderBy('createdAt','desc').limit(100).get();
-      return s.docs.map(d=>d.data());
-    }catch(e){ return []; }
+  function getRequests(){ return _req.map(r=>JSON.parse(JSON.stringify(r))); }
+  function updateRequest(id,patch){
+    const i=_req.findIndex(r=>r.id===id);
+    if(i>=0){const old=_req[i];_req[i]={...old,...patch,data:{...(old.data||{}),...(patch.data||{})}};}
+    whenReady(()=>{ _db.collection('nasch').doc(FID()).collection('requests').doc(id)
+      .set({...patch,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
+      .catch(e=>console.warn('updateRequest:',e)); });
+  }
+  function deleteRequest(id){
+    _req=_req.filter(r=>r.id!==id);
+    whenReady(()=>{ _db.collection('nasch').doc(FID()).collection('requests').doc(id).delete()
+      .catch(e=>console.warn('deleteRequest:',e)); });
   }
   function saveAvailability(uid,values){
     _avail[uid]={...values};
@@ -1331,7 +1345,7 @@ const FirestoreStore = (() => {
   function reset(){ if(confirm('Firestore-Daten zurücksetzen?')) location.reload(); }
 
   return { load, savePins, saveEmployee, savePlan, addRequest, getRequests,
-           saveAvailability, getAvailability, saveSignature, getSignature, saveDecision, reset };
+           saveAvailability, getAvailability, saveSignature, getSignature, saveDecision, updateRequest, deleteRequest, reset };
 })();
 
 // SandboxStore als Alias
@@ -3189,7 +3203,7 @@ function renderPlanTableDirect(tableId){
   if(!tbl) return 0;
   // Immer rendern wenn Sheets-Daten für diese Woche vorhanden
   const _drk=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
-  const _drs=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[_drk];
+  const _drs=null; // v26.2: Sheets nicht mehr hart über Cloud-Plan legen
   if(!_drs){
     // Kein Sheets-Daten → nur rendern wenn Tabelle leer
     if(tbl.querySelectorAll('tbody tr').length>0) return tbl.querySelectorAll('tbody tr').length;
@@ -3209,7 +3223,7 @@ function renderPlanTableDirect(tableId){
   emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
   // Sheets-Daten für die angezeigte Woche direkt verwenden wenn verfügbar
   const _curKey=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
-  const _sheetsWeek=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[_curKey];
+  const _sheetsWeek=null; // v26.2: Renderer nutzt PLAN/Cloud
   emps.forEach(([uid,u])=>{
     const sh=(_sheetsWeek&&_sheetsWeek[uid])||PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
     const wk=getEmployeeWeekStats(uid);
@@ -4231,8 +4245,9 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
           const date=addDays(monday,i), code=av?.[DAYS[i]]||'g';
           let sh=plan[uid][i]||emptyShift();
           if(sh.manual===true){continue;}
-          const requests=(SandboxStore.getRequests?SandboxStore.getRequests():[]).filter(r=>r.uid===uid&&['urlaub','wunschfrei'].includes(r.type)&&reqCovers(r,date));
-          const ur=requests.find(r=>r.type==='urlaub'), wf=requests.find(r=>r.type==='wunschfrei');
+          const requests=(SandboxStore.getRequests?SandboxStore.getRequests():[]).filter(r=>r.uid===uid&&['urlaub','wunschfrei','krank'].includes(r.type)&&r.status!=='abgelehnt'&&reqCovers(r,date));
+          const kr=requests.find(r=>r.type==='krank'), ur=requests.find(r=>r.type==='urlaub'), wf=requests.find(r=>r.type==='wunschfrei');
+          if(kr){plan[uid][i]={t:'K',z:'Krank',r:[],autoSource:'krank',availabilityCode:code};continue;}
           if(ur){plan[uid][i]={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:code};continue;}
           if(wf){plan[uid][i]={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:code};continue;}
           if(newWeek && code==='n'){plan[uid][i]={t:'-',z:'',r:[],autoSource:'availability',availabilityCode:'n'};continue;}
@@ -4737,17 +4752,25 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
 
   function updateRequest(id,patch){
     const m=state.manualRequests.find(r=>r.id===id);
-    if(m){Object.assign(m,patch);if(patch.data)m.data={...(m.data||{}),...patch.data};}
-    else {const prev=state.requestEdits[id]||{};state.requestEdits[id]={...prev,...patch,data:{...(prev.data||{}),...(patch.data||{})}};}
-    save(); refreshPlanning();
+    if(m){Object.assign(m,patch);if(patch.data)m.data={...(m.data||{}),...patch.data};save();}
+    else if(typeof SandboxStore!=='undefined'&&SandboxStore.updateRequest){SandboxStore.updateRequest(id,patch);}
+    else {const prev=state.requestEdits[id]||{};state.requestEdits[id]={...prev,...patch,data:{...(prev.data||{}),...(patch.data||{})}};save();}
+    refreshPlanning();
   }
   function deleteRequest(id){
     const idx=state.manualRequests.findIndex(r=>r.id===id);
-    if(idx>=0)state.manualRequests.splice(idx,1);else state.requestDeleted[id]=true;
-    save(); refreshPlanning();
+    if(idx>=0){state.manualRequests.splice(idx,1);save();}
+    else if(typeof SandboxStore!=='undefined'&&SandboxStore.deleteRequest){SandboxStore.deleteRequest(id);}
+    else {state.requestDeleted[id]=true;save();}
+    refreshPlanning();
   }
   function addManualRequest({type,uid,von,bis,schicht,hinweis,status='offen'}){
-    const r={id:`v15-req-${Date.now()}-${Math.random().toString(16).slice(2)}`,type,uid,data:{von,bis:bis||von,schicht:schicht||'',hinweis:hinweis||''},createdAt:new Date().toISOString(),status};
+    const data={von,bis:bis||von,schicht:schicht||'',hinweis:hinweis||'',adminManual:true};
+    if(typeof SandboxStore!=='undefined'&&SandboxStore.addRequest){
+      const id=SandboxStore.addRequest(type,uid,data,status);
+      const r={id,type,uid,data,createdAt:new Date().toISOString(),status};refreshPlanning();return r;
+    }
+    const r={id:`v15-req-${Date.now()}-${Math.random().toString(16).slice(2)}`,type,uid,data,createdAt:new Date().toISOString(),status};
     state.manualRequests.push(r);save();refreshPlanning();return r;
   }
 
@@ -4797,7 +4820,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     const d=r.data||{},k=dateKey(date),von=d.von||d.datum,bis=d.bis||von;
     return !!von&&k>=von&&k<=(bis||von);
   }
-  function activeRequests(uid,date){return effectiveRequests().filter(r=>r.uid===uid&&['urlaub','wunschfrei'].includes(r.type)&&r.status!=='abgelehnt'&&requestCovers(r,date));}
+  function activeRequests(uid,date){return effectiveRequests().filter(r=>r.uid===uid&&['urlaub','wunschfrei','krank'].includes(r.type)&&r.status!=='abgelehnt'&&requestCovers(r,date));}
 
   function applyCurrentConstraints(){
     if(typeof PLAN==='undefined'||typeof getMonday!=='function')return;
@@ -4808,9 +4831,10 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
         const date=addDays(mon,i), c=closureForDate(date);
         let sh=PLAN[uid][i]||{t:'-',z:'',r:[]};
         delete sh.businessClosure;delete sh.closureConflict;delete sh.closureNote;
-        const reqs=activeRequests(uid,date),ur=reqs.find(r=>r.type==='urlaub'),wf=reqs.find(r=>r.type==='wunschfrei');
-        if(sh.manual!==true&&['urlaub','wunschfrei'].includes(sh.autoSource)&&!ur&&!wf) sh={t:'-',z:'',r:[],availabilityCode:sh.availabilityCode||'g'};
-        if(sh.manual!==true&&ur) sh={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:sh.availabilityCode||'g'};
+        const reqs=activeRequests(uid,date),kr=reqs.find(r=>r.type==='krank'),ur=reqs.find(r=>r.type==='urlaub'),wf=reqs.find(r=>r.type==='wunschfrei');
+        if(sh.manual!==true&&['urlaub','wunschfrei','krank'].includes(sh.autoSource)&&!kr&&!ur&&!wf) sh={t:'-',z:'',r:[],availabilityCode:sh.availabilityCode||'g'};
+        if(sh.manual!==true&&kr) sh={t:'K',z:'Krank',r:[],autoSource:'krank',availabilityCode:sh.availabilityCode||'g'};
+        else if(sh.manual!==true&&ur) sh={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:sh.availabilityCode||'g'};
         else if(sh.manual!==true&&wf) sh={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:sh.availabilityCode||'g'};
         if(c){
           sh.businessClosure=c.kind;sh.closureNote=c.note||'';
@@ -4969,7 +4993,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     const id=uidSafe(r.id),d=r.data||{};
     return `<div class="v15-card" id="req_${id}"><div class="v15-grid">
       <div><label>Mitarbeiter</label><select id="rq_uid_${id}">${(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid,u])=>`<option value="${uid}" ${r.uid===uid?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>
-      <div><label>Art</label><select id="rq_type_${id}"><option value="wunschfrei" ${r.type==='wunschfrei'?'selected':''}>Wunschfrei</option><option value="urlaub" ${r.type==='urlaub'?'selected':''}>Urlaub</option></select></div>
+      <div><label>Art</label><select id="rq_type_${id}"><option value="wunschfrei" ${r.type==='wunschfrei'?'selected':''}>Wunschfrei</option><option value="urlaub" ${r.type==='urlaub'?'selected':''}>Urlaub</option><option value="krank" ${r.type==='krank'?'selected':''}>Krank</option></select></div>
       <div><label>Von</label><input id="rq_von_${id}" type="date" value="${d.von||''}"></div><div><label>Bis</label><input id="rq_bis_${id}" type="date" value="${d.bis||d.von||''}"></div>
       <div><label>Schicht / Umfang</label><input id="rq_shift_${id}" value="${esc(d.schicht||'')}"></div><div><label>Status</label><select id="rq_status_${id}"><option value="offen" ${r.status==='offen'?'selected':''}>Offen</option><option value="genehmigt" ${r.status==='genehmigt'?'selected':''}>Genehmigt</option><option value="abgelehnt" ${r.status==='abgelehnt'?'selected':''}>Abgelehnt</option></select></div>
       <div class="full"><label>Hinweis</label><input id="rq_note_${id}" value="${esc(d.hinweis||'')}"></div></div>
@@ -4977,13 +5001,13 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   }
   function renderRequests(){
     const box=document.getElementById('v15RequestList');if(!box)return;
-    const list=effectiveRequests().filter(r=>['wunschfrei','urlaub'].includes(r.type)).sort((a,b)=>String(a.data?.von||'').localeCompare(String(b.data?.von||''))||String(USERS[a.uid]?.name||'').localeCompare(String(USERS[b.uid]?.name||''),'de'));
-    box.innerHTML=list.length?list.map(requestCard).join(''):'<div class="v15-empty">Noch keine Wunschfrei-/Urlaubseinträge vorhanden.</div>';
+    const list=effectiveRequests().filter(r=>['wunschfrei','urlaub','krank'].includes(r.type)).sort((a,b)=>String(a.data?.von||'').localeCompare(String(b.data?.von||''))||String(USERS[a.uid]?.name||'').localeCompare(String(USERS[b.uid]?.name||''),'de'));
+    box.innerHTML=list.length?list.map(requestCard).join(''):'<div class="v15-empty">Noch keine Wunschfrei-/Urlaub-/Krank-Einträge vorhanden.</div>';
   }
   function saveRequestFromCard(id){
     const s=uidSafe(id),type=document.getElementById(`rq_type_${s}`)?.value||'wunschfrei',von=document.getElementById(`rq_von_${s}`)?.value||'',bis=document.getElementById(`rq_bis_${s}`)?.value||von;
     if(!von){alert('Bitte ein Von-Datum angeben.');return;}if(bis<von){alert('Bis darf nicht vor Von liegen.');return;}
-    const blocked=blockedInRange(von,bis,type);
+    const blocked=type==='krank'?[]:blockedInRange(von,bis,type);
     if(blocked.length&&!confirm(`Achtung: ${blocked.map(x=>`${fmt(x.date)} (${x.hits.map(h=>h.title).join(', ')})`).join('; ')} ist gesperrt. Trotzdem als Admin speichern?`))return;
     updateRequest(id,{uid:document.getElementById(`rq_uid_${s}`).value,type,status:document.getElementById(`rq_status_${s}`).value,data:{von,bis,schicht:document.getElementById(`rq_shift_${s}`).value.trim(),hinweis:document.getElementById(`rq_note_${s}`).value.trim()}});
     showToast?.('✓ Eintrag aktualisiert');
@@ -4991,7 +5015,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   function addRequestFromForm(){
     const uid=document.getElementById('v15NewReqUid')?.value,type=document.getElementById('v15NewReqType')?.value,von=document.getElementById('v15NewReqVon')?.value,bis=document.getElementById('v15NewReqBis')?.value||von,override=document.getElementById('v15NewReqOverride')?.checked;
     if(!uid||!von){alert('Bitte Mitarbeiter und Datum angeben.');return;}if(bis<von){alert('Bis darf nicht vor Von liegen.');return;}
-    const blocked=blockedInRange(von,bis,type);if(blocked.length&&!override){alert('Der Zeitraum enthält eine Sperre. Für eine kurzfristige Admin-Ergänzung „Sperre übersteuern“ aktivieren.');return;}
+    const blocked=type==='krank'?[]:blockedInRange(von,bis,type);if(blocked.length&&!override){alert('Der Zeitraum enthält eine Sperre. Für eine kurzfristige Admin-Ergänzung „Sperre übersteuern“ aktivieren.');return;}
     addManualRequest({type,uid,von,bis,schicht:document.getElementById('v15NewReqShift')?.value.trim()||'',hinweis:document.getElementById('v15NewReqNote')?.value.trim()||'',status:'genehmigt'});
     ['v15NewReqVon','v15NewReqBis','v15NewReqShift','v15NewReqNote'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});if(document.getElementById('v15NewReqOverride'))document.getElementById('v15NewReqOverride').checked=false;
     showToast?.('✓ Kurzfristiger Eintrag ergänzt');
@@ -5069,7 +5093,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
       const ev=eventsForDateAll(d).filter(e=>forUid?audienceVisible(e,forUid):true);ev.forEach(e=>items.push({cat:eventCategory(e),txt:`🗓️ ${e.title}${e.time?` · ${e.timeMode==='until'?'bis ':''}${e.time}`:''}`}));
       const cl=closureForDate(d);if(cl)items.push({cat:'Betrieb',txt:`🚫 ${closureLabel(cl)}${cl.note?' · '+cl.note:''}`});
       state.blockouts.filter(b=>blockoutMatches(b,d,'wunschfrei')||blockoutMatches(b,d,'urlaub')).forEach(b=>items.push({cat:'Sperre',txt:`⛔ ${b.title} · Urlaubs/Wunschfrei-Sperre`}));
-      if(!forUid) effectiveRequests().filter(r=>['urlaub','wunschfrei'].includes(r.type)&&r.status!=='abgelehnt'&&(r.data?.von===dateKey(d))).forEach(r=>items.push({cat:r.type==='urlaub'?'Urlaub':'Wunschfrei',txt:`${r.type==='urlaub'?'🏖':'⭐'} ${USERS[r.uid]?.name||r.uid} · ${r.type==='urlaub'?'Urlaub':'Wunschfrei'}`}));
+      if(!forUid) effectiveRequests().filter(r=>['urlaub','wunschfrei','krank'].includes(r.type)&&r.status!=='abgelehnt'&&(r.data?.von===dateKey(d))).forEach(r=>items.push({cat:r.type==='urlaub'?'Urlaub':'Wunschfrei',txt:`${r.type==='urlaub'?'🏖':'⭐'} ${USERS[r.uid]?.name||r.uid} · ${r.type==='urlaub'?'Urlaub':'Wunschfrei'}`}));
       if(forUid){groupsForEmployee(forUid).forEach(group=>(area(group)?.tasks||[]).filter(t=>t.enabled&&t.nextDue===dateKey(d)).forEach(t=>items.push({cat:groupLabel(group),txt:`${groupIcon(group)} ${t.title}`})));}
       else {WORK_GROUPS.forEach(([group])=>(area(group)?.tasks||[]).filter(t=>t.enabled&&t.nextDue===dateKey(d)).forEach(t=>items.push({cat:groupLabel(group),txt:`${groupIcon(group)} ${t.title}`})));}
       if(items.length)out.push({date:d,items});
@@ -5087,11 +5111,11 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   }
 
   // ── Admin Planungsseite ──
-  function newRequestFormHtml(){return `<div class="v15-card"><div style="font-weight:700;margin-bottom:8px;">Kurzfristig ergänzen</div><div class="v15-grid"><div><label>Mitarbeiter</label><select id="v15NewReqUid">${(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid,u])=>`<option value="${uid}">${esc(u.name)}</option>`).join('')}</select></div><div><label>Art</label><select id="v15NewReqType"><option value="wunschfrei">Wunschfrei</option><option value="urlaub">Urlaub</option></select></div><div><label>Von</label><input id="v15NewReqVon" type="date"></div><div><label>Bis</label><input id="v15NewReqBis" type="date"></div><div><label>Schicht / Umfang</label><input id="v15NewReqShift" placeholder="Ganzer Tag / Nur Früh …"></div><div><label>Hinweis</label><input id="v15NewReqNote"></div><div class="full"><label class="v15-check"><input id="v15NewReqOverride" type="checkbox"> Sperre bewusst übersteuern</label></div></div><button class="btn btn-primary" onclick="V15Planning.addManualRequest()">+ Eintrag ergänzen</button></div>`;}
+  function newRequestFormHtml(){return `<div class="v15-card"><div style="font-weight:700;margin-bottom:8px;">Kurzfristig ergänzen</div><div class="v15-grid"><div><label>Mitarbeiter</label><select id="v15NewReqUid">${(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid,u])=>`<option value="${uid}">${esc(u.name)}</option>`).join('')}</select></div><div><label>Art</label><select id="v15NewReqType"><option value="wunschfrei">Wunschfrei</option><option value="urlaub">Urlaub</option><option value="krank">Krank</option></select></div><div><label>Von</label><input id="v15NewReqVon" type="date"></div><div><label>Bis</label><input id="v15NewReqBis" type="date"></div><div><label>Schicht / Umfang</label><input id="v15NewReqShift" placeholder="Ganzer Tag / Nur Früh …"></div><div><label>Hinweis</label><input id="v15NewReqNote"></div><div class="full"><label class="v15-check"><input id="v15NewReqOverride" type="checkbox"> Sperre bewusst übersteuern</label></div></div><button class="btn btn-primary" onclick="V15Planning.addManualRequest()">+ Eintrag ergänzen</button></div>`;}
   function buildAdminPlanningPage(){
     const page=document.getElementById('pgAdminPlanning');if(!page)return;
-    page.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div class="banner binfo"><span>🗂️</span><span>Planungszentrale: Wunschfrei/Urlaub, Termine, Sperren, Schließtage, Mangelliste und Gruppenaufgaben.</span></div><div class="v15-tabs"><button onclick="V15Planning.tab('requests')" data-v15tab="requests">Wunschfrei</button><button onclick="V15Planning.tab('events')" data-v15tab="events">Termine</button><button onclick="V15Planning.tab('blocks')" data-v15tab="blocks">Sperren & Betrieb</button><button onclick="V15Planning.tab('shortages')" data-v15tab="shortages">Mangelliste</button><button onclick="V15Planning.tab('cleaning')" data-v15tab="cleaning">Gruppenaufgaben</button></div>
-      <div id="v15Pane_requests" class="v15-pane"><div class="sec">Wunschfrei-Frist</div>${deadlineEditorHtml()}<div class="sec">Kurzfristige Ergänzung</div>${newRequestFormHtml()}<div class="sec">Wunschfrei & Urlaub · Übersicht / Bearbeitung</div><div id="v15RequestList"></div></div>
+    page.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div class="banner binfo"><span>🗂️</span><span>Planungszentrale: Wunschfrei/Urlaub/Krank, Termine, Sperren, Schließtage, Mangelliste und Gruppenaufgaben.</span></div><div class="v15-tabs"><button onclick="V15Planning.tab('requests')" data-v15tab="requests">Wunschfrei</button><button onclick="V15Planning.tab('events')" data-v15tab="events">Termine</button><button onclick="V15Planning.tab('blocks')" data-v15tab="blocks">Sperren & Betrieb</button><button onclick="V15Planning.tab('shortages')" data-v15tab="shortages">Mangelliste</button><button onclick="V15Planning.tab('cleaning')" data-v15tab="cleaning">Gruppenaufgaben</button></div>
+      <div id="v15Pane_requests" class="v15-pane"><div class="sec">Wunschfrei-Frist</div>${deadlineEditorHtml()}<div class="sec">Kurzfristige Ergänzung</div>${newRequestFormHtml()}<div class="sec">Wunschfrei, Urlaub & Krank · Übersicht / Bearbeitung</div><div id="v15RequestList"></div></div>
       <div id="v15Pane_events" class="v15-pane" style="display:none;"><div class="sec">Wichtige Termine · Kategorien & Sichtbarkeit</div><div class="banner binfo"><span>👁️</span><span>Termine können für Alle, Leitung, Beschäftigungsarten oder die Gruppen Grillleitung, Verkauf, Telleroptik und Reinigung sichtbar sein. „Jährlich 1–2×“ unterstützt zwei Termine pro Jahr.</span></div><div id="v15EventsEditor"></div><div class="sec">Übersicht · nächste 120 Tage</div><div id="v15Overview"></div></div>
       <div id="v15Pane_blocks" class="v15-pane" style="display:none;"><div class="sec">Sperren für Urlaub / Wunschfrei</div><div class="banner bwarn"><span>⛔</span><span>Einschulung und letzter Schultag sind als Vorlagen vorhanden und werden erst nach Datum + Aktivierung wirksam. Rosenmontag und Weihnachten sind standardmäßig aktiv und jederzeit änderbar.</span></div><div id="v15Blockouts"></div><div class="sec">Geschlossene / halbe Tage</div><div class="banner binfo"><span>🚫</span><span>Ganztägige Schließungen setzen nicht manuell bearbeitete Service-Schichten auf frei. Manuelle Abweichungen bleiben möglich und werden als Konflikt gekennzeichnet.</span></div><div id="v15Closures"></div></div>
       <div id="v15Pane_shortages" class="v15-pane" style="display:none;"><div class="sec">Mangelliste · alle Mitarbeiter</div><div id="v15AdminShortages"></div></div>
@@ -5906,5 +5930,147 @@ if ('serviceWorker' in navigator) {
 </div>
 </body>
 </html></script>
+
+<script id="nasch-v262-cloud-migration">
+/* NASCH v26.2 · schrittweise Wochenplan-Cloudmigration + rückwirkende Admin-Abwesenheiten */
+(()=>{
+  const VERSION='26.2';
+  const cloudState={key:'',exists:false,version:0,published:false,loading:false,lastError:'',source:'legacy'};
+  const clone=o=>JSON.parse(JSON.stringify(o||{}));
+  const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const FID=()=>window.FILIAL_ID||'FIL001';
+  function keyForOffset(off=(window.AppState?.weekOffset||0)){
+    if(window.WeekPlanStore?.keyForOffset) return WeekPlanStore.keyForOffset(off);
+    const d=typeof getMonday==='function'?getMonday(off):new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function db(){try{return firebase.firestore();}catch(_){return null;}}
+  function ref(key){const x=db();return x?x.collection('nasch').doc(FID()).collection('plan').doc(key):null;}
+  function isManager(){try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false;}}
+  function isOffice(){try{return !!window.BranchSandbox?.isOffice?.(AppState.currentUserId);}catch(_){return false;}}
+  function usePlan(plan){
+    if(!plan||typeof plan!=='object')return false;
+    try{WeekPlanStore?.loadOffset?.(AppState.weekOffset);}catch(_){}
+    Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(plan));
+    return true;
+  }
+  function legacyPlanFor(key){
+    // Bereits geladener lokaler Plan hat Vorrang. Eingebettete Sheets-Daten sind nur noch Migrationsquelle.
+    const current=clone(PLAN);
+    if(Object.keys(current).length)return current;
+    try{if(typeof NASCH_SHEETS_IMPORT!=='undefined'&&NASCH_SHEETS_IMPORT[key])return clone(NASCH_SHEETS_IMPORT[key]);}catch(_){}
+    return {};
+  }
+  function ensureBar(){
+    const page=document.getElementById('pgAdminPlan');if(!page)return null;
+    let bar=document.getElementById('v262CloudWeekBar');
+    if(!bar){bar=document.createElement('div');bar.id='v262CloudWeekBar';bar.className='banner binfo';bar.style.cssText='margin-bottom:8px;align-items:center;flex-wrap:wrap;';const tbl=page.querySelector('.plan-wrap');if(tbl)page.insertBefore(bar,tbl);else page.prepend(bar);}
+    return bar;
+  }
+  function renderStatus(){
+    const bar=ensureBar();if(!bar)return;
+    const key=keyForOffset();
+    if(cloudState.loading){bar.className='banner binfo';bar.innerHTML='<span>☁️</span><span><strong>Cloud wird geprüft …</strong><br><small>'+esc(key)+'</small></span>';return;}
+    if(cloudState.lastError){bar.className='banner bwarn';bar.innerHTML='<span>⚠️</span><span><strong>Cloud nicht erreichbar</strong><br><small>'+esc(cloudState.lastError)+'</small></span>';return;}
+    if(cloudState.exists){bar.className='banner bok';bar.innerHTML=`<span>☁️</span><span style="flex:1"><strong>KW synchronisiert</strong><br><small>${esc(key)} · Cloud-Version ${cloudState.version||1}${cloudState.published?' · veröffentlicht':' · Entwurf'}</small></span><button type="button" class="v15-smallbtn" onclick="CloudWeekMigration.reloadCurrent()">↻ Neu laden</button>`;return;}
+    bar.className='banner bwarn';bar.innerHTML=`<span>🕘</span><span style="flex:1"><strong>Diese KW ist noch nicht in der Cloud</strong><br><small>${esc(key)} · alter Wochenplan bleibt unverändert, bis du ihn einzeln übernimmst.</small></span><button type="button" class="v15-smallbtn" onclick="CloudWeekMigration.migrateCurrent()">☁️ Diese KW synchronisieren</button>`;
+  }
+  async function loadWeek(offset=(AppState.weekOffset||0),opts={}){
+    const key=keyForOffset(offset),r=ref(key);cloudState.key=key;cloudState.loading=true;cloudState.lastError='';renderStatus();
+    try{WeekPlanStore?.loadOffset?.(offset);}catch(_){}
+    if(!r){cloudState.loading=false;cloudState.lastError='Firebase nicht bereit';renderStatus();return false;}
+    try{
+      const snap=await r.get();
+      cloudState.loading=false;cloudState.exists=snap.exists;cloudState.version=snap.exists?(snap.data().version||1):0;cloudState.published=false;cloudState.source=snap.exists?'cloud':'legacy';
+      if(snap.exists){
+        const d=snap.data()||{};
+        const plan=isManager()?(d.draftPlan||d.publishedPlan||d.plan):(d.publishedPlan||d.plan);
+        cloudState.published=!!(d.publishedPlan||d.published||d.plan);
+        if(plan&&Object.keys(plan).length)usePlan(plan);
+      }
+      renderStatus();
+      if(opts.render!==false){try{renderPlan();if(isManager())buildAdminPlan();renderPersonalDailyHours?.();renderAdminDailyHours?.();}catch(e){console.warn('v26.2 render',e)}}
+      return snap.exists;
+    }catch(e){cloudState.loading=false;cloudState.lastError=e.code||e.message||String(e);renderStatus();return false;}
+  }
+  async function migrateCurrent(){
+    if(!isManager()){alert('Nur Filialleitung/Vertretung kann alte Wochen synchronisieren.');return;}
+    const key=keyForOffset(),r=ref(key);if(!r)return;
+    if(!confirm(`KW ab ${key} jetzt einmalig in die Cloud übernehmen?\n\nEs wird nur diese eine Woche synchronisiert. Andere alte Wochen bleiben unverändert.`))return;
+    cloudState.loading=true;renderStatus();
+    try{
+      const fresh=await r.get();
+      if(fresh.exists&&(fresh.data()?.publishedPlan||fresh.data()?.plan||fresh.data()?.draftPlan)){cloudState.loading=false;alert('Diese KW ist inzwischen bereits synchronisiert. Sie wird neu geladen.');await loadWeek(AppState.weekOffset);return;}
+      const plan=legacyPlanFor(key);if(!Object.keys(plan).length)throw new Error('Für diese KW ist kein alter Plan vorhanden.');
+      await r.set({
+        plan:clone(plan),publishedPlan:clone(plan),draftPlan:null,published:true,version:1,
+        migrationSource:'legacy-week-plan',migratedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Admin'
+      },{merge:true});
+      cloudState.loading=false;cloudState.exists=true;cloudState.version=1;cloudState.published=true;cloudState.source='cloud';renderStatus();showToast?.('☁️ Diese KW wurde synchronisiert');
+    }catch(e){cloudState.loading=false;cloudState.lastError=e.code||e.message||String(e);renderStatus();alert('Synchronisierung fehlgeschlagen: '+cloudState.lastError);}
+  }
+  async function saveDraftCloud(){
+    if(!isManager())return false;const key=keyForOffset(),r=ref(key);if(!r)return false;
+    try{WeekPlanStore?.persistCurrent?.();}catch(_){}
+    try{const snap=await r.get(),d=snap.exists?snap.data():{},v=d.version||0;await r.set({draftPlan:clone(PLAN),draftUpdatedAt:firebase.firestore.FieldValue.serverTimestamp(),draftUpdatedBy:AppState.currentUser?.name||'Admin',version:v||1},{merge:true});cloudState.exists=true;cloudState.version=v||1;cloudState.published=!!(d.publishedPlan||d.plan);cloudState.lastError='';renderStatus();return true;}catch(e){cloudState.lastError=e.code||e.message||String(e);renderStatus();return false;}
+  }
+  async function publishCloud(){
+    if(!isManager())return false;const key=keyForOffset(),r=ref(key);if(!r)return false;
+    try{WeekPlanStore?.persistCurrent?.();}catch(_){}
+    try{
+      const snap=await r.get(),d=snap.exists?snap.data():{},serverVersion=d.version||0;
+      if(cloudState.exists&&cloudState.key===key&&cloudState.version&&serverVersion>cloudState.version){alert('Diese KW wurde auf einem anderen Gerät geändert. Bitte zuerst „Neu laden“ und anschließend erneut veröffentlichen.');await loadWeek(AppState.weekOffset);return false;}
+      const v=serverVersion+1;
+      await r.set({plan:clone(PLAN),publishedPlan:clone(PLAN),draftPlan:null,published:true,version:v,publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Admin'},{merge:true});
+      cloudState.exists=true;cloudState.version=v;cloudState.published=true;cloudState.lastError='';renderStatus();return true;
+    }catch(e){cloudState.lastError=e.code||e.message||String(e);renderStatus();return false;}
+  }
+
+  // Alte automatische Sheets-Hartüberschreibung abschalten. Sheets bleiben nur Migrationsquelle.
+  try{window.sheetsSync=()=>false;sheetsSync=window.sheetsSync;}catch(_){}
+  try{window.injectSheetsIfPlanEmpty=()=>{};injectSheetsIfPlanEmpty=window.injectSheetsIfPlanEmpty;}catch(_){}
+
+  // KW-Wechsel: zuerst lokalen Altplan öffnen, dann exakt diese KW aus Firestore prüfen.
+  window.wNav=async function(d){
+    if(!isManager())return;if(typeof editMode!=='undefined'&&editMode){alert('Bitte die laufende Bearbeitung zuerst speichern oder abbrechen.');return;}
+    try{WeekPlanStore?.persistCurrent?.();}catch(_){}AppState.weekOffset+=d;
+    try{WeekPlanStore?.loadOffset?.(AppState.weekOffset);}catch(_){}
+    try{renderPlan();buildAdminPlan();renderPersonalDailyHours?.();renderAdminDailyHours?.();}catch(_){}
+    await loadWeek(AppState.weekOffset);
+  };try{wNav=window.wNav}catch(_){}
+
+  // Cloud-fähige Entwurf-/Veröffentlichungsfunktionen.
+  window.saveDraft=async function(){
+    const ok=await saveDraftCloud();if(!ok){showToast?.('❌ Entwurf nicht in Cloud gespeichert');return;}
+    try{PublishStore?.saveDraft?.(PublishStore.branchKey(),keyForOffset(),PLAN);}catch(_){}
+    planChanges={};editMode=false;planSnapshot=null;document.getElementById('savePlanBar')&&(document.getElementById('savePlanBar').style.display='none');const b=document.getElementById('editBtn');if(b)b.textContent='✏️ Bearbeiten';buildAdminPlan();renderPlan();updatePublishStatus?.();showToast?.('☁️ Entwurf gespeichert');
+  };try{saveDraft=window.saveDraft}catch(_){}
+  window.publishPlan=async function(){
+    const key=keyForOffset();if(!confirm(`Wochenplan ${key} für Mitarbeiter veröffentlichen?`))return;
+    const ok=await publishCloud();if(!ok){showToast?.('❌ Nicht veröffentlicht');return;}
+    try{PublishStore?.publish?.(PublishStore.branchKey(),key,PLAN,AppState.currentUser?.name||'Admin');}catch(_){}
+    planChanges={};planSnapshot=null;editMode=false;document.getElementById('savePlanBar')&&(document.getElementById('savePlanBar').style.display='none');const b=document.getElementById('editBtn');if(b)b.textContent='✏️ Bearbeiten';buildAdminPlan();renderPlan();updatePublishStatus?.();showToast?.('✅ Wochenplan cloud-synchron veröffentlicht');
+  };try{publishPlan=window.publishPlan}catch(_){}
+  window.savePlan=async function(){const ok=await saveDraftCloud();if(ok){planChanges={};planSnapshot=null;editMode=false;buildAdminPlan();renderPlan();showToast?.('☁️ Plan als Entwurf gespeichert');}else showToast?.('❌ Cloud-Speicherung fehlgeschlagen');};try{savePlan=window.savePlan}catch(_){}
+
+  // Admin-Plan öffnen => Status/Cloud dieser einzelnen KW prüfen.
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(pg==='pgAdminPlan')setTimeout(()=>loadWeek(AppState.weekOffset),50);return r;};try{goTo=window.goTo}catch(_){}}
+
+  // Nach Login aktuelle KW aus Cloud laden. Keine Alt-Woche wird dabei hochgeladen.
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);let n=0;const t=setInterval(()=>{n++;if(AppState?.currentUserId||n>30){clearInterval(t);if(AppState?.currentUserId)setTimeout(()=>loadWeek(AppState.weekOffset),80);}},100);return r;};try{startApp=window.startApp}catch(_){}}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&AppState?.currentUserId)setTimeout(()=>loadWeek(AppState.weekOffset,{render:true}),100);});
+
+  // Admin: rückwirkende Urlaub-/Krank-Einträge ausdrücklich erlauben.
+  // Mitarbeiterformulare bleiben von der gerade geöffneten KW unabhängig (kein max auf aktuelle Woche).
+  function dateHints(){
+    [['wfVon','Wunschfrei: Datum frei wählbar – unabhängig von der angezeigten KW.'],['urlVon','Urlaub: Zeitraum frei wählbar – unabhängig von der angezeigten KW.'],['krankVon','Krankmeldung: Datum unabhängig vom Wochenplan wählen.']].forEach(([id,txt])=>{const el=document.getElementById(id);if(!el||el.dataset.v262Hint)return;el.dataset.v262Hint='1';el.removeAttribute('max');const h=document.createElement('div');h.style.cssText='font-size:10px;color:var(--muted);margin-top:3px;';h.textContent=txt;el.insertAdjacentElement('afterend',h);});
+  }
+  const oldGo2=window.goTo;if(typeof oldGo2==='function'){window.goTo=function(pg,title){const r=oldGo2.apply(this,arguments);if(['pgWunsch','pgKrank','pgAdminPlanning'].includes(pg))setTimeout(dateHints,0);return r;};try{goTo=window.goTo}catch(_){}}
+
+  window.CloudWeekMigration={loadCurrent:()=>loadWeek(AppState.weekOffset),reloadCurrent:()=>loadWeek(AppState.weekOffset),migrateCurrent,saveDraft:saveDraftCloud,publish:publishCloud,state:()=>({...cloudState}),key:keyForOffset};
+  setTimeout(()=>{ensureBar();renderStatus();dateHints();},0);
+})();
+</script>
 </body>
 </html>

@@ -1,7 +1,7 @@
-/* NASCH PWA Service Worker · V25.4
+/* NASCH PWA Service Worker · V26.2
    Ziel: HTML auf GitHub Pages immer zuerst aus dem Netz laden,
    damit neue Releases nicht durch einen alten PWA-Cache blockiert werden. */
-const CACHE = 'nasch-app-v25.4';
+const CACHE = 'nasch-app-v26.2';
 const STATIC_ASSETS = [
   './manifest-emsdetten.webmanifest',
   './icon-180.png',
