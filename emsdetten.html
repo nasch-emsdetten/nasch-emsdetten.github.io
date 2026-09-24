@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.13</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.14</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -607,7 +607,11 @@ window.FILIAL_ID = 'FIL001';
     <div class="page" id="pgVerfueg">
       <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
       <div class="banner bwarn"><span>🔒</span><span>Änderungen sind erst nach Genehmigung durch Lee Ko aktiv.</span></div>
-      <div class="sec">Verfügbarkeit pro Tag</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div class="sec" style="flex:1;margin-bottom:0;">Verfügbarkeit pro Tag</div>
+        <button type="button" id="verfEditBtn" onclick="toggleVerfEdit()" style="border:1px solid var(--border);background:#fff;color:var(--navy);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">✏️ Bearbeiten</button>
+      </div>
+      <div id="verfLockHint" class="banner binfo" style="margin-bottom:8px;"><span>🔒</span><span>Nur Ansicht · Zum Ändern zuerst „Bearbeiten“ wählen.</span></div>
       <div id="verfDays"></div>
       <div id="verfGrundWrap" style="display:none;">
         <label>Begründung (Pflicht bei Änderung)</label>
@@ -2700,7 +2704,7 @@ function goTo(pgId, title){
       if(t && !t.querySelector('tbody tr')) renderPlanTableDirect('adminTbl');
     }, 50);
   }
-  if(pgId==='pgVerfueg') if(typeof buildVerfDays==='function') buildVerfDays();
+  if(pgId==='pgVerfueg') { if(typeof setVerfEditMode==='function') setVerfEditMode(false,true); else if(typeof buildVerfDays==='function') buildVerfDays(); }
   if(pgId==='pgStunden') renderPersonalDailyHours();
   if(pgId==='pgAdminStz') { buildStzList(); renderAdminDailyHours(); stzTab(1); }
 }
@@ -2778,15 +2782,17 @@ function sendeHO(){
   showToast('✓ Home-Office lokal gespeichert');
 }
 function sendeVerf(){
-  if(!document.getElementById('verfGrund').value.trim()){document.getElementById('verfErr').textContent='Bitte Begründung angeben.';return;}
+  if(!verfEditMode) return;
+  const grund=document.getElementById('verfGrund').value.trim();
+  if(!grund){document.getElementById('verfErr').textContent='Bitte Begründung angeben.';return;}
   document.getElementById('verfErr').textContent='';
-  document.getElementById('verfOK').classList.remove('hidden');
-  document.getElementById('verfSendBtn').classList.add('hidden');
-  document.getElementById('verfGrundWrap').style.display='none';
   SandboxStore.saveAvailability(AppState.currentUserId,vSel);
   Object.assign(vOrig,vSel);
-  SandboxStore.addRequest('verfuegbarkeit',AppState.currentUserId,{werte:{...vSel},grund:document.getElementById('verfGrund').value.trim()});
-  showToast('✓ Verfügbarkeit lokal gespeichert');
+  SandboxStore.addRequest('verfuegbarkeit',AppState.currentUserId,{werte:{...vSel},grund});
+  document.getElementById('verfGrund').value='';
+  setVerfEditMode(false);
+  document.getElementById('verfOK').classList.remove('hidden');
+  showToast('✓ Verfügbarkeit gespeichert');
 }
 
 // ── Verfügbarkeit ─────────────────────────────────────────
@@ -2795,6 +2801,45 @@ const VOPTS=[{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:
 const VFARBE={g:['#E1F5EE','#085041'],f:['#FFF2CC','#7D6608'],s:['#FAE5D3','#784212'],n:['#FCEBEB','#791F1F']};
 const vSel={Mo:'g',Di:'g',Mi:'n',Do:'g',Fr:'f',Sa:'f',So:'n'};
 const vOrig={...vSel};
+let verfEditMode=false;
+
+function setVerfEditMode(on, restoreOnLock=false){
+  verfEditMode=!!on;
+  if(!verfEditMode && restoreOnLock) Object.assign(vSel,vOrig);
+
+  const btn=document.getElementById('verfEditBtn');
+  if(btn){
+    btn.textContent=verfEditMode?'↩ Abbrechen':'✏️ Bearbeiten';
+    btn.style.background=verfEditMode?'#f0f5ff':'#fff';
+  }
+  const hint=document.getElementById('verfLockHint');
+  if(hint){
+    hint.style.display='flex';
+    hint.className='banner '+(verfEditMode?'bwarn':'binfo');
+    hint.innerHTML=verfEditMode
+      ? '<span>✏️</span><span>Bearbeitungsmodus aktiv · Änderungen werden erst mit „Änderung senden“ übernommen.</span>'
+      : '<span>🔒</span><span>Nur Ansicht · Zum Ändern zuerst „Bearbeiten“ wählen.</span>';
+  }
+  if(!verfEditMode){
+    const gw=document.getElementById('verfGrundWrap'); if(gw) gw.style.display='none';
+    document.getElementById('verfSendBtn')?.classList.add('hidden');
+    const err=document.getElementById('verfErr'); if(err) err.textContent='';
+  } else {
+    document.getElementById('verfOK')?.classList.add('hidden');
+  }
+  buildVerfDays();
+}
+
+function toggleVerfEdit(){
+  if(verfEditMode){
+    setVerfEditMode(false,true);
+    const grund=document.getElementById('verfGrund'); if(grund) grund.value='';
+    showToast('Änderungen verworfen');
+  }else{
+    setVerfEditMode(true);
+  }
+}
+
 function buildVerfDays(){
   const c=document.getElementById('verfDays');
   if(!c) return;
@@ -2804,16 +2849,18 @@ function buildVerfDays(){
         <span style="font-size:13px;font-weight:600;flex:1;">${tag}</span>
         <span id="vst_${tag}" style="font-size:11px;color:var(--muted);">${VOPTS.find(o=>o.k===vSel[tag])?.l}</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:6px;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:6px;${verfEditMode?'':'opacity:.72;'}">
         ${VOPTS.map(o=>`<div onclick="selVerf('${tag}','${o.k}')" id="vo_${tag}_${o.k}"
+          aria-disabled="${verfEditMode?'false':'true'}"
           style="padding:7px 6px;border-radius:4px;border:1px solid ${vSel[tag]===o.k?VFARBE[o.k][1]:'var(--border)'};
             background:${vSel[tag]===o.k?VFARBE[o.k][0]:'var(--card)'};
-            text-align:center;cursor:pointer;font-size:11px;font-weight:600;
+            text-align:center;cursor:${verfEditMode?'pointer':'default'};font-size:11px;font-weight:600;
             color:${vSel[tag]===o.k?VFARBE[o.k][1]:'var(--muted)'};">${o.l}</div>`).join('')}
       </div>
     </div>`).join('');
 }
 function selVerf(tag,key){
+  if(!verfEditMode) return;
   vSel[tag]=key;
   TAGE.forEach(t=>{VOPTS.forEach(o=>{const el=document.getElementById('vo_'+t+'_'+o.k);if(el){const act=vSel[t]===o.k;el.style.background=act?VFARBE[o.k][0]:'var(--card)';el.style.borderColor=act?VFARBE[o.k][1]:'var(--border)';el.style.color=act?VFARBE[o.k][1]:'var(--muted)';}});});
   document.getElementById('vst_'+tag).textContent=VOPTS.find(o=>o.k===key)?.l;
@@ -5370,14 +5417,14 @@ window.NASCH_SANDBOX_VERSION='V19';
 </script>
 
 <script>
-/* V24.13: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
+/* V24.14: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
 </script>
 <script>
-/* V24.13 · PWA/GitHub-Cache-Stabilisierung */
+/* V24.14 · PWA/GitHub-Cache-Stabilisierung */
 (() => {
   if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
   if('caches' in window){
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v24.13').map(k=>caches.delete(k)))).catch(()=>{});
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v24.14').map(k=>caches.delete(k)))).catch(()=>{});
   }
 })();
 </script>
