@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.12</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.13</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -3792,7 +3792,11 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('Service Worker:',e)));
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js?v=24.13',{updateViaCache:'none'})
+      .then(reg=>reg.update())
+      .catch(e=>console.warn('Service Worker:',e));
+  });
 }
 </script>
 
@@ -5366,9 +5370,16 @@ window.NASCH_SANDBOX_VERSION='V19';
 </script>
 
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker:', err)));
-}
+/* V24.13: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
+</script>
+<script>
+/* V24.13 · PWA/GitHub-Cache-Stabilisierung */
+(() => {
+  if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  if('caches' in window){
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v24.13').map(k=>caches.delete(k)))).catch(()=>{});
+  }
+})();
 </script>
 </body>
 </html>

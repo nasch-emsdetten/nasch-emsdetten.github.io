@@ -1,16 +1,74 @@
-const CACHE = 'nasch-sandbox-v17';
-const ASSETS = [
-  './', './index.html', './manifest.json', './icon-192.png', './icon-512.png'
+/* NASCH PWA Service Worker · V24.13
+   Ziel: HTML auf GitHub Pages immer zuerst aus dem Netz laden,
+   damit neue Releases nicht durch einen alten PWA-Cache blockiert werden. */
+const CACHE = 'nasch-app-v24.13';
+const STATIC_ASSETS = [
+  './icon-192.png',
+  './icon-512.png'
 ];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache => Promise.all(STATIC_ASSETS.map(url => cache.add(url).catch(() => null))))
+      .then(() => self.skipWaiting())
+  );
 });
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE && /^nasch-(sandbox|app)-v/i.test(key)).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
 });
-self.addEventListener('fetch', e => {
-  if(e.request.method !== 'GET') return;
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-    const copy=res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res;
-  }).catch(() => caches.match('./index.html'))));
+
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if(req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  if(url.origin !== self.location.origin) return;
+
+  const isDocument = req.mode === 'navigate' || req.destination === 'document' || /\.html$/i.test(url.pathname);
+
+  if(isDocument){
+    // NETWORK FIRST: Releases auf GitHub werden sofort sichtbar.
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(req, {cache:'no-store'});
+        if(fresh && fresh.ok){
+          const cache = await caches.open(CACHE);
+          await cache.put(req, fresh.clone());
+        }
+        return fresh;
+      } catch(err) {
+        const cached = await caches.match(req);
+        if(cached) return cached;
+        const fallback = await caches.match('./index.html');
+        if(fallback) return fallback;
+        throw err;
+      }
+    })());
+    return;
+  }
+
+  // STATIC: Cache benutzen, aber im Hintergrund aktualisieren.
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    const networkPromise = fetch(req).then(async res => {
+      if(res && res.ok){
+        const cache = await caches.open(CACHE);
+        await cache.put(req, res.clone());
+      }
+      return res;
+    }).catch(() => null);
+
+    if(cached){
+      event.waitUntil(networkPromise);
+      return cached;
+    }
+    const fresh = await networkPromise;
+    return fresh || Response.error();
+  })());
 });
