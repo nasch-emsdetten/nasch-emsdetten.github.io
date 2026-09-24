@@ -6,7 +6,8 @@
 <meta name="theme-color" content="#98C01F">
 <title>NASCH Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NASCH Emsdetten">
@@ -231,7 +232,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.1</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.3</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -3980,7 +3981,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js?v=25.1',{updateViaCache:'none'})
+    navigator.serviceWorker.register('./sw.js?v=25.3',{updateViaCache:'none'})
       .then(reg=>reg.update())
       .catch(e=>console.warn('Service Worker:',e));
   });
@@ -5557,20 +5558,20 @@ window.NASCH_SANDBOX_VERSION='V19';
 </script>
 
 <script>
-/* V25.1: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
+/* V25.3: Service Worker wird weiter oben einmalig mit updateViaCache:'none' registriert. */
 </script>
 <script>
-/* V25.1 · PWA/GitHub-Cache-Stabilisierung */
+/* V25.3 · PWA/GitHub-Cache-Stabilisierung */
 (() => {
   if(!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
   if('caches' in window){
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v25.1').map(k=>caches.delete(k)))).catch(()=>{});
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>/^nasch-(sandbox|app)-v/i.test(k) && k!=='nasch-app-v25.3').map(k=>caches.delete(k)))).catch(()=>{});
   }
 })();
 </script>
 
 <script>
-/* V25.1 · Dienstplan produktionsnah: Firestore als zentrale Quelle für Wochenpläne */
+/* V25.3 · Dienstplan produktionsnah: Firestore als zentrale Quelle für Wochenpläne */
 (() => {
   const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
   let lastVisibleLoad=0;
@@ -5812,7 +5813,7 @@ window.NASCH_SANDBOX_VERSION='V19';
   .install-card button{width:100%;margin-top:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;border-radius:9px;padding:9px 10px;font-size:12px;font-weight:700;cursor:pointer}
 </style>
 <script>
-/* NASCH V25.1 · Arbeitszeitkorrektur + PWA-Installationshilfe */
+/* NASCH V25.3 · Arbeitszeitkorrektur + PWA-Installationshilfe */
 (() => {
   const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
   const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -5994,18 +5995,103 @@ window.NASCH_SANDBOX_VERSION='V19';
     }).catch(()=>{});
   });
 
-  // ── PWA INSTALLATIONSHILFE ──
+  // ── PWA INSTALLATION · V25.3 ─────────────────────────────
+  // Android/Chromium: echter Browser-Installationsdialog über beforeinstallprompt.
+  // iOS stellt absichtlich keine API für eine programmgesteuerte Installation bereit.
   let deferredInstallPrompt=null;
+  let installEventWaiters=[];
   const standalone=()=>window.matchMedia?.('(display-mode: standalone)').matches===true||window.navigator.standalone===true;
   const ios=()=>/iphone|ipad|ipod/i.test(navigator.userAgent||'');
   const android=()=>/android/i.test(navigator.userAgent||'');
+  const chromium=()=>/chrome|crios|edg|edga|samsungbrowser/i.test(navigator.userAgent||'');
+
   function injectInstallCard(){
-    const login=document.getElementById('loginScreen'),card=login?.querySelector('.login-card');if(!login||!card||document.getElementById('pwaInstallCard'))return;
+    const login=document.getElementById('loginScreen'),card=login?.querySelector('.login-card');
+    if(!login||!card||document.getElementById('pwaInstallCard'))return;
     const c=document.createElement('div');c.id='pwaInstallCard';c.className='install-card';card.insertAdjacentElement('afterend',c);updateInstallCard();
   }
-  function updateInstallCard(){const c=document.getElementById('pwaInstallCard');if(!c)return;if(standalone()){c.style.display='none';return;}c.style.display='block';let msg='NASCH dauerhaft mit eigenem Icon auf dem Startbildschirm speichern.';let btn='📲 App installieren';if(ios()){msg='iPhone/iPad: In Safari auf Teilen ⬆️ tippen → „Zum Home-Bildschirm“ → „Hinzufügen“.';btn='📱 iPhone-Anleitung anzeigen';}else if(android()&&!deferredInstallPrompt){msg='Android: In Chrome oben rechts ⋮ → „App installieren“ oder „Zum Startbildschirm hinzufügen“.';btn='📲 Installationshilfe';}c.innerHTML=`<div style="font-size:12px;font-weight:800;">📲 NASCH als App speichern</div><div style="font-size:10px;line-height:1.45;color:#d7e3ef;margin-top:3px;">${msg}</div><button type="button" onclick="installNaschApp()">${btn}</button>`;}
-  window.installNaschApp=async function(){if(standalone()){alert('NASCH ist bereits als App installiert.');return;}if(deferredInstallPrompt){deferredInstallPrompt.prompt();try{await deferredInstallPrompt.userChoice}catch(_){}deferredInstallPrompt=null;updateInstallCard();return;}if(ios())alert('Auf dem iPhone:\n\n1. Diese Seite in Safari öffnen\n2. Unten auf Teilen ⬆️ tippen\n3. „Zum Home-Bildschirm“ auswählen\n4. „Als Web-App öffnen“ aktivieren (falls angezeigt)\n5. „Hinzufügen“ tippen');else if(android())alert('Auf Android:\n\n1. Diese Seite in Chrome öffnen\n2. Oben rechts auf ⋮ tippen\n3. „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen\n4. Bestätigen');else alert('Im Browser-Menü „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ auswählen.');};
-  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallCard();});window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallCard();});
+
+  function updateInstallCard(){
+    const c=document.getElementById('pwaInstallCard');if(!c)return;
+    if(standalone()){c.style.display='none';return;}
+    c.style.display='block';
+    if(ios()){
+      c.innerHTML='<div style="font-size:12px;font-weight:800;">📲 NASCH installieren</div><div style="font-size:10px;line-height:1.45;color:#d7e3ef;margin-top:3px;">Auf dem iPhone muss Apple die Installation über Safari bestätigen.</div><button type="button" onclick="installNaschApp()">📱 Zum iPhone-Installieren</button>';
+      return;
+    }
+    if(deferredInstallPrompt){
+      c.innerHTML='<div style="font-size:12px;font-weight:800;">📲 NASCH Mitarbeiter-App</div><div style="font-size:10px;line-height:1.45;color:#d7e3ef;margin-top:3px;">Bereit zur Installation mit eigenem Icon.</div><button type="button" onclick="installNaschApp()">⬇️ Jetzt installieren</button>';
+      return;
+    }
+    if(android()){
+      c.innerHTML='<div style="font-size:12px;font-weight:800;">📲 NASCH Mitarbeiter-App</div><div id="pwaInstallMsg" style="font-size:10px;line-height:1.45;color:#d7e3ef;margin-top:3px;">Installation wird vorbereitet…</div><button type="button" onclick="installNaschApp()">⬇️ App installieren</button>';
+      return;
+    }
+    c.innerHTML='<div style="font-size:12px;font-weight:800;">📲 NASCH Mitarbeiter-App</div><div style="font-size:10px;line-height:1.45;color:#d7e3ef;margin-top:3px;">Als App auf diesem Gerät installieren.</div><button type="button" onclick="installNaschApp()">⬇️ App installieren</button>';
+  }
+
+  function waitForInstallPrompt(ms=2200){
+    if(deferredInstallPrompt)return Promise.resolve(deferredInstallPrompt);
+    return new Promise(resolve=>{
+      const fn=e=>resolve(e); installEventWaiters.push(fn);
+      setTimeout(()=>{installEventWaiters=installEventWaiters.filter(x=>x!==fn);resolve(deferredInstallPrompt);},ms);
+    });
+  }
+
+  async function triggerInstallPrompt(){
+    if(!deferredInstallPrompt)return false;
+    const ev=deferredInstallPrompt;
+    deferredInstallPrompt=null;
+    try{
+      await ev.prompt();
+      const choice=await ev.userChoice;
+      if(choice?.outcome==='accepted') showToast?.('✓ NASCH wird installiert');
+      else updateInstallCard();
+      return choice?.outcome==='accepted';
+    }catch(e){
+      console.warn('PWA Installationsdialog:',e);deferredInstallPrompt=ev;updateInstallCard();return false;
+    }
+  }
+
+  window.installNaschApp=async function(){
+    if(standalone()){alert('NASCH ist bereits als App installiert.');return;}
+    if(ios()){
+      alert('iPhone / iPad:\n\nApple erlaubt keine automatische Installation aus einer Webseite.\n\nSafari → Teilen ⬆️ → „Zum Home-Bildschirm“ → „Hinzufügen“.\n\nDanach startet NASCH wie eine normale App mit eigenem Icon.');
+      return;
+    }
+    if(await triggerInstallPrompt())return;
+
+    // Beim ersten Besuch kann der Service Worker noch initialisieren. Kurz auf
+    // Installierbarkeit warten und den nativen Dialog im selben Vorgang öffnen.
+    const msg=document.getElementById('pwaInstallMsg');
+    if(msg)msg.textContent='Installation wird geprüft…';
+    try{
+      if('serviceWorker' in navigator){
+        await navigator.serviceWorker.ready;
+        try{const reg=await navigator.serviceWorker.getRegistration();await reg?.update();}catch(_){}
+      }
+    }catch(_){}
+    await waitForInstallPrompt(2200);
+    if(await triggerInstallPrompt())return;
+
+    // Keine Browser-API verfügbar: nicht so tun, als könne die Seite den
+    // Browser zwingen. Kurzer Hinweis nur für diesen Sonderfall.
+    if(android()&&chromium()){
+      alert('Der direkte Installationsdialog ist auf diesem Gerät noch nicht freigegeben.\n\nBitte die Seite einmal neu laden und danach erneut auf „App installieren“ tippen. Chrome kann den Dialog erst anbieten, wenn die PWA vollständig geprüft wurde.');
+    }else if(android()){
+      alert('Dieser Android-Browser stellt keinen direkten PWA-Installationsdialog für Webseiten bereit. In Chrome öffnen und dort „App installieren“ tippen.');
+    }else{
+      alert('Dieser Browser stellt keinen direkten Installationsdialog bereit.');
+    }
+    updateInstallCard();
+  };
+
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferredInstallPrompt=e;
+    const waiters=[...installEventWaiters];installEventWaiters=[];waiters.forEach(fn=>{try{fn(e)}catch(_){}});
+    updateInstallCard();
+  });
+  window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallCard();showToast?.('✓ NASCH wurde installiert');});
 
   document.addEventListener('DOMContentLoaded',()=>{injectCorrectionUI();injectInstallCard();TimeCorrectionStore.ensureLoaded(true).then(()=>renderTimeCorrectionAdmin()).catch(()=>{});});
   if(document.readyState!=='loading'){injectCorrectionUI();injectInstallCard();}
