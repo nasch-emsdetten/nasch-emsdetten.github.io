@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.7</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v27.0</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -762,6 +762,15 @@ window.FILIAL_ID = 'FIL001';
           <div style="font-size:11px;color:#085041;margin-top:2px;" id="waShareSub">Mitarbeiter sehen jetzt den aktuellen Plan.</div>
         </div>
         <button id="waShareBtn" onclick="doWhatsAppShare()" style="padding:10px 14px;border:none;border-radius:var(--radius);background:#25D366;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📲 Über WhatsApp teilen</button>
+      </div>
+
+      <!-- Veröffentlichung: für Admin dauerhaft sichtbar -->
+      <div id="adminPublishBar" style="display:none;margin:8px 0 10px;padding:10px 12px;background:#eef6ff;border:1px solid #b9d6f2;border-radius:10px;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:12px;font-weight:800;color:#1e3a5f;">📢 Wochenplan für Mitarbeiter</div>
+          <div id="adminPublishHint" style="font-size:10px;color:#64748b;margin-top:2px;">Nur veröffentlichte Pläne sind auf Mitarbeiter-Geräten sichtbar.</div>
+        </div>
+        <button id="adminPublishAlwaysBtn" type="button" onclick="adminPublishCurrentWeek()" style="padding:10px 14px;border:none;border-radius:8px;background:#1e3a5f;color:#fff;font-size:12px;font-weight:800;cursor:pointer;">📢 Wochenplan veröffentlichen</button>
       </div>
 
       <!-- Speichern/Veröffentlichen Leiste (nur im Bearbeitungs-Modus) -->
@@ -2514,31 +2523,70 @@ function renderPlan() {
   const planTable = document.getElementById('planTbl');
   if(!weekLabel || !planTable) return;
 
-  // Mitarbeiter sehen nur veröffentlichten Plan
-  if(!viewerIsAdmin && typeof PublishStore !== 'undefined') {
-    const bid = PublishStore.branchKey();
-    const wk  = PublishStore.weekKey();
-    if(!PublishStore.isPublished(bid, wk)) {
-      const kw = getKW(monday);
+  // Mitarbeiter sehen ausschließlich den veröffentlichten Cloud-Plan.
+  // Wichtig: PublishStore ist nur ein lokaler Browser-Cache und darf nicht darüber
+  // entscheiden, ob ein auf einem anderen Gerät veröffentlichter Plan sichtbar ist.
+  if(!viewerIsAdmin) {
+    const bid = typeof PublishStore !== 'undefined' ? PublishStore.branchKey() : (window.FILIAL_ID||'FIL001');
+    const wk  = typeof PublishStore !== 'undefined' ? PublishStore.weekKey() : (typeof WeekPlanStore!=='undefined'?WeekPlanStore.keyForOffset(AppState.weekOffset):'');
+    let cloudInfo=null;
+    try{ cloudInfo=window.CloudWeekMigration?.state?.()||null; }catch(_){}
+    const cloudAvailable=!!window.CloudWeekMigration?.loadCurrent;
+    const cloudMatches=!!cloudInfo && cloudInfo.key===wk;
+
+    // Beim ersten Öffnen des Plans die aktuelle KW sofort aus Firestore nachladen.
+    if(cloudAvailable && !cloudMatches) {
       weekLabel.textContent = `KW ${kw}`;
-      const isAdm=typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);
       planTable.innerHTML = `<tr><td colspan="10" style="padding:32px 16px;text-align:center;color:var(--muted);">
-        <div style="font-size:32px;margin-bottom:10px;">📅</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text);">Noch kein Wochenplan veröffentlicht</div>
-        <div style="font-size:12px;margin-top:6px;">Der Wochenplan für KW ${kw} wurde noch nicht veröffentlicht.</div>
-        ${isAdm?`<button onclick="if(typeof publishPlan==='function'){publishPlan();renderPlan();}" style="margin-top:12px;padding:10px 20px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">📢 Jetzt veröffentlichen</button>`:'<div style="font-size:12px;margin-top:6px;">Lee wird den Plan in Kürze freigeben.</div>'}
+        <div style="font-size:32px;margin-bottom:10px;">☁️</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);">Wochenplan wird geladen …</div>
+        <div style="font-size:12px;margin-top:6px;">Die veröffentlichte KW ${kw} wird aus der Cloud abgerufen.</div>
+      </td></tr>`;
+      setTimeout(()=>{ try{ window.CloudWeekMigration.loadCurrent(); }catch(_){} },0);
+      return;
+    }
+
+    if(cloudMatches && cloudInfo.loading) {
+      weekLabel.textContent = `KW ${kw}`;
+      planTable.innerHTML = `<tr><td colspan="10" style="padding:32px 16px;text-align:center;color:var(--muted);">
+        <div style="font-size:32px;margin-bottom:10px;">☁️</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);">Wochenplan wird geladen …</div>
       </td></tr>`;
       return;
     }
-    // Veröffentlichten Plan laden (statt aktuellem Entwurf)
-    const pubPlan = PublishStore.getPublishedPlan(bid, wk);
-    if(pubPlan) {
-      // Temporär PLAN durch veröffentlichten Plan ersetzen für die Darstellung
-      const origPlan = JSON.parse(JSON.stringify(PLAN));
-      Object.keys(PLAN).forEach(k => delete PLAN[k]);
-      Object.assign(PLAN, pubPlan);
-      // Rendering läuft durch → danach wiederherstellen
-      setTimeout(() => { Object.keys(PLAN).forEach(k => delete PLAN[k]); Object.assign(PLAN, origPlan); }, 0);
+
+    // Wenn Firestore für diese KW erfolgreich geprüft wurde, ist die Cloud die Quelle der Wahrheit.
+    if(cloudMatches) {
+      if(!cloudInfo.published) {
+        weekLabel.textContent = `KW ${kw}`;
+        const cloudErr=cloudInfo.lastError?`<div style="font-size:11px;margin-top:7px;color:#b42318;">Cloud-Fehler: ${escapeHtml(cloudInfo.lastError)}</div>`:'';
+        planTable.innerHTML = `<tr><td colspan="10" style="padding:32px 16px;text-align:center;color:var(--muted);">
+          <div style="font-size:32px;margin-bottom:10px;">📅</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);">Noch kein Wochenplan veröffentlicht</div>
+          <div style="font-size:12px;margin-top:6px;">Für KW ${kw} liegt noch keine veröffentlichte Cloud-Version vor.</div>${cloudErr}
+        </td></tr>`;
+        return;
+      }
+      // PLAN enthält jetzt bereits publishedPlan aus Firestore. Nicht wieder mit einem
+      // lokalen PublishStore-Plan überschreiben.
+    } else if(typeof PublishStore !== 'undefined') {
+      // Fallback nur für ältere/offline Installationen ohne CloudMigration.
+      if(!PublishStore.isPublished(bid, wk)) {
+        weekLabel.textContent = `KW ${kw}`;
+        planTable.innerHTML = `<tr><td colspan="10" style="padding:32px 16px;text-align:center;color:var(--muted);">
+          <div style="font-size:32px;margin-bottom:10px;">📅</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);">Noch kein Wochenplan veröffentlicht</div>
+          <div style="font-size:12px;margin-top:6px;">Der Wochenplan für KW ${kw} wurde noch nicht veröffentlicht.</div>
+        </td></tr>`;
+        return;
+      }
+      const pubPlan = PublishStore.getPublishedPlan(bid, wk);
+      if(pubPlan) {
+        const origPlan = JSON.parse(JSON.stringify(PLAN));
+        Object.keys(PLAN).forEach(k => delete PLAN[k]);
+        Object.assign(PLAN, pubPlan);
+        setTimeout(() => { Object.keys(PLAN).forEach(k => delete PLAN[k]); Object.assign(PLAN, origPlan); }, 0);
+      }
     }
   }
 
@@ -4598,7 +4646,10 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     const title=`Wochenplan KW ${kw} - ${String(mon.getFullYear())}`;
     return {title, html:`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>NASCH Emsdetten</title><style>
       @page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;font-size:8.5px}h1{font-size:16px;margin:0 0 2px}.sub{font-size:9px;color:#566274;margin-bottom:8px}.hint{font-size:8px;color:#657386;margin:6px 0}.plan{width:100%;border-collapse:collapse;table-layout:fixed}.plan th,.plan td{border:1px solid #aeb9c7;padding:4px;vertical-align:top;word-break:break-word}.plan th{background:#1e3a5f;color:#fff;text-align:center;font-size:8px}.plan th:first-child{width:19mm}.plan .name{background:#f3f6f9;width:30mm}.plan .week{background:#f3f6f9;text-align:center;width:24mm}.plan .total{background:#f3f6f9;text-align:center}.plan .name small{font-weight:400;color:#657386}.shift{line-height:1.3}.shift.F{background:#fff4bf}.shift.S{background:#ffe3ca}.shift.TS{background:#e6f1fb}.shift.U{background:#f8dce8}.shift.WF{background:#fff1a8}.shift.K{background:#f4d6d6}.shift.R{background:#e8f4ea}.meta{margin-top:3px;font-size:6.5px;line-height:1.15;color:#ffe7a3}.legend{margin-top:6px;font-size:7.5px;color:#455468}.footer{margin-top:6px;display:flex;justify-content:space-between;color:#657386;font-size:7px}@media print{button{display:none}}
-      </style></head><body><h1>${escapeHtml(title)}</h1><div class="sub">${formatFullDate(mon)} bis ${formatFullDate(sun)} · NASCH Emsdetten</div><table class="plan"><thead><tr><th>Mitarbeiter</th>${head}<th>Woche</th></tr></thead><tbody>${body}<tr><td class="name"><strong>Tag gesamt</strong></td>${totals}<td class="total"><strong>${typeof getWeekTotalHours==='function'?formatHours(getWeekTotalHours()):''}</strong></td></tr></tbody></table>${legend?`<div class="legend"><strong>Tätigkeiten:</strong> ${legend}</div>`:''}<div class="footer"><span>Erstellt aus der NASCH Sandbox ${V14_VERSION}</span><span>${new Date().toLocaleString('de-DE')}</span></div><script>setTimeout(()=>window.print(),250);<\/script></body></html>`};
+      </style></head><body><h1>${escapeHtml(title)}</h1><div class="sub">${formatFullDate(mon)} bis ${formatFullDate(sun)} · NASCH Emsdetten</div><table class="plan"><thead><tr><th>Mitarbeiter</th>${head}<th>Woche</th></tr></thead><tbody>${body}<tr><td class="name"><strong>Tag gesamt</strong></td>${totals}<td class="total"><strong>${typeof getWeekTotalHours==='function'?formatHours(getWeekTotalHours()):''}</strong></td></tr></tbody></table>${legend?`<div class="legend"><strong>Tätigkeiten:</strong> ${legend}</div>`:''}<div class="footer"><span>Erstellt aus der NASCH Sandbox ${V14_VERSION}</span><span>${new Date().toLocaleString('de-DE')}</span></div><script>setTimeout(()=>window.print(),250);<\/script>
+
+
+</body></html>`};
   }
 
   window.exportWeekPlanPDF=function(){
@@ -6043,7 +6094,7 @@ if ('serviceWorker' in navigator) {
     const key=keyForOffset();
     if(cloudState.loading){bar.className='banner binfo';bar.innerHTML='<span>☁️</span><span><strong>Cloud wird geprüft …</strong><br><small>'+esc(key)+'</small></span>';return;}
     if(cloudState.lastError){bar.className='banner bwarn';bar.innerHTML='<span>⚠️</span><span><strong>Cloud nicht erreichbar</strong><br><small>'+esc(cloudState.lastError)+'</small></span>';return;}
-    if(cloudState.exists){bar.className='banner bok';bar.innerHTML=`<span>☁️</span><span style="flex:1"><strong>KW synchronisiert</strong><br><small>${esc(key)} · Cloud-Version ${cloudState.version||1}${cloudState.published?' · veröffentlicht':' · Entwurf'}</small></span><button type="button" class="v15-smallbtn" onclick="CloudWeekMigration.reloadCurrent()">↻ Neu laden</button>`;return;}
+    if(cloudState.exists){bar.className='banner bok';bar.innerHTML=`<span>☁️</span><span style="flex:1"><strong>KW synchronisiert</strong><br><small>${esc(key)} · Cloud-Version ${cloudState.version||1}${cloudState.published?' · veröffentlicht':' · Entwurf'}</small></span><button type="button" class="v15-smallbtn" onclick="CloudWeekMigration.reloadCurrent()">↻ Neu laden</button>`;try{updateAdminPublishBar();}catch(_){}return;}
     bar.className='banner bwarn';bar.innerHTML=`<span>🕘</span><span style="flex:1"><strong>Diese KW ist noch nicht in der Cloud</strong><br><small>${esc(key)} · alter Wochenplan bleibt unverändert, bis du ihn einzeln übernimmst.</small></span><button type="button" class="v15-smallbtn" onclick="CloudWeekMigration.migrateCurrent()">☁️ Diese KW synchronisieren</button>`;
   }
   async function loadWeek(offset=(AppState.weekOffset||0),opts={}){
@@ -6117,11 +6168,49 @@ if ('serviceWorker' in navigator) {
     try{PublishStore?.saveDraft?.(PublishStore.branchKey(),keyForOffset(),PLAN);}catch(_){}
     planChanges={};editMode=false;planSnapshot=null;document.getElementById('savePlanBar')&&(document.getElementById('savePlanBar').style.display='none');const b=document.getElementById('editBtn');if(b)b.textContent='✏️ Bearbeiten';buildAdminPlan();renderPlan();updatePublishStatus?.();showToast?.('☁️ Entwurf gespeichert');
   };try{saveDraft=window.saveDraft}catch(_){}
-  window.publishPlan=async function(){
-    const key=keyForOffset();if(!confirm(`Wochenplan ${key} für Mitarbeiter veröffentlichen?`))return;
-    const ok=await publishCloud();if(!ok){showToast?.('❌ Nicht veröffentlicht');return;}
+  function isPublishAdmin(){
+    try{
+      const uid=String(AppState.currentUserId||'');
+      return AppState.currentUser?.role==='admin' || !!window.BranchSandbox?.isCentral?.(uid);
+    }catch(_){return false;}
+  }
+  function updateAdminPublishBar(){
+    const bar=document.getElementById('adminPublishBar');
+    if(!bar)return;
+    const allowed=isPublishAdmin();
+    bar.style.display=allowed?'flex':'none';
+    if(!allowed)return;
+    const btn=document.getElementById('adminPublishAlwaysBtn');
+    const hint=document.getElementById('adminPublishHint');
+    const key=keyForOffset();
+    if(btn)btn.textContent=cloudState.published?'📢 Änderung veröffentlichen':'📢 Wochenplan veröffentlichen';
+    if(hint)hint.textContent=cloudState.published
+      ? `KW ab ${key} ist veröffentlicht · Änderungen werden erst nach erneutem Veröffentlichen für Mitarbeiter sichtbar.`
+      : `KW ab ${key} ist noch nicht veröffentlicht · Mitarbeiter sehen sie erst nach dem Veröffentlichen.`;
+  }
+  window.adminPublishCurrentWeek=async function(){
+    if(!isPublishAdmin()){alert('Nur Admin kann Wochenpläne für Mitarbeiter veröffentlichen.');return;}
+    const key=keyForOffset();
+    if(typeof editMode!=='undefined'&&editMode){
+      if(!confirm('Die Planung ist noch im Bearbeitungsmodus. Aktuellen Stand jetzt speichern und veröffentlichen?'))return;
+    }else if(!confirm(`Wochenplan ${key} jetzt für alle Mitarbeiter veröffentlichen?`))return;
+    const btn=document.getElementById('adminPublishAlwaysBtn');
+    const old=btn?.textContent;
+    if(btn){btn.disabled=true;btn.textContent='☁️ Wird veröffentlicht …';}
+    const ok=await publishCloud();
+    if(btn){btn.disabled=false;btn.textContent=old||'📢 Wochenplan veröffentlichen';}
+    if(!ok){showToast?.('❌ Veröffentlichung fehlgeschlagen');alert('Der Wochenplan konnte nicht in Firestore veröffentlicht werden. Bitte Cloud-Verbindung prüfen.');updateAdminPublishBar();return;}
     try{PublishStore?.publish?.(PublishStore.branchKey(),key,PLAN,AppState.currentUser?.name||'Admin');}catch(_){}
-    planChanges={};planSnapshot=null;editMode=false;document.getElementById('savePlanBar')&&(document.getElementById('savePlanBar').style.display='none');const b=document.getElementById('editBtn');if(b)b.textContent='✏️ Bearbeiten';buildAdminPlan();renderPlan();updatePublishStatus?.();showToast?.('✅ Wochenplan cloud-synchron veröffentlicht');
+    planChanges={};planSnapshot=null;editMode=false;
+    const sb=document.getElementById('savePlanBar');if(sb)sb.style.display='none';
+    const eb=document.getElementById('editBtn');if(eb)eb.textContent='✏️ Bearbeiten';
+    try{buildAdminPlan();renderPlan();updatePublishStatus?.();}catch(_){}
+    updateAdminPublishBar();
+    showToast?.('✅ Wochenplan veröffentlicht – Mitarbeiter können ihn jetzt sehen');
+  };
+  window.publishPlan=async function(){
+    if(!isPublishAdmin()){alert('Nur Admin kann Wochenpläne für Mitarbeiter veröffentlichen.');return;}
+    return window.adminPublishCurrentWeek();
   };try{publishPlan=window.publishPlan}catch(_){}
   window.savePlan=async function(){const ok=await saveDraftCloud();if(ok){planChanges={};planSnapshot=null;editMode=false;buildAdminPlan();renderPlan();showToast?.('☁️ Plan als Entwurf gespeichert');}else showToast?.('❌ Cloud-Speicherung fehlgeschlagen');};try{savePlan=window.savePlan}catch(_){}
 
@@ -6138,6 +6227,18 @@ if ('serviceWorker' in navigator) {
     [['wfVon','Wunschfrei: Datum frei wählbar – unabhängig von der angezeigten KW.'],['urlVon','Urlaub: Zeitraum frei wählbar – unabhängig von der angezeigten KW.'],['krankVon','Krankmeldung: Datum unabhängig vom Wochenplan wählen.']].forEach(([id,txt])=>{const el=document.getElementById(id);if(!el||el.dataset.v262Hint)return;el.dataset.v262Hint='1';el.removeAttribute('max');const h=document.createElement('div');h.style.cssText='font-size:10px;color:var(--muted);margin-top:3px;';h.textContent=txt;el.insertAdjacentElement('afterend',h);});
   }
   const oldGo2=window.goTo;if(typeof oldGo2==='function'){window.goTo=function(pg,title){const r=oldGo2.apply(this,arguments);if(['pgWunsch','pgKrank','pgAdminPlanning'].includes(pg))setTimeout(dateHints,0);return r;};try{goTo=window.goTo}catch(_){}}
+
+  // Mitarbeiter: beim Öffnen des Plan-Tabs immer frisch aus Firestore lesen.
+  // So werden Veröffentlichungen sichtbar, ohne dass die komplette App neu gestartet werden muss.
+  const oldNavCloud=window.navTo;
+  if(typeof oldNavCloud==='function'){
+    window.navTo=function(key){
+      const r=oldNavCloud.apply(this,arguments);
+      if(key==='plan'&&AppState?.currentUserId&&!isManager())setTimeout(()=>loadWeek(0,{render:true}),40);
+      return r;
+    };
+    try{navTo=window.navTo}catch(_){}
+  }
 
   window.CloudWeekMigration={loadCurrent:()=>loadWeek(AppState.weekOffset),reloadCurrent:()=>loadWeek(AppState.weekOffset),migrateCurrent,saveDraft:saveDraftCloud,publish:publishCloud,state:()=>({...cloudState}),key:keyForOffset,normalizeCurrent:normalizeCurrentPlan};
   setTimeout(()=>{ensureBar();renderStatus();dateHints();},0);
@@ -6301,7 +6402,7 @@ if ('serviceWorker' in navigator) {
 
 
 <script id="nasch-v265-timesheet-pdf">
-/* NASCH v26.7 · Zuschlagsanzeige nur für berechtigte Mitarbeiter */
+/* NASCH v26.9 · Zuschlagsanzeige nur für berechtigte Mitarbeiter */
 (()=>{
   const VERSION='26.7';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6424,5 +6525,262 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
+
+<script id="nasch-v269-employee-cloud-plan">
+/* NASCH v26.9 · Mitarbeiter-Wochenplan: Firestore ist Quelle der Wahrheit. */
+window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
+</script>
+<script id="nasch-v269-admin-publish-ui">
+/* NASCH v26.9 · Admin veröffentlicht die aktuelle KW sichtbar für Mitarbeiter */
+(()=>{
+  function isAdmin(){
+    try{return AppState?.currentUser?.role==='admin' || !!window.BranchSandbox?.isCentral?.(String(AppState?.currentUserId||''));}catch(_){return false;}
+  }
+  function refresh(){
+    const bar=document.getElementById('adminPublishBar');
+    if(!bar)return;
+    const allowed=isAdmin();
+    bar.style.display=allowed?'flex':'none';
+    if(!allowed)return;
+    const st=window.CloudWeekMigration?.state?.()||{};
+    const btn=document.getElementById('adminPublishAlwaysBtn');
+    const hint=document.getElementById('adminPublishHint');
+    let key='';try{key=window.CloudWeekMigration?.key?.(AppState.weekOffset)||'';}catch(_){}
+    if(btn)btn.textContent=st.published?'📢 Änderung veröffentlichen':'📢 Wochenplan veröffentlichen';
+    if(hint)hint.textContent=st.published
+      ? `Diese KW ist veröffentlicht. Änderungen sehen Mitarbeiter erst nach erneutem Veröffentlichen.`
+      : `Diese KW ist noch nicht veröffentlicht. Mitarbeiter sehen sie erst nach dem Veröffentlichen.`;
+  }
+  const oldStart=window.startApp;
+  if(typeof oldStart==='function'){
+    window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(refresh,500);return r;};
+    try{startApp=window.startApp}catch(_){}
+  }
+  const oldGo=window.goTo;
+  if(typeof oldGo==='function'){
+    window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(pg==='pgAdminPlan')setTimeout(refresh,80);return r;};
+    try{goTo=window.goTo}catch(_){}
+  }
+  const oldBuild=window.buildAdminPlan;
+  if(typeof oldBuild==='function'){
+    window.buildAdminPlan=function(){const r=oldBuild.apply(this,arguments);setTimeout(refresh,0);return r;};
+    try{buildAdminPlan=window.buildAdminPlan}catch(_){}
+  }
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+  setTimeout(refresh,0);
+  window.NaschAdminPublishV269={refresh};
+})();
+</script>
+
+<style id="nasch-v270-style">
+  .v270-printbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:8px 0 10px}
+  .v270-printbar .btn{width:auto;margin-top:0;min-width:145px;padding:8px 10px}
+  .v270-vac{margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+  .v270-vac-grid{display:grid;grid-template-columns:repeat(4,minmax(95px,1fr));gap:7px}
+  .v270-vac-rest{margin-top:7px;padding:7px 9px;border-radius:7px;background:#f8fafc;border:1px solid var(--border);font-size:11px}
+  @media(max-width:620px){.v270-vac-grid{grid-template-columns:1fr 1fr}.v270-printbar .btn{flex:1;min-width:130px}}
+</style>
+<script id="nasch-v270-plan-views-vacation">
+/* NASCH v27.0 · zwei Wochenplan-Druckansichten + Urlaubsverwaltung */
+(()=>{
+  const VERSION='27.0';
+  const VAC_KEY='nasch-v270-vacation';
+  const deep=o=>JSON.parse(JSON.stringify(o));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=(v,fallback=0)=>{const n=Number(String(v??'').replace(',','.'));return Number.isFinite(n)?n:fallback;};
+  const activeEntries=()=>{
+    const e=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{});
+    return e.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.NaschEmployees?.isInactive?.(uid))&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,window.BranchSandbox?.active?.()||'FIL001')));
+  };
+
+  // ── Urlaub: bestehende Restwerte einmalig verlustfrei in Anspruch/Vorjahr/Genommen aufteilen ──
+  let vacState={};
+  try{vacState=JSON.parse(localStorage.getItem(VAC_KEY)||'{}')||{};}catch(_){vacState={};}
+  const saveVacLocal=()=>{try{localStorage.setItem(VAC_KEY,JSON.stringify(vacState));}catch(_){}};
+  function inferVacation(uid){
+    uid=String(uid); const u=USERS?.[uid]; if(!u)return null;
+    if(vacState[uid]) return vacState[uid];
+    let anspruch=Math.max(0,num(u.urlaubAnspruch,0));
+    let vorjahr=Math.max(0,num(u.urlaubVorjahr,0));
+    let genommen=Math.max(0,num(u.urlaubGenommen,0));
+    const restRaw=Number(u.urlaubRest);
+    // Alte App hatte Restwerte, aber Genommen/Vorjahr meist 0. Diese Restwerte bleiben erhalten.
+    if(Number.isFinite(restRaw) && vorjahr===0 && genommen===0){
+      if(restRaw>anspruch) vorjahr=Math.max(0,restRaw-anspruch);
+      else genommen=Math.max(0,anspruch-restRaw);
+    }
+    vacState[uid]={anspruch,vorjahr,genommen}; saveVacLocal();
+    return vacState[uid];
+  }
+  function applyVacation(uid){
+    const u=USERS?.[String(uid)],v=inferVacation(uid);if(!u||!v)return;
+    u.urlaubAnspruch=Math.max(0,num(v.anspruch,0));
+    u.urlaubVorjahr=Math.max(0,num(v.vorjahr,0));
+    u.urlaubGenommen=Math.max(0,num(v.genommen,0));
+    u.urlaubRest=Math.round((u.urlaubAnspruch+u.urlaubVorjahr-u.urlaubGenommen)*100)/100;
+  }
+  Object.keys(USERS||{}).forEach(applyVacation);
+
+  function refreshVacationDisplays(uid){
+    const u=USERS?.[String(uid)];if(!u)return;
+    if(String(AppState?.currentUserId||'')===String(uid)){
+      const p=document.getElementById('profUrlaub');if(p)p.textContent=String(u.urlaubRest??0).replace('.',',');
+      const a=document.getElementById('urlAnsp');if(a)a.textContent=String((num(u.urlaubAnspruch)+num(u.urlaubVorjahr))).replace('.',',');
+      const r=document.getElementById('urlRest');if(r)r.textContent=String(u.urlaubRest??0).replace('.',',');
+    }
+  }
+  window.adminVacationChange=function(uid,field,value){
+    uid=String(uid);if(!USERS?.[uid])return;
+    const v=inferVacation(uid); if(!v)return;
+    const n=Math.max(0,num(value,0));
+    if(field==='urlaubAnspruch')v.anspruch=n;
+    if(field==='urlaubVorjahr')v.vorjahr=n;
+    if(field==='urlaubGenommen')v.genommen=n;
+    vacState[uid]=v;saveVacLocal();applyVacation(uid);
+    try{SandboxStore?.saveEmployee?.(uid);}catch(_){}
+    refreshVacationDisplays(uid);
+    try{NaschAdminSettings?.buildAdminSettings?.();}catch(_){}
+    try{buildMAList?.();}catch(_){}
+    showToast?.('✓ Urlaubstage gespeichert');
+  };
+  function injectVacationEditors(){
+    const root=document.getElementById('adminEmployeeSettings');if(!root)return;
+    const cards=[...root.children].filter(x=>x.classList?.contains('card'));
+    const ents=NaschAdminSettings?.entries?.()||activeEntries();
+    ents.forEach(([uid,u],i)=>{
+      const card=cards[i];if(!card||card.querySelector('.v270-vac'))return;
+      applyVacation(uid);const v=inferVacation(uid);const rest=num(u.urlaubRest,0);
+      const box=document.createElement('div');box.className='v270-vac';
+      box.innerHTML=`<div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:7px;">🏖 Urlaubstage</div>
+        <div class="v270-vac-grid">
+          <div><label style="margin-top:0;">Anspruch aktuelles Jahr</label><input type="number" min="0" step="0.5" value="${v.anspruch}" onchange="adminVacationChange('${esc(uid)}','urlaubAnspruch',this.value)"></div>
+          <div><label style="margin-top:0;">Urlaub aus Vorjahr</label><input type="number" min="0" step="0.5" value="${v.vorjahr}" onchange="adminVacationChange('${esc(uid)}','urlaubVorjahr',this.value)"></div>
+          <div><label style="margin-top:0;">Bereits genommen</label><input type="number" min="0" step="0.5" value="${v.genommen}" onchange="adminVacationChange('${esc(uid)}','urlaubGenommen',this.value)"></div>
+          <div><label style="margin-top:0;">Rest</label><input type="text" value="${String(rest).replace('.',',')} Tage" readonly style="background:#f8fafc;font-weight:800;"></div>
+        </div>
+        <div class="v270-vac-rest">Rest = Anspruch aktuelles Jahr + Urlaub aus Vorjahr − bereits genommen. Alte Restwerte wurden beim ersten Öffnen übernommen.</div>`;
+      card.appendChild(box);
+    });
+  }
+
+  // ── Wochenplan-Bildschirm entschlacken: Name בלבד, keine VZ/TZ/AH und keine F/S-Zähler ──
+  function cleanPlanTable(tableId){
+    const tbl=document.getElementById(tableId);if(!tbl)return;
+    const head=[...tbl.querySelectorAll('thead th')];
+    const hasWeek=head.some(x=>x.textContent.trim()==='Woche');
+    const rows=[...tbl.querySelectorAll('tbody tr')];
+    rows.forEach((tr,idx)=>{
+      const cells=[...tr.children];if(!cells.length)return;
+      cells[0].querySelectorAll('small').forEach(x=>x.remove());
+      if(tr.classList.contains('foot-row')||/^(Tag gesamt|Summe)$/i.test(cells[0].textContent.trim())){
+        cells.slice(1).forEach((td,j)=>{
+          td.querySelectorAll('.f-early,.f-late').forEach(x=>x.remove());
+          if(hasWeek&&j===cells.length-2){const strong=td.querySelector('strong');if(strong)td.innerHTML=`<strong>${esc(strong.textContent)}</strong>`;}
+          else{
+            const total=td.querySelector('.f-total')||td.querySelector('strong');
+            if(total)td.innerHTML=`<strong style="color:var(--navy);">${esc(total.textContent)}</strong>`;
+          }
+        });
+      }else if(hasWeek&&cells.length){
+        const last=cells[cells.length-1];
+        const strong=last.querySelector('strong');
+        if(strong)last.innerHTML=`<strong style="color:var(--navy);font-size:11px;">${esc(strong.textContent)}</strong>`;
+      }
+    });
+  }
+  function wrapCleaner(name,tableId){
+    const prev=window[name];if(typeof prev!=='function')return;
+    window[name]=function(){const r=prev.apply(this,arguments);setTimeout(()=>cleanPlanTable(tableId),0);cleanPlanTable(tableId);return r;};
+    try{eval(name+'=window[name]')}catch(_){}
+  }
+  wrapCleaner('renderPlan','planTbl');
+  wrapCleaner('buildAdminPlan','adminTbl');
+  const oldDirect=window.renderPlanTableDirect;
+  if(typeof oldDirect==='function'){
+    window.renderPlanTableDirect=function(){const r=oldDirect.apply(this,arguments);cleanPlanTable(arguments[0]||'adminTbl');return r;};
+    try{renderPlanTableDirect=window.renderPlanTableDirect}catch(_){}
+  }
+
+  // ── Zwei getrennte A4-Druck-/PDF-Ansichten ──
+  function plainActivity(value){
+    try{return typeof activityText==='function'?activityText(value):(Array.isArray(value)?value:[value]).filter(Boolean).join(' + ');}catch(_){return '';}
+  }
+  function shiftText(s){
+    if(!s||!s.t||s.t==='-')return 'Frei';
+    if(s.t==='TS'){
+      const times=typeof getSplitShiftTimes==='function'?getSplitShiftTimes(s):[s.z1||'',s.z2||''];
+      const a1=typeof shiftActivities==='function'?plainActivity(shiftActivities(s,1)):plainActivity(s.r1||s.r);
+      const a2=typeof shiftActivities==='function'?plainActivity(shiftActivities(s,2)):plainActivity(s.r2||s.r);
+      return `${esc(times[0]||'-')}${a1?' · '+esc(a1):''}<br>${esc(times[1]||'-')}${a2?' · '+esc(a2):''}`;
+    }
+    const type=typeof shiftTypeText==='function'?shiftTypeText(s):s.t;
+    if(['U','WF','K','BS'].includes(s.t))return esc(type||s.t);
+    const time=s.z||((s.start&&s.end)?`${s.start}–${s.end}`:'');
+    const act=plainActivity(s.r);
+    return `${time?esc(time):esc(type||s.t)}${act?' · '+esc(act):''}`;
+  }
+  function dateMeta(d){
+    const bits=[];
+    try{const h=getNRWPublicHolidayName?.(d);if(h)bits.push(h);}catch(_){}
+    try{const v=schoolHolidayName?.(d);if(v)bits.push(v);}catch(_){}
+    return bits;
+  }
+  function printHtml(mode='office'){
+    const office=mode==='office';
+    const mon=getMonday(AppState.weekOffset||0),dates=Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;}),sun=dates[6];
+    const kw=typeof getKW==='function'?getKW(mon):'';
+    const branchName=window.BranchSandbox?.branch?.()?.name||'Emsdetten';
+    const head=dates.map((d,i)=>`<th>${esc(DAYS[i])}<br><small>${esc(formatFullDate(d))}</small>${dateMeta(d).length?`<div class="meta">${dateMeta(d).map(esc).join('<br>')}</div>`:''}</th>`).join('');
+    let body='';
+    activeEntries().forEach(([uid,u])=>{
+      const cells=dates.map((d,i)=>{const sh=(PLAN[uid]||[])[i]||{t:'-'};return `<td class="shift ${esc(sh.t||'-')}">${shiftText(sh)}</td>`;}).join('');
+      const ws=typeof getEmployeeWeekStats==='function'?getEmployeeWeekStats(uid):{hours:0};
+      body+=`<tr><td class="name"><strong>${esc(u.name)}</strong></td>${cells}${office?`<td class="week"><strong>${esc(formatHours(ws.hours))}</strong></td>`:''}</tr>`;
+    });
+    const totals=dates.map((d,i)=>{const st=typeof getDayPlanStats==='function'?getDayPlanStats(i):{hours:0};return `<td class="total"><strong>${esc(formatHours(st.hours))}</strong></td>`;}).join('');
+    const final=office?`<td class="grand"><strong>${esc(formatHours(typeof getWeekTotalHours==='function'?getWeekTotalHours():0))}</strong></td>`:'';
+    const title=office?`Wochenplan Büro · KW ${kw}`:`Wochenplan Laden · KW ${kw}`;
+    const subtitle=office?'Büroansicht · Wochensumme je Mitarbeiter':'Ladenansicht · ohne Wochensumme je Mitarbeiter';
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+      @page{size:A4 landscape;margin:7mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;font-size:8.3px}h1{font-size:15px;margin:0 0 2px}.sub{font-size:8.5px;color:#566274;margin-bottom:7px}.hint{font-size:7.5px;color:#657386;margin-bottom:6px}.plan{width:100%;border-collapse:collapse;table-layout:fixed}.plan th,.plan td{border:1px solid #aeb9c7;padding:4px;vertical-align:top;word-break:break-word}.plan th{background:#1e3a5f;color:#fff;text-align:center;font-size:8px}.plan th:first-child{width:31mm}.name{background:#f3f6f9;width:31mm}.week{background:#f3f6f9;text-align:center;width:20mm}.total{background:#f3f6f9;text-align:center}.grand{background:#1e3a5f;color:#fff;text-align:center}.shift{line-height:1.3}.shift.F{background:#fff4bf}.shift.S{background:#ffe3ca}.shift.TS{background:#e6f1fb}.shift.U{background:#f8dce8}.shift.WF{background:#fff1a8}.shift.K{background:#f4d6d6}.shift.R{background:#e8f4ea}.meta{margin-top:2px;font-size:6.3px;line-height:1.1;color:#ffe7a3}.footer{margin-top:6px;display:flex;justify-content:space-between;color:#657386;font-size:7px}.actions{display:flex;gap:8px;margin:0 0 7px}.actions button{border:1px solid #aeb9c7;border-radius:6px;background:#fff;padding:6px 10px;font-weight:700;cursor:pointer}@media print{.actions{display:none}}
+    </style></head><body><div class="actions"><button onclick="window.print()">🖨 Drucken / Als PDF speichern</button></div><h1>${esc(title)}</h1><div class="sub">${esc(formatFullDate(mon))} bis ${esc(formatFullDate(sun))} · NASCH ${esc(branchName)}</div><div class="hint">${esc(subtitle)} · keine Früh-/Spät-Zählung</div><table class="plan"><thead><tr><th>Mitarbeiter</th>${head}${office?'<th>Wochensumme</th>':''}</tr></thead><tbody>${body}<tr><td class="name"><strong>Tag gesamt</strong></td>${totals}${final}</tr></tbody></table><div class="footer"><span>NASCH Mitarbeiter-App v${VERSION}</span><span>${esc(new Date().toLocaleString('de-DE'))}</span></div></body></html>`;
+  }
+  function openPrint(mode){
+    if(typeof editMode!=='undefined'&&editMode){alert('Bitte die laufende Planbearbeitung zuerst speichern oder abbrechen.');return;}
+    const w=window.open('','_blank');if(!w){alert('Druck-/PDF-Ansicht konnte nicht geöffnet werden. Bitte Pop-ups erlauben.');return;}
+    w.document.open();w.document.write(printHtml(mode));w.document.close();
+  }
+  window.exportWeekPlanOfficePDF=()=>openPrint('office');
+  window.exportWeekPlanStorePDF=()=>openPrint('store');
+  window.exportWeekPlanPDF=window.exportWeekPlanOfficePDF; // bestehende Büro-Links bleiben kompatibel
+  window.NaschWeekPDF={html:()=>({title:'Wochenplan Büro',html:printHtml('office')}),export:window.exportWeekPlanOfficePDF,office:window.exportWeekPlanOfficePDF,store:window.exportWeekPlanStorePDF};
+
+  function injectPrintButtons(){
+    const page=document.getElementById('pgAdminPlan');if(!page)return;
+    let bar=document.getElementById('v270PrintBar');
+    if(!bar){bar=document.createElement('div');bar.id='v270PrintBar';bar.className='v270-printbar';bar.innerHTML='<button class="btn btn-outline" onclick="exportWeekPlanOfficePDF()">📊 Büro · PDF/Druck</button><button class="btn btn-outline" onclick="exportWeekPlanStorePDF()">🏪 Laden · PDF/Druck</button>';const nav=page.querySelector('.week-nav')||page.querySelector('[style*="display:flex"]');if(nav)nav.insertAdjacentElement('afterend',bar);else page.prepend(bar);}
+    const old=document.getElementById('adminWeekPdfBtn');if(old)old.style.display='none';
+  }
+  function patchOfficeButton(){
+    const office=document.getElementById('pgOffice');if(!office)return;
+    [...office.querySelectorAll('button')].forEach(b=>{if(/Wochenplan PDF/i.test(b.textContent||'')){b.textContent='📊 Wochenplan Büro · PDF/Druck';b.onclick=window.exportWeekPlanOfficePDF;}});
+  }
+
+  // Settings-Renderer um Urlaub ergänzen.
+  if(window.NaschAdminSettings?.buildAdminSettings){
+    const prevSettings=NaschAdminSettings.buildAdminSettings.bind(NaschAdminSettings);
+    NaschAdminSettings.buildAdminSettings=function(){const r=prevSettings();injectVacationEditors();return r;};
+  }
+  // Office wird dynamisch neu aufgebaut.
+  if(window.BranchSandbox?.renderOfficePage){
+    const prevOffice=BranchSandbox.renderOfficePage;
+    // API-Objekt selbst kann nicht sicher ersetzt werden; Navigation/Start patcht den Button nach dem Rendern.
+  }
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(){const r=oldGo.apply(this,arguments);setTimeout(()=>{injectPrintButtons();injectVacationEditors();patchOfficeButton();cleanPlanTable('adminTbl');cleanPlanTable('planTbl');},0);return r;};try{goTo=window.goTo}catch(_){}}
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{Object.keys(USERS||{}).forEach(applyVacation);refreshVacationDisplays(AppState?.currentUserId);injectPrintButtons();injectVacationEditors();patchOfficeButton();cleanPlanTable('adminTbl');cleanPlanTable('planTbl');},350);return r;};try{startApp=window.startApp}catch(_){}}
+
+  setTimeout(()=>{Object.keys(USERS||{}).forEach(applyVacation);injectPrintButtons();injectVacationEditors();patchOfficeButton();cleanPlanTable('adminTbl');cleanPlanTable('planTbl');},0);
+})();
+</script>
 </body>
 </html>
