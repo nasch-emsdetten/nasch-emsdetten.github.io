@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.3</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.7</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -582,6 +582,13 @@ window.FILIAL_ID = 'FIL001';
       <div class="card" style="margin-bottom:12px;overflow:hidden;">
         <div class="card-h"><div class="card-t">Tagesstunden</div></div>
         <div id="personalDailyHours"></div>
+      </div>
+      <div class="card" id="personalTimesheetPdfCard" style="margin-bottom:12px;">
+        <div class="card-h"><div class="card-t">📄 Stundenzettel als PDF</div></div>
+        <div class="card-b">
+          <button class="btn btn-outline" type="button" style="margin-top:0;" onclick="window.NaschTimesheetPDF?.openOwn?.()">📄 Stundenzettel als PDF ansehen</button>
+          <div style="font-size:10px;color:var(--muted);margin-top:7px;">Zeigt deinen eigenen Stundenzettel für die aktuell angezeigte Kalenderwoche.</div>
+        </div>
       </div>
       <div class="card" id="signCard">
         <div class="card-h"><div class="card-t">Digitale Unterschrift</div></div>
@@ -4112,7 +4119,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('Service Worker:',e)));
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=26.7').catch(e=>console.warn('Service Worker:',e)));
 }
 </script>
 
@@ -5672,7 +5679,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker:', err)));
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=26.7').catch(err => console.warn('Service Worker:', err)));
 }
 </script>
 
@@ -5733,8 +5740,8 @@ if ('serviceWorker' in navigator) {
     if(window.TimeCorrectionStore&&!TimeCorrectionStore.isLoaded())TimeCorrectionStore.ensureLoaded().then(()=>renderPersonalDailyHours()).catch(()=>{});
     let total=0,totalPause=0,total25=0,total50=0;
     let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Pausen werden automatisch abgezogen: <strong>ab 5 Std. 30 Min.</strong> · <strong>ab 9 Std. 60 Min.</strong> Angezeigt werden Netto-Arbeitsstunden.</span></div>';
-    if(eligible)html+='<div class="banner binfo" style="margin-bottom:8px;"><span>💶</span><span>Zuschläge aktiv. Bei unbekannter Pausenlage werden Zuschlagsstunden auf die Netto-Arbeitszeit begrenzt.</span></div>';
-    html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:680px;"><thead><tr style="background:#f8fafc;"><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th>'+(eligible?'<th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th>':'')+'<th style="padding:7px 9px;text-align:right;">Korrektur</th></tr></thead><tbody>';
+    if(eligible) html+='<div class="banner binfo" style="margin-bottom:8px;"><span>💶</span><span>Zuschläge aktiv. Bei unbekannter Pausenlage werden Zuschlagsstunden auf die Netto-Arbeitszeit begrenzt.</span></div>';
+    html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:'+(eligible?'760':'610')+'px;"><thead><tr style="background:#f8fafc;"><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th>'+(eligible?'<th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th>':'')+'<th style="padding:7px 9px;text-align:right;">Korrektur</th></tr></thead><tbody>';
     for(let i=0;i<7;i++){
       const d=new Date(mon);d.setDate(mon.getDate()+i);const dk=dateKey254(d),sh=shifts[i]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null;
       const pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;
@@ -5755,10 +5762,10 @@ if ('serviceWorker' in navigator) {
       const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;let total=0,totalPause=0,total25=0,total50=0,rows='';
       for(let day=0;day<7;day++){
         const d=new Date(mon);d.setDate(mon.getDate()+day);const dk=dateKey254(d),sh=(PLAN[uid]||[])[day]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null,pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;const times=rec?`${rec.start}–${rec.end}`:(typeof dailyShiftTimes==='function'?dailyShiftTimes(sh):'–');
-        rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}${st?`<div><span class="time-corr-badge ${st.cls}">${st.text}</span></div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${esc254(times)}</td><td style="padding:7px 9px;text-align:right;">${pause} Min.</td><td style="padding:7px 9px;text-align:right;font-weight:800;">${formatHours(h)}</td><td style="padding:7px 9px;text-align:right;">${eligible?formatHours(z.pct25||0):'–'}</td><td style="padding:7px 9px;text-align:right;">${eligible?formatHours(z.pct50||0):'–'}</td></tr>`;
+        rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}${st?`<div><span class="time-corr-badge ${st.cls}">${st.text}</span></div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${esc254(times)}</td><td style="padding:7px 9px;text-align:right;">${pause} Min.</td><td style="padding:7px 9px;text-align:right;font-weight:800;">${formatHours(h)}</td>${eligible?`<td style="padding:7px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:7px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}</tr>`;
       }
-      const badge=eligible?'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:var(--ok);color:var(--ok-t);font-weight:700;">Zuschläge: Ja</span>':'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:#f1f5f9;color:#64748b;font-weight:700;">Zuschläge: Nein</span>';
-      html+=`<div class="card" style="margin-bottom:10px;overflow:hidden;"><div style="padding:10px 11px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${esc254(u.initials)}</div><strong style="font-size:12px;flex:1;min-width:140px;">${esc254(u.name)}</strong>${badge}<span style="font-size:11px;color:var(--navy);font-weight:800;">Netto ${formatHours(total)}</span></div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:650px;"><thead><tr><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th><th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th></tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;">${formatHours(total)}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${eligible?formatHours(total25):'–'}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${eligible?formatHours(total50):'–'}</td></tr></tbody></table></div></div>`;
+      const badge=eligible?'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:var(--ok);color:var(--ok-t);font-weight:700;">Zuschläge</span>':'';
+      html+=`<div class="card" style="margin-bottom:10px;overflow:hidden;"><div style="padding:10px 11px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${esc254(u.initials)}</div><strong style="font-size:12px;flex:1;min-width:140px;">${esc254(u.name)}</strong>${badge}<span style="font-size:11px;color:var(--navy);font-weight:800;">Netto ${formatHours(total)}</span></div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:${eligible?'650':'500'}px;"><thead><tr><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th>${eligible?'<th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th>':''}</tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;">${formatHours(total)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(total25)}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(total50)}</td>`:''}</tr></tbody></table></div></div>`;
     });box.innerHTML=html;
   };
   try{renderAdminDailyHours=window.renderAdminDailyHours;}catch(_){}
@@ -5892,7 +5899,7 @@ if ('serviceWorker' in navigator) {
   <div class="card" style="margin-bottom:12px;">
     <div class="card-h"><div class="card-t">📋 Verfügbarkeit eintragen</div></div>
     <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>Unter <strong>Mein Bereich → Verfügbarkeit</strong> kannst du eintragen, wann du in der kommenden Woche arbeiten kannst.</p>
+      <p>Unter <strong>Mein Bereich → Verfügbarkeit</strong> siehst du deine aktuell genehmigte, regelmäßige Verfügbarkeit. Änderungen werden als Antrag an die Filialleitung gesendet.</p>
       <p>Optionen: <strong>Ganztags · Nur Früh · Nur Spät · Nicht verfügbar</strong></p>
     </div>
   </div>
@@ -6136,5 +6143,286 @@ if ('serviceWorker' in navigator) {
   setTimeout(()=>{ensureBar();renderStatus();dateHints();},0);
 })();
 </script>
+<script id="nasch-v264-availability-approval">
+/* NASCH v26.4 · Verfügbarkeitsänderungen als echter Genehmigungsworkflow */
+(()=>{
+  const VERSION='26.4';
+  const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const LABEL={g:'Ganztag',f:'Nur Früh',s:'Nur Spät',n:'Nicht verfügbar'};
+  let editMode=false;
+  let pendingReq=null;
+  let latestReq=null;
+  let activeCache=null;
+  const FID=()=>window.FILIAL_ID||'FIL001';
+  const clone=o=>JSON.parse(JSON.stringify(o||{}));
+  const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+  const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false;}};
+  function db(){try{return firebase.firestore();}catch(_){return null;}}
+  function branchRef(col){const x=db();return x?x.collection('nasch').doc(FID()).collection(col):null;}
+  function cleanValues(v){const out={};DAYS.forEach(d=>out[d]=['g','f','s','n'].includes(v?.[d])?v[d]:'g');return out;}
+  function tsMillis(v){if(!v)return 0;if(typeof v.toMillis==='function')return v.toMillis();const n=Date.parse(v);return Number.isFinite(n)?n:0;}
+
+  async function fetchActive(uid){
+    const r=branchRef('availability');if(!r)return null;
+    try{const snap=await r.doc(String(uid)).get();return snap.exists?cleanValues(snap.data()):null;}catch(e){console.warn('availability active load',e);return null;}
+  }
+  async function fetchRequests(uid){
+    const r=branchRef('requests');if(!r)return [];
+    try{
+      const snap=await r.orderBy('createdAt','desc').limit(500).get();
+      return snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>String(x.uid)===String(uid)&&x.type==='verfuegbarkeit').sort((a,b)=>tsMillis(b.createdAt)-tsMillis(a.createdAt));
+    }catch(e){console.warn('availability requests load',e);return [];}
+  }
+  function ensureControls(){
+    const page=document.getElementById('pgVerfueg');if(!page)return;
+    let status=document.getElementById('verfRequestStatus');
+    if(!status){status=document.createElement('div');status.id='verfRequestStatus';const sec=[...page.querySelectorAll('.sec')].find(x=>x.textContent.includes('Verfügbarkeit pro Tag'));if(sec)sec.insertAdjacentElement('beforebegin',status);}
+    let bar=document.getElementById('verfEditBar');
+    if(!bar){bar=document.createElement('div');bar.id='verfEditBar';bar.style.cssText='display:flex;gap:8px;margin:0 0 10px;';const days=document.getElementById('verfDays');if(days)days.insertAdjacentElement('beforebegin',bar);}
+  }
+  function setDayControlsEnabled(on){
+    DAYS.forEach(day=>{document.querySelectorAll(`[id^="vo_${day}_"]`).forEach(el=>{el.style.pointerEvents=on?'auto':'none';el.style.opacity=on?'1':'.78';el.style.cursor=on?'pointer':'default';});});
+  }
+  function renderStatus(){
+    ensureControls();const box=document.getElementById('verfRequestStatus');const bar=document.getElementById('verfEditBar');if(!box||!bar)return;
+    if(pendingReq){
+      const vals=cleanValues(pendingReq.data?.werte||{});const diffs=DAYS.filter(d=>vals[d]!==vOrig[d]).map(d=>`${d}: ${LABEL[vOrig[d]]} → ${LABEL[vals[d]]}`);
+      box.innerHTML=`<div class="banner bwarn"><span>🕘</span><span style="flex:1"><strong>Verfügbarkeitsänderung wartet auf Genehmigung</strong><br><small>${esc(diffs.join(' · ')||'Änderung eingereicht')}${pendingReq.data?.grund?'<br>Begründung: '+esc(pendingReq.data.grund):''}</small></span></div>`;
+      bar.innerHTML=`<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.withdraw('${esc(pendingReq.id)}')">Antrag zurückziehen</button>`;
+      setDayControlsEnabled(false);return;
+    }
+    if(latestReq?.status==='genehmigt') box.innerHTML='<div class="banner bok"><span>✅</span><span>Deine letzte Verfügbarkeitsänderung wurde genehmigt und ist jetzt aktiv.</span></div>';
+    else if(latestReq?.status==='abgelehnt') box.innerHTML=`<div class="banner bwarn"><span>❌</span><span><strong>Letzte Änderung abgelehnt</strong>${latestReq.decisionNote?'<br><small>'+esc(latestReq.decisionNote)+'</small>':''}</span></div>`;
+    else if(latestReq?.status==='zurueckgezogen') box.innerHTML='<div class="banner binfo"><span>↩️</span><span>Der letzte Änderungsantrag wurde zurückgezogen.</span></div>';
+    else box.innerHTML='';
+    if(editMode) bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.cancelEdit()">↩ Abbrechen</button>';
+    else bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.startEdit()">✏️ Verfügbarkeit bearbeiten</button>';
+    setDayControlsEnabled(editMode);
+  }
+  function renderDays(){
+    try{buildVerfDays();}catch(e){console.warn('build availability',e)}
+    setTimeout(()=>{setDayControlsEnabled(editMode&&!pendingReq);renderStatus();},0);
+  }
+  async function refreshEmployeeView(){
+    if(!AppState?.currentUserId)return;ensureControls();
+    const uid=String(AppState.currentUserId);
+    const [active,reqs]=await Promise.all([fetchActive(uid),fetchRequests(uid)]);
+    activeCache=cleanValues(active||SandboxStore?.getAvailability?.(uid)||vOrig);
+    Object.assign(vOrig,activeCache);Object.assign(vSel,activeCache);
+    pendingReq=reqs.find(r=>r.status==='offen')||null;latestReq=reqs[0]||null;editMode=false;
+    const ok=document.getElementById('verfOK');if(ok)ok.classList.add('hidden');
+    const gr=document.getElementById('verfGrundWrap');if(gr)gr.style.display='none';
+    const sb=document.getElementById('verfSendBtn');if(sb)sb.classList.add('hidden');
+    const er=document.getElementById('verfErr');if(er)er.textContent='';
+    renderDays();
+  }
+  function startEdit(){
+    if(pendingReq){showToast?.('🕘 Es ist bereits ein Änderungsantrag offen');return;}
+    editMode=true;Object.assign(vSel,vOrig);const ok=document.getElementById('verfOK');if(ok)ok.classList.add('hidden');renderDays();
+  }
+  function cancelEdit(){
+    editMode=false;Object.assign(vSel,vOrig);const g=document.getElementById('verfGrund');if(g)g.value='';const gr=document.getElementById('verfGrundWrap');if(gr)gr.style.display='none';const sb=document.getElementById('verfSendBtn');if(sb)sb.classList.add('hidden');renderDays();
+  }
+  const baseSel=window.selVerf;
+  window.selVerf=function(tag,key){if(!editMode||pendingReq)return;if(typeof baseSel==='function')return baseSel(tag,key);};try{selVerf=window.selVerf}catch(_){}
+
+  window.sendeVerf=async function(){
+    if(!editMode||pendingReq)return;
+    const grund=String(document.getElementById('verfGrund')?.value||'').trim();
+    const changed=DAYS.some(d=>vSel[d]!==vOrig[d]);
+    if(!changed){document.getElementById('verfErr').textContent='Es wurde keine Änderung ausgewählt.';return;}
+    if(!grund){document.getElementById('verfErr').textContent='Bitte Begründung angeben.';return;}
+    document.getElementById('verfErr').textContent='';
+    const values=cleanValues(vSel);
+    const id=SandboxStore.addRequest('verfuegbarkeit',AppState.currentUserId,{werte:values,vorher:cleanValues(vOrig),grund});
+    pendingReq={id,type:'verfuegbarkeit',uid:String(AppState.currentUserId),status:'offen',data:{werte:values,vorher:cleanValues(vOrig),grund},createdAt:new Date().toISOString()};
+    latestReq=pendingReq;editMode=false;Object.assign(vSel,vOrig);
+    const ok=document.getElementById('verfOK');if(ok){ok.textContent='✓ Änderungsantrag gesendet – deine bisherige Verfügbarkeit bleibt bis zur Genehmigung aktiv.';ok.classList.remove('hidden');}
+    const g=document.getElementById('verfGrund');if(g)g.value='';const gr=document.getElementById('verfGrundWrap');if(gr)gr.style.display='none';const sb=document.getElementById('verfSendBtn');if(sb)sb.classList.add('hidden');
+    renderDays();showToast?.('📨 Verfügbarkeitsantrag gesendet');
+  };try{sendeVerf=window.sendeVerf}catch(_){}
+
+  async function withdraw(id){
+    if(!pendingReq||pendingReq.id!==id)return;if(!confirm('Offenen Verfügbarkeitsantrag zurückziehen?'))return;
+    SandboxStore.updateRequest(id,{status:'zurueckgezogen',decidedAt:new Date().toISOString(),decidedBy:AppState.currentUser?.name||'Mitarbeiter'});
+    pendingReq=null;latestReq={...(latestReq||{}),id,status:'zurueckgezogen'};await refreshEmployeeView();showToast?.('↩ Antrag zurückgezogen');
+  }
+
+  function ensureAdminPage(){
+    const wrap=document.querySelector('.page-wrap');if(!wrap)return;
+    if(!document.getElementById('pgAvailRequests')){
+      const p=document.createElement('div');p.className='page';p.id='pgAvailRequests';p.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><div class="sec" style="flex:1;margin:0;">Verfügbarkeitsanträge</div><button class="btn btn-outline" style="width:auto;margin:0;padding:7px 10px;font-size:11px;" onclick="AvailabilityApproval.renderAdmin()">↻ Aktualisieren</button></div><div class="banner binfo"><span>📅</span><span>Die bisherige Verfügbarkeit bleibt aktiv, bis ein Antrag genehmigt wird.</span></div><div id="availabilityRequestList"></div>`;wrap.appendChild(p);
+    }
+    const list=document.querySelector('#pgAdmin .menu-list');if(list&&!document.getElementById('adminAvailRequestsMenu')){
+      const item=document.createElement('div');item.className='mi';item.id='adminAvailRequestsMenu';item.onclick=()=>goTo('pgAvailRequests','Verfügbarkeitsanträge');item.innerHTML='<div class="mi-icon" style="background:#E1F5EE;">📅</div><span class="mi-lbl">Verfügbarkeitsanträge</span><span id="availabilityRequestBadge" style="display:none;background:#E24B4A;color:#fff;border-radius:10px;font-size:11px;font-weight:600;padding:2px 7px;"></span><span class="mi-arr">›</span>';const settings=document.getElementById('adminSettingsMenu');list.insertBefore(item,settings||null);
+    }
+  }
+  function valueRows(before,after){
+    const b=cleanValues(before||{}),a=cleanValues(after||{}),rows=DAYS.filter(d=>b[d]!==a[d]).map(d=>`<div style="display:grid;grid-template-columns:34px 1fr 18px 1fr;gap:5px;align-items:center;padding:5px 0;border-bottom:1px solid #eef2f7;font-size:11px;"><strong>${d}</strong><span>${esc(LABEL[b[d]])}</span><span>→</span><strong>${esc(LABEL[a[d]])}</strong></div>`);return rows.join('')||'<div style="font-size:11px;color:var(--muted);">Keine Abweichung erkennbar.</div>';
+  }
+  async function renderAdmin(){
+    ensureAdminPage();const box=document.getElementById('availabilityRequestList');if(!box||!isManager())return;box.innerHTML='<div class="card"><div class="card-b" style="color:var(--muted);">Anträge werden geladen …</div></div>';
+    const r=branchRef('requests');if(!r){box.innerHTML='<div class="banner bwarn">Firebase nicht bereit.</div>';return;}
+    try{
+      const snap=await r.orderBy('createdAt','desc').limit(500).get();let list=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.type==='verfuegbarkeit');
+      const open=list.filter(x=>x.status==='offen');const badge=document.getElementById('availabilityRequestBadge');if(badge){badge.style.display=open.length?'inline-block':'none';badge.textContent=String(open.length);}
+      list.sort((a,b)=>(a.status==='offen'?0:1)-(b.status==='offen'?0:1)||tsMillis(b.createdAt)-tsMillis(a.createdAt));
+      if(!list.length){box.innerHTML='<div class="card"><div class="card-b" style="font-size:12px;color:var(--muted);">Keine Verfügbarkeitsanträge vorhanden.</div></div>';return;}
+      box.innerHTML=list.map(q=>{const u=USERS[String(q.uid)]||{name:'Mitarbeiter '+q.uid};const before=q.data?.vorher||{};const after=q.data?.werte||{};const open=q.status==='offen';const status=open?'🕘 Offen':q.status==='genehmigt'?'✅ Genehmigt':q.status==='abgelehnt'?'❌ Abgelehnt':'↩ Zurückgezogen';return `<div class="card" style="margin-bottom:10px;"><div class="card-h"><div style="flex:1"><div class="card-t">${esc(u.name)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${status}</div></div></div><div class="card-b">${valueRows(before,after)}${q.data?.grund?`<div style="font-size:11px;margin-top:8px;"><strong>Begründung:</strong> ${esc(q.data.grund)}</div>`:''}${q.decisionNote?`<div style="font-size:11px;margin-top:5px;color:var(--muted);"><strong>Entscheidung:</strong> ${esc(q.decisionNote)}</div>`:''}${open?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><button class="btn btn-success" style="margin:0;" onclick="AvailabilityApproval.approve('${esc(q.id)}','${esc(String(q.uid))}')">✓ Genehmigen</button><button class="btn" style="margin:0;background:#E24B4A;color:#fff;" onclick="AvailabilityApproval.reject('${esc(q.id)}')">✕ Ablehnen</button></div>`:''}</div></div>`;}).join('');
+    }catch(e){box.innerHTML=`<div class="banner bwarn"><span>⚠️</span><span>Anträge konnten nicht geladen werden.<br><small>${esc(e.code||e.message||e)}</small></span></div>`;}
+  }
+  async function approve(id,uid){
+    if(!isManager())return;if(!confirm('Diese Verfügbarkeitsänderung genehmigen?'))return;
+    const rr=branchRef('requests'),ar=branchRef('availability');if(!rr||!ar)return;
+    try{
+      const snap=await rr.doc(id).get();if(!snap.exists)throw new Error('Antrag nicht gefunden.');const q=snap.data();if(q.status!=='offen'){alert('Dieser Antrag wurde bereits bearbeitet.');return;}
+      const vals=cleanValues(q.data?.werte||{});
+      await ar.doc(String(uid)).set({...vals,approvedFromRequest:id,approvedBy:AppState.currentUser?.name||'Leitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      await rr.doc(id).set({status:'genehmigt',decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      try{SandboxStore.saveAvailability(String(uid),vals);SandboxStore.updateRequest(id,{status:'genehmigt'});}catch(_){}
+      await renderAdmin();showToast?.('✅ Verfügbarkeit genehmigt');
+    }catch(e){alert('Genehmigung fehlgeschlagen: '+(e.code||e.message||e));}
+  }
+  async function reject(id){
+    if(!isManager())return;const note=prompt('Grund für die Ablehnung (optional):','');if(note===null)return;
+    const rr=branchRef('requests');if(!rr)return;try{await rr.doc(id).set({status:'abgelehnt',decisionNote:String(note||'').trim(),decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});try{SandboxStore.updateRequest(id,{status:'abgelehnt',decisionNote:String(note||'').trim()});}catch(_){}await renderAdmin();showToast?.('❌ Antrag abgelehnt');}catch(e){alert('Ablehnung fehlgeschlagen: '+(e.code||e.message||e));}
+  }
+
+  // Seite öffnen: immer aktuellen Cloud-Stand laden. Keine stillen Änderungen mehr.
+  const oldBuild=window.buildVerfDays;window.buildVerfDays=function(){if(typeof oldBuild==='function')oldBuild();setTimeout(()=>{ensureControls();setDayControlsEnabled(editMode&&!pendingReq);renderStatus();},0);};try{buildVerfDays=window.buildVerfDays}catch(_){}
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(pg==='pgVerfueg')setTimeout(refreshEmployeeView,30);if(pg==='pgAvailRequests')setTimeout(renderAdmin,30);return r;};try{goTo=window.goTo}catch(_){} }
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{ensureAdminPage();const m=document.getElementById('adminAvailRequestsMenu');if(m)m.style.display=isManager()?'flex':'none';if(isManager())renderAdmin();},300);return r;};try{startApp=window.startApp}catch(_){} }
+
+  window.AvailabilityApproval={refresh:refreshEmployeeView,startEdit,cancelEdit,withdraw,renderAdmin,approve,reject};
+  setTimeout(()=>{ensureControls();ensureAdminPage();const m=document.getElementById('adminAvailRequestsMenu');if(m)m.style.display=isManager()?'flex':'none';},0);
+  console.info('NASCH v'+VERSION+' Verfügbarkeitsworkflow aktiv');
+})();
+</script>
+
+
+<script id="nasch-v265-timesheet-pdf">
+/* NASCH v26.7 · Zuschlagsanzeige nur für berechtigte Mitarbeiter */
+(()=>{
+  const VERSION='26.7';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false;}};
+  const isOffice=()=>{try{return window.BranchSandbox?.isOffice?.(AppState.currentUserId)===true;}catch(_){return false;}};
+  const isCentral=()=>{try{return window.BranchSandbox?.isCentral?.(AppState.currentUserId)===true;}catch(_){return false;}};
+  const branchId=()=>{try{return window.BranchSandbox?.active?.()||window.FILIAL_ID||'FIL001';}catch(_){return window.FILIAL_ID||'FIL001';}};
+  const branchName=()=>{try{return window.BranchSandbox?.branch?.(branchId())?.name||'Emsdetten';}catch(_){return 'Emsdetten';}};
+  function allowedUid(uid){
+    uid=String(uid||'');
+    if(!uid||!USERS?.[uid])return false;
+    if(String(AppState.currentUserId)===uid)return true;
+    if(!(isManager()||isOffice()||isCentral()))return false;
+    try{if(window.BranchSandbox?.workerIn)return window.BranchSandbox.workerIn(uid,branchId());}catch(_){}
+    return true;
+  }
+  function workerEntries(){
+    const all=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{});
+    return all.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.NaschEmployees?.isInactive?.(uid))&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,branchId())));
+  }
+  function statusForShift(sh,rec){
+    if(rec)return 'Korrigiert';
+    const t=String(sh?.t||'-');
+    return ({U:'Urlaub',K:'Krank',WF:'Wunschfrei',BS:'Berufsschule',HO:'Home-Office','-':'Frei'})[t]||'Plan';
+  }
+  function surchargeForPdf(uid,sh,rec,d,net){
+    const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;
+    if(!eligible)return {eligible:false,pct25:0,pct50:0};
+    let z={pct25:0,pct50:0};
+    if(rec?.start&&rec?.end&&typeof surchargeHoursForTimeText==='function')z=surchargeHoursForTimeText(`${rec.start}–${rec.end}`,d)||z;
+    else if(typeof getShiftSurchargeHours==='function')z=getShiftSurchargeHours(uid,sh,d)||z;
+    const raw=(Number(z.pct25)||0)+(Number(z.pct50)||0);
+    if(raw>Number(net||0)&&raw>0){const scale=Number(net||0)/raw;z={...z,pct25:Math.round((Number(z.pct25)||0)*scale*100)/100,pct50:Math.round((Number(z.pct50)||0)*scale*100)/100};}
+    return {eligible:true,pct25:Number(z.pct25)||0,pct50:Number(z.pct50)||0};
+  }
+  function dayData(uid,day){
+    const mon=getMonday(AppState.weekOffset||0);const d=new Date(mon);d.setDate(mon.getDate()+day);
+    const sh=(PLAN?.[uid]||[])[day]||{t:'-',z:'',r:[]};
+    const rec=window.TimeCorrectionStore?.getRecord?.(uid,dateKey(d))||null;
+    const rules=window.NaschPauseRules||{};
+    let pause=0,net=0,times='–';
+    if(rec){
+      pause=typeof rules.recordPause==='function'?rules.recordPause(rec):Math.max(0,Number(rec.pauseMin)||0);
+      net=typeof rules.recordNetHours==='function'?rules.recordNetHours(rec):0;
+      times=`${rec.start||'–'}–${rec.end||'–'}`;
+    }else{
+      pause=typeof rules.shiftAutoPause==='function'?rules.shiftAutoPause(sh):0;
+      net=typeof rules.shiftNetHours==='function'?rules.shiftNetHours(sh):(typeof getShiftHours==='function'?Number(getShiftHours(sh))||0:0);
+      times=typeof dailyShiftTimes==='function'?dailyShiftTimes(sh):(sh.z||'–');
+    }
+    const surcharge=surchargeForPdf(uid,sh,rec,d,net);
+    return {d,sh,rec,pause,net,times,status:statusForShift(sh,rec),surcharge};
+  }
+  function weekMeta(){
+    const mon=getMonday(AppState.weekOffset||0),sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const kw=typeof getKW==='function'?getKW(mon):'';
+    const fd=d=>d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+    return {mon,sun,kw,label:`KW ${kw} · ${fd(mon)} - ${fd(sun)}`};
+  }
+  function signatureText(uid){
+    try{const s=SandboxStore?.getSignature?.(uid);if(!s)return 'Nicht unterschrieben';const d=new Date(s);return Number.isNaN(d.getTime())?'Unterschrieben':`Unterschrieben am ${d.toLocaleString('de-DE')}`;}catch(_){return 'Nicht unterschrieben';}
+  }
+  function employeeSheetHtml(uid,standalone=false){
+    const u=USERS[uid]||{};const meta=weekMeta();const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;let total=0,totalPause=0,total25=0,total50=0;
+    const rows=Array.from({length:7},(_,i)=>{
+      const x=dayData(uid,i);total+=x.net;totalPause+=x.pause;total25+=Number(x.surcharge?.pct25)||0;total50+=Number(x.surcharge?.pct50)||0;
+      const dt=x.d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
+      const f=v=>typeof formatHours==='function'?formatHours(v):Number(v||0).toFixed(2)+' h';
+      return `<tr><td>${esc(dt)}</td><td>${esc(x.times)}</td><td class="r">${esc(x.pause)} Min.</td><td class="r"><strong>${esc(f(x.net))}</strong></td>${eligible?`<td class="r">${esc(f(x.surcharge?.pct25||0))}</td><td class="r">${esc(f(x.surcharge?.pct50||0))}</td>`:''}<td>${esc(x.status)}</td></tr>`;
+    }).join('');
+    const totalTxt=typeof formatHours==='function'?formatHours(total):total.toFixed(2)+' h';
+    return `${standalone?'':'<section class="sheet">'}
+      <div class="head"><div><div class="brand">NASCH RESTAURANT</div><div class="branch">${esc(branchName())}</div></div><img src="./icon-192.png" alt="NASCH"></div>
+      <h1>Stundenzettel</h1>
+      <div class="meta"><div><span>Mitarbeiter</span><strong>${esc(u.name||uid)}</strong></div><div><span>Mitarbeiter-Nr.</span><strong>${esc(uid)}</strong></div><div><span>Zeitraum</span><strong>${esc(meta.label)}</strong></div><div><span>Beschäftigung</span><strong>${esc(u.label||u.typ||'–')}</strong></div></div>
+      <table><thead><tr><th>Datum</th><th>Arbeitszeit</th><th class="r">Pause</th><th class="r">Netto</th>${eligible?'<th class="r">25 %</th><th class="r">50 %</th>':''}<th>Status</th></tr></thead><tbody>${rows}<tr class="sum"><td colspan="2"><strong>Gesamt</strong></td><td class="r"><strong>${totalPause} Min.</strong></td><td class="r"><strong>${esc(totalTxt)}</strong></td>${eligible?`<td class="r"><strong>${esc(typeof formatHours==='function'?formatHours(total25):total25.toFixed(2)+' h')}</strong></td><td class="r"><strong>${esc(typeof formatHours==='function'?formatHours(total50):total50.toFixed(2)+' h')}</strong></td>`:''}<td></td></tr></tbody></table>
+      <div class="footgrid"><div><span>Monats-Soll</span><strong>${u.sollStundenMonat!=null?esc(u.sollStundenMonat)+' h':'–'}</strong></div><div><span>Unterschrift</span><strong>${esc(signatureText(uid))}</strong></div></div>
+      <div class="note">Pausenregel: ab 5:00 Std. 30 Min., ab 9:00 Std. 60 Min. Korrigierte Zeiten haben Vorrang vor Planzeiten.${eligible?' Zuschläge: 25 % und 50 % werden ausgewiesen.':''}</div>
+      <div class="created">Erstellt am ${esc(new Date().toLocaleString('de-DE'))}</div>
+    ${standalone?'':'</section>'}`;
+  }
+  const printCss=`
+    @page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;background:#eef2f6}.toolbar{position:sticky;top:0;z-index:5;background:#172f4d;padding:10px 14px;display:flex;gap:8px;justify-content:center}.toolbar button{border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer}.toolbar .print{background:#98C01F;color:#102030}.toolbar .close{background:#fff;color:#172033}.sheet{width:210mm;min-height:297mm;margin:10px auto;background:#fff;padding:12mm;page-break-after:always;box-shadow:0 4px 18px rgba(0,0,0,.12)}.sheet:last-child{page-break-after:auto}.head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #98C01F;padding-bottom:8px}.head img{width:48px;height:48px;border-radius:10px}.brand{font-size:17px;font-weight:900;letter-spacing:.4px}.branch{font-size:11px;color:#607080;margin-top:2px}h1{font-size:20px;margin:14px 0 10px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}.meta div,.footgrid div{border:1px solid #d9e0e7;border-radius:6px;padding:7px 9px}.meta span,.footgrid span{display:block;font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}.meta strong,.footgrid strong{font-size:10px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#1e3a5f;color:#fff;text-align:left;padding:7px;border:1px solid #1e3a5f}td{padding:7px;border:1px solid #cfd7df}.r{text-align:right}.sum td{background:#f2f5f7}.footgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.note{font-size:8px;color:#5f6b78;margin-top:10px}.created{font-size:7px;color:#8793a0;text-align:right;margin-top:12px}@media print{body{background:#fff}.toolbar{display:none}.sheet{margin:0;box-shadow:none;width:auto;min-height:auto;padding:0}}`;
+  async function ensureCorrections(){try{if(window.TimeCorrectionStore&&!TimeCorrectionStore.isLoaded?.())await TimeCorrectionStore.ensureLoaded?.();}catch(_){} }
+  function openWindow(content,title){
+    const w=window.open('','_blank');if(!w){alert('PDF-Ansicht konnte nicht geöffnet werden. Bitte Pop-ups für diese Seite erlauben.');return;}
+    w.document.open();w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${printCss}</style></head><body><div class="toolbar"><button class="print" onclick="window.print()">🖨 Drucken / Als PDF speichern</button><button class="close" onclick="window.close()">Schließen</button></div>${content}</body></html>`);w.document.close();
+  }
+  async function openEmployee(uid){
+    uid=String(uid||'');if(!allowedUid(uid)){alert('Keine Berechtigung für diesen Stundenzettel.');return;}await ensureCorrections();openWindow(employeeSheetHtml(uid,false),`Stundenzettel ${USERS[uid]?.name||uid}`);
+  }
+  async function openAll(){
+    if(!(isManager()||isOffice()||isCentral()))return;await ensureCorrections();const entries=workerEntries();if(!entries.length){alert('Keine Mitarbeiter für diese Filiale gefunden.');return;}openWindow(entries.map(([uid])=>employeeSheetHtml(uid,false)).join(''),`Stundenzettel ${branchName()}`);
+  }
+  function refreshAdminCard(){
+    const host=document.getElementById('adminDailyHours');if(!host)return;
+    let card=document.getElementById('timesheetPdfAdminCard');
+    if(!card){card=document.createElement('div');card.id='timesheetPdfAdminCard';card.className='card';card.style.marginBottom='12px';host.insertAdjacentElement('beforebegin',card);}
+    const entries=workerEntries();
+    card.innerHTML=`<div class="card-h"><div class="card-t">📄 Stundenzettel als PDF ansehen</div></div><div class="card-b"><label style="margin-top:0;">Mitarbeiter</label><select id="timesheetPdfEmployee">${entries.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name)}</option>`).join('')}</select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn btn-outline" style="margin-top:8px;" onclick="NaschTimesheetPDF.openSelected()">📄 PDF ansehen</button><button class="btn btn-primary" style="margin-top:8px;" onclick="NaschTimesheetPDF.openAll()">📚 Alle als PDF</button></div><div style="font-size:10px;color:var(--muted);margin-top:7px;">PDF-Ansicht für die aktuell angezeigte Kalenderwoche.</div></div>`;
+    const old=[...document.querySelectorAll('#stzP1 button')].find(b=>/Alle drucken \(PDF\)/.test(b.textContent||''));if(old){old.textContent='📚 Alle Stundenzettel PDF';old.onclick=()=>openAll();}
+  }
+  function refreshPersonalButton(){
+    const staticCard=document.getElementById('personalTimesheetPdfCard');
+    if(staticCard){staticCard.style.display=(AppState.currentUserId&&!isOffice())?'block':'none';const old=document.getElementById('personalTimesheetPdfBar');if(old)old.remove();return;}
+    const box=document.getElementById('personalDailyHours');if(!box)return;let bar=document.getElementById('personalTimesheetPdfBar');if(!bar){bar=document.createElement('div');bar.id='personalTimesheetPdfBar';bar.innerHTML='<button class="btn btn-outline" type="button" onclick="NaschTimesheetPDF.openOwn()">📄 Stundenzettel als PDF ansehen</button>';const card=box.closest('.card');if(card)card.insertAdjacentElement('afterend',bar);}bar.style.display=(AppState.currentUserId&&!isOffice())?'block':'none';
+  }
+  function refreshOfficeCard(){
+    const host=document.getElementById('v20OfficeContent');if(!host||!isOffice())return;let card=document.getElementById('officeTimesheetPdfCard');if(!card){card=document.createElement('div');card.id='officeTimesheetPdfCard';card.className='card';host.appendChild(card);}const entries=workerEntries();card.innerHTML=`<div class="card-h"><div class="card-t">📄 Stundenzettel PDF</div></div><div class="card-b"><select id="officeTimesheetPdfEmployee">${entries.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name)}</option>`).join('')}</select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn btn-outline" onclick="NaschTimesheetPDF.openOfficeSelected()">PDF ansehen</button><button class="btn btn-primary" onclick="NaschTimesheetPDF.openAll()">Alle als PDF</button></div></div>`;
+  }
+  const oldAdmin=window.renderAdminDailyHours;if(typeof oldAdmin==='function'){window.renderAdminDailyHours=function(){const r=oldAdmin.apply(this,arguments);setTimeout(refreshAdminCard,0);return r;};try{renderAdminDailyHours=window.renderAdminDailyHours}catch(_){} }
+  const oldPersonal=window.renderPersonalDailyHours;if(typeof oldPersonal==='function'){window.renderPersonalDailyHours=function(){const r=oldPersonal.apply(this,arguments);setTimeout(refreshPersonalButton,0);return r;};try{renderPersonalDailyHours=window.renderPersonalDailyHours}catch(_){} }
+  const oldOffice=window.BranchSandbox?.renderOfficePage;if(typeof oldOffice==='function'){window.BranchSandbox.renderOfficePage=function(){const r=oldOffice.apply(this,arguments);setTimeout(refreshOfficeCard,0);return r;};}
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(pg==='pgAdminStz')setTimeout(refreshAdminCard,40);if(pg==='pgStunden')setTimeout(refreshPersonalButton,40);return r;};try{goTo=window.goTo}catch(_){} }
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{refreshAdminCard();refreshPersonalButton();refreshOfficeCard();},450);return r;};try{startApp=window.startApp}catch(_){} }
+  window.NaschTimesheetPDF={openEmployee,openAll,openOwn:()=>openEmployee(AppState.currentUserId),openSelected:()=>openEmployee(document.getElementById('timesheetPdfEmployee')?.value),openOfficeSelected:()=>openEmployee(document.getElementById('officeTimesheetPdfEmployee')?.value)};
+  setTimeout(()=>{refreshAdminCard();refreshPersonalButton();refreshOfficeCard();},0);
+  console.info('NASCH v'+VERSION+' Stundenzettel-PDF aktiv');
+})();
+</script>
+
 </body>
 </html>
