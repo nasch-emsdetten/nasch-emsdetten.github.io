@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.10</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v24.11</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -2677,7 +2677,9 @@ function goTo(pgId, title){
   if(pgId==='pgAdminMA') buildMAList();
   if(pgId==='pgAdminPlan'){
     const d=document.getElementById('planDebug');if(d){d.style.display='none';d.textContent='';}
-    buildAdminPlan();
+    try{ buildAdminPlan(); } catch(e){ console.warn('buildAdminPlan:', e); }
+    // Fallback: direkt rendern wenn Tabelle noch leer
+    setTimeout(()=>renderPlanTableDirect('adminTbl'), 50);
   }
   if(pgId==='pgVerfueg') if(typeof buildVerfDays==='function') buildVerfDays();
   if(pgId==='pgStunden') renderPersonalDailyHours();
@@ -3066,6 +3068,46 @@ function buildAdminPlan(){
   if(typeof updatePublishStatus==='function') setTimeout(updatePublishStatus, 0);
 }
 
+// ── DIREKTER PLAN-RENDERER (Fallback wenn buildAdminPlan leer lässt) ─────────
+function renderPlanTableDirect(tableId){
+  const tbl=document.getElementById(tableId||'adminTbl');
+  if(!tbl) return 0;
+  if(tbl.querySelectorAll('tbody tr').length>0) return tbl.querySelectorAll('tbody tr').length;
+  // Keine Zeilen → direkt rendern
+  const mon=getMonday(AppState.weekOffset||0);
+  const kw=getKW(mon);
+  const lbl=document.getElementById(tableId==='adminTbl'?'adminWLbl':'wLbl');
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  if(lbl) lbl.textContent=`KW ${kw} · ${formatDate(mon)}–${formatDate(sun)}`;
+  const today=new Date();today.setHours(0,0,0,0);
+  const dates=Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+  let h='<thead><tr><th class="nc">Name</th>';
+  dates.forEach((d,i)=>{const isT=d.toDateString()===today.toDateString();h+=`<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;});
+  h+='<th style="background:#1e3a5f;color:#e8f4fd;min-width:64px;">Woche</th></tr></thead><tbody>';
+  const emps=Object.entries(USERS).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
+  emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  emps.forEach(([uid,u])=>{
+    const sh=PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
+    const wk=getEmployeeWeekStats(uid);
+    h+=`<tr><td class="nc" style="font-size:11px;">${escapeHtml(u.name)}<br><small style="color:var(--muted);">${escapeHtml(u.typ||'')}</small></td>`;
+    dates.forEach((_,i)=>{
+      const s=sh[i]||{t:'-'};const isT=dates[i].toDateString()===today.toDateString();
+      const changed=typeof planChanges!=='undefined'&&planChanges[uid]?.[i];
+      let style=isT?'background:rgba(30,58,95,.04);':'';if(changed)style+='background:#fffae8;';
+      if(typeof editMode!=='undefined'&&editMode){
+        h+=`<td onclick="openShiftEditor('${uid}',${i})" style="${style}cursor:pointer;"><div style="position:relative;">${shiftLabel(s)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div></td>`;
+      } else { h+=`<td style="${style}">${shiftLabel(s)}</td>`; }
+    });
+    h+=`<td style="background:#f8fafc;text-align:center;font-size:9px;"><span style="color:var(--early-t);display:block;">F:${wk.f}</span><span style="color:var(--late-t);display:block;">S:${wk.s}</span><strong style="color:var(--navy);display:block;">${formatHours(wk.hours)}</strong></td></tr>`;
+  });
+  h+='<tr style="background:#f8fafc;border-top:2px solid var(--border);"><td class="nc" style="font-size:10px;font-weight:600;">Summe</td>';
+  dates.forEach((_,i)=>{const st=getDayPlanStats(i);h+=`<td style="background:#f8fafc;text-align:center;font-size:10px;"><span style="color:var(--early-t);">F:${st.f}</span><br><span style="color:var(--late-t);">S:${st.s}</span></td>`;});
+  h+=`<td style="background:#1e3a5f;color:#e8f4fd;text-align:center;font-size:9px;padding:6px;"><strong>${formatHours(getWeekTotalHours())}</strong></td></tr>`;
+  h+='</tbody>';
+  tbl.innerHTML=h;
+  return emps.length;
+}
+
 function toggleEdit(){
   if(editMode){ cancelEdit(); return; }
   editMode=true;
@@ -3075,6 +3117,7 @@ function toggleEdit(){
   const ban=document.getElementById('editBanner');
   if(ban) ban.style.display='flex';
   buildAdminPlan();
+  setTimeout(()=>renderPlanTableDirect('adminTbl'), 50);
 }
 
 function openShiftEditor(uid,dayIdx){
