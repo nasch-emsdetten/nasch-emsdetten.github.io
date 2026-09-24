@@ -4167,7 +4167,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=26.7').catch(e=>console.warn('Service Worker:',e)));
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=27.3').catch(e=>console.warn('Service Worker:',e)));
 }
 </script>
 
@@ -5730,7 +5730,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=26.7').catch(err => console.warn('Service Worker:', err)));
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=27.3').catch(err => console.warn('Service Worker:', err)));
 }
 </script>
 
@@ -6017,9 +6017,9 @@ if ('serviceWorker' in navigator) {
   @media(max-width:560px){.v271-deadline-grid{grid-template-columns:1fr}.v271-quota-defaults{grid-template-columns:1fr 1fr 1fr}.v271-modal-grid{grid-template-columns:1fr}.v271-modal-grid .full{grid-column:1}.v271-wish-table th:nth-child(3),.v271-wish-table td:nth-child(3){display:none}}
 </style>
 <script id="nasch-v271-requests-deadlines">
-/* NASCH v27.1 · Urlaub/Wunschfrei: gemeinsame Fristen, Mitarbeiter-Aktuellansicht, Admin Wunschfrei chronologisch + Urlaub Monatsmatrix */
+/* NASCH v27.3 · Urlaub/Wunschfrei + optionales Wunschfrei-Kontingent */
 (()=>{
-  const VERSION='27.1', QUOTA_KEY='nasch-v271-wunschquota';
+  const VERSION='27.3', QUOTA_KEY='nasch-v271-wunschquota';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pad=n=>String(n).padStart(2,'0');
   const key=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -6048,18 +6048,19 @@ if ('serviceWorker' in navigator) {
   function deadlineHtml(){const ds=deadlines(),e=deadlineEvent();if(!ds.length)return '<div class="v271-empty">Keine Frist für Urlaub & Wunschfrei hinterlegt.</div>';return `<div class="v271-deadline-grid">${ds.slice(0,2).map((d,i)=>`<div class="v271-deadline ${i===0?'current':'next'}"><b>${i===0?'Aktuelle Frist':'Nächste Frist'}</b><div class="date">${esc(deadlineDateText(d))}${e?.time?` · ${esc(e.time)} Uhr`:''}</div><div class="period">für Zeitraum ${esc(periodText(d))}</div></div>`).join('')}</div>`;}
 
   // Wunschfrei-Kontingent: Standards + individuelle Abweichung, Werte werden am Mitarbeiter gespeichert.
-  let quota={defaults:{VZ:3,TZ:2,AH:1},overrides:{}};
-  try{const q=JSON.parse(localStorage.getItem(QUOTA_KEY)||'null');if(q&&q.defaults)quota={defaults:{VZ:3,TZ:2,AH:1,...q.defaults},overrides:q.overrides||{}};}catch(_){}
+  let quota={enabled:true,defaults:{VZ:3,TZ:2,AH:1},overrides:{}};
+  try{const q=JSON.parse(localStorage.getItem(QUOTA_KEY)||'null');if(q&&q.defaults)quota={enabled:q.enabled!==false,defaults:{VZ:3,TZ:2,AH:1,...q.defaults},overrides:q.overrides||{}};}catch(_){}
   if(!Object.keys(quota.overrides).length){entries().forEach(([uid,u])=>{const def=Number(quota.defaults[u.typ]);const cur=Number(u.wunschKont);if(Number.isFinite(cur)&&Number.isFinite(def)&&cur!==def)quota.overrides[uid]=cur;});}
   function saveQuotaLocal(){try{localStorage.setItem(QUOTA_KEY,JSON.stringify(quota));}catch(_){}}
   function quotaFor(uid){const u=USERS?.[uid]||{};if(Object.prototype.hasOwnProperty.call(quota.overrides,uid))return Number(quota.overrides[uid])||0;const d=Number(quota.defaults[u.typ]);return Number.isFinite(d)?d:(Number(u.wunschKont)||0);}
   function applyQuota(uid,persist=false){const u=USERS?.[uid];if(!u)return;u.wunschKont=quotaFor(uid);if(persist)try{SandboxStore?.saveEmployee?.(uid);}catch(_){}}
   function applyAllQuota(persist=false){entries().forEach(([uid])=>applyQuota(uid,persist));saveQuotaLocal();}
-  async function loadQuotaCloud(){try{if(!window.firebase?.firestore)return;const snap=await firebase.firestore().collection('nasch').doc(branchId()).collection('config').doc('wishfreeQuota').get();if(snap.exists){const d=snap.data()||{};quota={defaults:{VZ:3,TZ:2,AH:1,...(d.defaults||{})},overrides:d.overrides||{}};applyAllQuota(false);renderAll();}}catch(e){console.warn('v27.1 quota load',e)}}
-  function saveQuotaCloud(){try{if(!window.firebase?.firestore)return;firebase.firestore().collection('nasch').doc(branchId()).collection('config').doc('wishfreeQuota').set({defaults:quota.defaults,overrides:quota.overrides,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(e=>console.warn('v27.1 quota save',e));}catch(e){console.warn('v27.1 quota save',e)}}
+  async function loadQuotaCloud(){try{if(!window.firebase?.firestore)return;const snap=await firebase.firestore().collection('nasch').doc(branchId()).collection('config').doc('wishfreeQuota').get();if(snap.exists){const d=snap.data()||{};quota={enabled:d.enabled!==false,defaults:{VZ:3,TZ:2,AH:1,...(d.defaults||{})},overrides:d.overrides||{}};applyAllQuota(false);saveQuotaLocal();renderAll();}}catch(e){console.warn('v27.1 quota load',e)}}
+  function saveQuotaCloud(){try{if(!window.firebase?.firestore)return;firebase.firestore().collection('nasch').doc(branchId()).collection('config').doc('wishfreeQuota').set({enabled:quota.enabled!==false,defaults:quota.defaults,overrides:quota.overrides,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(e=>console.warn('v27.1 quota save',e));}catch(e){console.warn('v27.1 quota save',e)}}
   function setQuotaDefault(typ,val){const n=Math.max(0,Number(val)||0);quota.defaults[typ]=n;applyAllQuota(true);saveQuotaCloud();renderAll();showToast?.('✓ Wunschfrei-Standard gespeichert');}
   function setQuotaOverride(uid,val){if(String(val)==='')delete quota.overrides[uid];else quota.overrides[uid]=Math.max(0,Number(val)||0);applyQuota(uid,true);saveQuotaLocal();saveQuotaCloud();renderAll();showToast?.('✓ Wunschfrei-Kontingent gespeichert');}
-  function quotaEditor(){return `<details class="v271-quota-box"><summary>⭐ Wunschfrei-Kontingent anpassen</summary><div class="v271-quota-body"><div class="v271-quota-defaults">${[['VZ','Vollzeit'],['TZ','Teilzeit'],['AH','Aushilfe']].map(([t,l])=>`<label>${l}<input type="number" min="0" step="0.5" value="${esc(quota.defaults[t])}" onchange="NaschRequestView271.setQuotaDefault('${t}',this.value)"></label>`).join('')}</div><div style="overflow-x:auto;"><table class="v271-quota-table"><thead><tr><th>Mitarbeiter</th><th>Kontingent</th></tr></thead><tbody>${entries().map(([uid,u])=>`<tr><td>${esc(u.name)}</td><td><select onchange="NaschRequestView271.setQuotaOverride('${esc(uid)}',this.value)"><option value="" ${!Object.prototype.hasOwnProperty.call(quota.overrides,uid)?'selected':''}>Standard (${esc(quota.defaults[u.typ]??u.wunschKont??0)})</option>${Array.from({length:13},(_,i)=>i/2).map(v=>`<option value="${v}" ${Number(quota.overrides[uid])===v?'selected':''}>${String(v).replace('.',',')}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div></div></details>`;}
+  function setQuotaEnabled(flag){quota.enabled=!!flag;saveQuotaLocal();saveQuotaCloud();renderAll();showToast?.(quota.enabled?'✓ Wunschfrei-Kontingent eingeschaltet':'✓ Wunschfrei-Kontingent ausgeschaltet');}
+  function quotaEditor(){const on=quota.enabled!==false;return `<details class="v271-quota-box" open><summary>⭐ Wunschfrei-Kontingent</summary><div class="v271-quota-body"><label style="display:flex;align-items:center;gap:9px;padding:9px 10px;margin-bottom:9px;border:1px solid var(--border);border-radius:9px;background:${on?'#f0fdf4':'#f8fafc'};font-size:11px;font-weight:800;cursor:pointer;"><input type="checkbox" ${on?'checked':''} onchange="NaschRequestView271.setQuotaEnabled(this.checked)" style="width:18px;height:18px;"><span>Kontingent verwenden</span><span style="margin-left:auto;font-size:10px;color:${on?'#087f5b':'var(--muted)'};">${on?'EIN':'AUS'}</span></label>${on?`<div class="v271-quota-defaults">${[['VZ','Vollzeit'],['TZ','Teilzeit'],['AH','Aushilfe']].map(([t,l])=>`<label>${l}<input type="number" min="0" step="0.5" value="${esc(quota.defaults[t])}" onchange="NaschRequestView271.setQuotaDefault('${t}',this.value)"></label>`).join('')}</div><div style="overflow-x:auto;"><table class="v271-quota-table"><thead><tr><th>Mitarbeiter</th><th>Kontingent</th></tr></thead><tbody>${entries().map(([uid,u])=>`<tr><td>${esc(u.name)}</td><td><select onchange="NaschRequestView271.setQuotaOverride('${esc(uid)}',this.value)"><option value="" ${!Object.prototype.hasOwnProperty.call(quota.overrides,uid)?'selected':''}>Standard (${esc(quota.defaults[u.typ]??u.wunschKont??0)})</option>${Array.from({length:13},(_,i)=>i/2).map(v=>`<option value="${v}" ${Number(quota.overrides[uid])===v?'selected':''}>${String(v).replace('.',',')}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>`:`<div class="v271-empty">Wunschfrei kann ohne festes Kontingent beantragt werden. Gespeicherte Kontingentwerte bleiben erhalten und werden beim Einschalten wieder verwendet.</div>`}</div></details>`;}
 
   function employeeApprovedHtml(){const uid=String(AppState?.currentUserId||'');const list=reqs().filter(r=>String(r.uid)===uid&&['urlaub','wunschfrei'].includes(r.type)&&r.status==='genehmigt'&&activeFuture(r)).sort((a,b)=>requestStart(a).localeCompare(requestStart(b)));if(!list.length)return '<div class="v271-empty">Keine aktuell genehmigten Urlaubs- oder Wunschfrei-Zeiträume.</div>';return `<div style="overflow-x:auto;"><table class="v271-emp-table"><thead><tr><th>Art</th><th>Zeitraum</th><th>Umfang</th></tr></thead><tbody>${list.map(r=>`<tr><td><strong>${r.type==='urlaub'?'🏖 Urlaub':'⭐ Wunschfrei'}</strong></td><td>${esc(rangeText(r))}</td><td>${esc(r.data?.schicht||'Ganzer Tag')}</td></tr>`).join('')}</tbody></table></div>`;}
   function decorateEmployee(){
@@ -6068,7 +6069,7 @@ if ('serviceWorker' in navigator) {
     const legacy=document.getElementById('v15WishDeadlineInfoWunsch');if(legacy)legacy.style.display='none';
     let d1=document.getElementById('v271DeadlineWF');if(!d1){d1=document.createElement('div');d1.id='v271DeadlineWF';wp1.prepend(d1);}d1.innerHTML='<div class="sec" style="margin-top:0;">Fristen · Urlaub & Wunschfrei</div>'+deadlineHtml();
     let d2=document.getElementById('v271DeadlineURL');if(!d2){d2=document.createElement('div');d2.id='v271DeadlineURL';wp2.prepend(d2);}d2.innerHTML='<div class="sec" style="margin-top:0;">Fristen · Urlaub & Wunschfrei</div>'+deadlineHtml();
-    const info=[...wp1.children].find(x=>x.classList?.contains('binfo')&&!x.id);if(info)info.innerHTML=`<span>⭐</span><span>Dein Wunschfrei-Kontingent: <strong>${esc(String(quotaFor(String(AppState.currentUserId||''))).replace('.',','))}</strong>. Die Frist gilt auch für Urlaubsanträge.</span>`;
+    const info=[...wp1.children].find(x=>x.classList?.contains('binfo')&&!x.id);if(info)info.innerHTML=quota.enabled!==false?`<span>⭐</span><span>Dein Wunschfrei-Kontingent: <strong>${esc(String(quotaFor(String(AppState.currentUserId||''))).replace('.',','))}</strong>. Die Frist gilt auch für Urlaubsanträge.</span>`:`<span>⭐</span><span>Wunschfrei kann <strong>ohne festes Kontingent</strong> beantragt werden. Die Frist gilt auch für Urlaubsanträge.</span>`;
     const urlBis=document.getElementById('urlBis');if(urlBis){const lab=urlBis.closest('div')?.querySelector('label');if(lab)lab.textContent='Bis (optional)';}
     const t3=document.getElementById('wt3');if(t3)t3.textContent='Aktuell';
     wp3.innerHTML=`<div class="sec">Aktuell genehmigt</div>${employeeApprovedHtml()}<div style="font-size:9px;color:var(--muted);margin-top:7px;">Abgelaufene Urlaubs- und Wunschfrei-Zeiträume werden automatisch ausgeblendet.</div>`;
@@ -6105,9 +6106,9 @@ if ('serviceWorker' in navigator) {
   const prevGo=window.goTo;if(typeof prevGo==='function'){window.goTo=function(pg,title){const r=prevGo.apply(this,arguments);if(pg==='pgWunsch'||pg==='pgAdminPlanning'||pg==='pgInfos')setTimeout(renderAll,30);return r;};try{goTo=window.goTo}catch(_){}}
   const prevStart=window.startApp;if(typeof prevStart==='function'){window.startApp=function(){const r=prevStart.apply(this,arguments);setTimeout(()=>{renderAll();loadQuotaCloud();},550);return r;};try{startApp=window.startApp}catch(_){}}
 
-  window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,quotaFor};
+  window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='27.1';
+  window.NASCH_APP_VERSION='27.3';
 })();
 </script>
 
@@ -6708,7 +6709,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 <script id="nasch-v270-plan-views-vacation">
 /* NASCH v27.0 · zwei Wochenplan-Druckansichten + Urlaubsverwaltung */
 (()=>{
-  const VERSION='27.1';
+  const VERSION='27.3';
   const VAC_KEY='nasch-v270-vacation';
   const deep=o=>JSON.parse(JSON.stringify(o));
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6907,5 +6908,146 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   setTimeout(()=>{Object.keys(USERS||{}).forEach(applyVacation);injectPrintButtons();injectVacationEditors();patchOfficeButton();cleanPlanTable('adminTbl');cleanPlanTable('planTbl');},0);
 })();
 </script>
+<style id="nasch-v273-style">
+  .v273-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.v273-btn{border:1px solid var(--border);border-radius:8px;padding:6px 9px;background:#fff;color:var(--navy);font-size:10px;font-weight:800;cursor:pointer}.v273-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}.v273-btn.warn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}.v273-btn.danger{background:#fff1f2;color:#9f1239;border-color:#fecdd3}.v273-btn:disabled{opacity:.45;cursor:not-allowed}
+  .v273-table-wrap{overflow-x:auto}.v273-table{width:100%;border-collapse:collapse;background:#fff}.v273-table th,.v273-table td{padding:8px 7px;border-bottom:1px solid var(--border);font-size:10px;vertical-align:middle}.v273-table th{text-align:left;color:var(--muted);font-size:9px}.v273-type{font-weight:900;color:var(--navy)}.v273-sub{font-size:9px;color:var(--muted);margin-top:2px}.v273-state{display:inline-block;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap}.v273-state.open{background:#fff2cc;color:#7d6608}.v273-state.ok{background:#e1f5ee;color:#085041}.v273-state.change{background:#e6f1fb;color:#0c447c}.v273-state.off{background:#f1f5f9;color:#64748b}
+  .v273-admin{border:1px solid #dbe5ec;border-radius:11px;background:#f8fbff;padding:10px;margin-bottom:11px}.v273-admin h3{font-size:12px;color:var(--navy);margin:0 0 7px}.v273-change-card{background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 10px;margin-bottom:7px}.v273-change-head{display:flex;align-items:flex-start;gap:8px}.v273-change-head strong{font-size:11px}.v273-change-body{font-size:10px;line-height:1.45;margin-top:7px}.v273-arrow{font-weight:900;color:var(--navy);padding:0 4px}.v273-old{color:#64748b}.v273-new{font-weight:800;color:#0f5132}.v273-admin-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+  .v273-modal{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:100120;display:none;align-items:center;justify-content:center;padding:15px}.v273-modal.open{display:flex}.v273-modal-card{width:min(500px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.28)}.v273-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v273-grid .full{grid-column:1/-1}.v273-current{border:1px solid var(--border);background:#f8fafc;border-radius:9px;padding:9px 10px;margin:9px 0;font-size:11px}.v273-foot{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+  @media(max-width:600px){.v273-table th:nth-child(3),.v273-table td:nth-child(3){display:none}.v273-actions{justify-content:flex-start}.v273-grid{grid-template-columns:1fr}.v273-grid .full{grid-column:1}}
+</style>
+<script id="nasch-v273-request-actions">
+/* NASCH v27.3 · Mitarbeiter: Anträge zurückziehen, Wunschfrei tauschen, Urlaub verschieben/ändern */
+(()=>{
+  const VERSION='27.3', CHANGE_TYPE='abwesenheit_aenderung';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pad=n=>String(n).padStart(2,'0');
+  const todayKey=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+  const reqs=()=>{try{return window.V15Planning?.effectiveRequests?.()||window.SandboxStore?.getRequests?.()||[];}catch(_){return[]}};
+  const rStart=r=>String(r?.data?.von||r?.data?.datum||'');
+  const rEnd=r=>String(r?.data?.bis||r?.data?.von||r?.data?.datum||'');
+  const short=k=>{if(!k)return'–';const [y,m,d]=String(k).split('-');return `${d}.${m}.`;};
+  const fmtRange=(a,b)=>!a?'–':(!b||a===b?short(a):`${short(a)}–${short(b)}`);
+  const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false}};
+  const baseReqs=()=>reqs().filter(r=>['urlaub','wunschfrei'].includes(r.type));
+  const changes=()=>reqs().filter(r=>r.type===CHANGE_TYPE);
+  const findReq=id=>reqs().find(r=>String(r.id)===String(id))||null;
+  const openChangeFor=targetId=>changes().find(r=>r.status==='offen'&&String(r.data?.targetId)===String(targetId))||null;
+  const actionLabel=a=>a==='withdraw'?'Rückzug':a==='swap_wunschfrei'?'Wunschfrei tauschen':a==='move_urlaub'?'Urlaub verschieben / ändern':'Änderung';
+  const typeLabel=t=>t==='urlaub'?'🏖 Urlaub':'⭐ Wunschfrei';
+  const statusBadge=r=>{
+    if(r.data?.withdrawnByEmployee)return '<span class="v273-state off">Zurückgezogen</span>';
+    if(r.status==='genehmigt')return '<span class="v273-state ok">Genehmigt</span>';
+    if(r.status==='offen')return '<span class="v273-state open">Offen</span>';
+    return '<span class="v273-state off">'+esc(r.status||'–')+'</span>';
+  };
+  function savePatch(id,patch){try{window.SandboxStore?.updateRequest?.(id,patch);return true;}catch(e){console.warn('v27.3 update',e);return false}}
+  function addChange(uid,data){try{return window.SandboxStore?.addRequest?.(CHANGE_TYPE,uid,data,'offen');}catch(e){console.warn('v27.3 add',e);return null}}
+  function refreshPlans(){try{window.WeekPlanStore?.syncAllConstraints?.();}catch(_){}try{renderPlan?.();}catch(_){}try{if(isManager())buildAdminPlan?.();}catch(_){} }
+  function refresh(){
+    try{window.NaschRequestView271?.render?.();}catch(_){}
+    setTimeout(()=>{renderEmployee();renderAdmin();},20);
+  }
+
+  function employeeRows(){
+    const uid=String(AppState?.currentUserId||''),tk=todayKey();
+    return baseReqs().filter(r=>String(r.uid)===uid&&['offen','genehmigt'].includes(r.status)&&rEnd(r)>=tk&&!r.data?.withdrawnByEmployee)
+      .sort((a,b)=>rStart(a).localeCompare(rStart(b)));
+  }
+  function renderEmployee(){
+    const wp3=document.getElementById('wp3');if(!wp3||isManager())return;
+    const list=employeeRows();
+    let html='<div class="sec">Meine aktuellen Anträge</div>';
+    if(!list.length)html+='<div class="v271-empty">Keine offenen oder aktuell genehmigten Urlaubs-/Wunschfrei-Anträge.</div>';
+    else html+=`<div class="v273-table-wrap"><table class="v273-table"><thead><tr><th>Art</th><th>Zeitraum</th><th>Umfang</th><th>Status / Aktion</th></tr></thead><tbody>${list.map(r=>{
+      const ch=openChangeFor(r.id);const approved=r.status==='genehmigt';
+      let actions='';
+      if(ch){actions=`<div class="v273-sub">${esc(actionLabel(ch.data?.action))} wartet auf Entscheidung</div><div class="v273-actions" style="margin-top:5px;"><button class="v273-btn" onclick="NaschRequestActions273.withdrawChange('${esc(ch.id)}')">Änderungsantrag zurückziehen</button></div>`;}
+      else if(r.status==='offen'){actions=`<div class="v273-actions"><button class="v273-btn danger" onclick="NaschRequestActions273.withdrawOpen('${esc(r.id)}')">Antrag zurückziehen</button></div>`;}
+      else if(approved&&r.type==='wunschfrei'){actions=`<div class="v273-actions"><button class="v273-btn" onclick="NaschRequestActions273.open('${esc(r.id)}','withdraw')">Rückzug beantragen</button><button class="v273-btn primary" onclick="NaschRequestActions273.open('${esc(r.id)}','swap_wunschfrei')">Tausch beantragen</button></div>`;}
+      else if(approved&&r.type==='urlaub'){actions=`<div class="v273-actions"><button class="v273-btn" onclick="NaschRequestActions273.open('${esc(r.id)}','withdraw')">Rückzug beantragen</button><button class="v273-btn primary" onclick="NaschRequestActions273.open('${esc(r.id)}','move_urlaub')">Verschieben / ändern</button></div>`;}
+      return `<tr><td><div class="v273-type">${typeLabel(r.type)}</div></td><td><strong>${esc(fmtRange(rStart(r),rEnd(r)))}</strong></td><td>${esc(r.data?.schicht||'Ganzer Tag')}</td><td>${ch?'<span class="v273-state change">Änderung offen</span>':statusBadge(r)}${actions}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+    html+='<div class="v273-sub" style="margin-top:8px;">Offene Anträge können sofort zurückgezogen werden. Bei bereits genehmigten Einträgen bleibt der bisherige Termin aktiv, bis die Leitung die Änderung genehmigt.</div>';
+    wp3.innerHTML=html;
+    const tab=document.getElementById('wt3');if(tab)tab.textContent='Aktuell & ändern';
+  }
+
+  function ensureModal(){
+    let o=document.getElementById('v273ActionModal');if(o)return o;
+    o=document.createElement('div');o.id='v273ActionModal';o.className='v273-modal';
+    o.innerHTML=`<div class="v273-modal-card"><div style="display:flex;align-items:center;gap:8px;"><div id="v273Title" style="font-size:15px;font-weight:900;flex:1;">Änderung beantragen</div><button class="v273-btn" onclick="NaschRequestActions273.close()">✕</button></div><input type="hidden" id="v273Target"><input type="hidden" id="v273Action"><div id="v273Current" class="v273-current"></div><div id="v273Fields"></div><div style="margin-top:9px;"><label>Hinweis / Grund (optional)</label><input id="v273Reason" placeholder="z. B. Termin hat sich verschoben"></div><div class="v273-foot"><button class="btn btn-outline" style="width:auto;margin:0;" onclick="NaschRequestActions273.close()">Abbrechen</button><button class="btn btn-primary" style="width:auto;margin:0;" onclick="NaschRequestActions273.submit()">Antrag senden</button></div></div>`;
+    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)close();});return o;
+  }
+  function open(id,action){
+    const r=findReq(id);if(!r||r.status!=='genehmigt')return;if(openChangeFor(id)){alert('Für diesen Eintrag gibt es bereits einen offenen Änderungsantrag.');return;}
+    const o=ensureModal(),title=document.getElementById('v273Title'),cur=document.getElementById('v273Current'),fields=document.getElementById('v273Fields');
+    document.getElementById('v273Target').value=r.id;document.getElementById('v273Action').value=action;document.getElementById('v273Reason').value='';
+    title.textContent=actionLabel(action)+' beantragen';cur.innerHTML=`<strong>${typeLabel(r.type)}</strong><br>${esc(fmtRange(rStart(r),rEnd(r)))}${r.data?.schicht?` · ${esc(r.data.schicht)}`:''}`;
+    if(action==='withdraw')fields.innerHTML='<div class="banner binfo"><span>↩</span><span>Der genehmigte Eintrag bleibt aktiv, bis die Leitung den Rückzug bestätigt.</span></div>';
+    else{
+      const min=todayKey(),isWish=action==='swap_wunschfrei';
+      fields.innerHTML=`<div class="v273-grid"><div><label>Neu von</label><input type="date" id="v273NewVon" min="${min}" value="${esc(rStart(r))}"></div><div><label>Neu bis (optional)</label><input type="date" id="v273NewBis" min="${min}" value="${esc(rEnd(r))}"></div>${isWish?`<div class="full"><label>Neue Schicht / Umfang</label><select id="v273NewShift"><option ${String(r.data?.schicht||'').startsWith('Ganzer')?'selected':''}>Ganzer Tag (1 Tag)</option><option ${String(r.data?.schicht||'').startsWith('Nur Früh')?'selected':''}>Nur Frühschicht (½ Tag)</option><option ${String(r.data?.schicht||'').startsWith('Nur Spät')?'selected':''}>Nur Spätschicht (½ Tag)</option></select></div>`:''}</div><div class="v273-sub" style="margin-top:7px;">Der bisher genehmigte Zeitraum bleibt bis zur Entscheidung bestehen.</div>`;
+    }
+    o.classList.add('open');
+  }
+  function close(){document.getElementById('v273ActionModal')?.classList.remove('open');}
+  function submit(){
+    const id=document.getElementById('v273Target')?.value,action=document.getElementById('v273Action')?.value,r=findReq(id);if(!r)return;
+    if(openChangeFor(id)){alert('Es gibt bereits einen offenen Änderungsantrag.');return;}
+    const data={action,targetId:r.id,targetType:r.type,oldVon:rStart(r),oldBis:rEnd(r),oldSchicht:r.data?.schicht||'',grund:document.getElementById('v273Reason')?.value.trim()||'',requestedAt:new Date().toISOString()};
+    if(action!=='withdraw'){
+      const von=document.getElementById('v273NewVon')?.value||'',bis=document.getElementById('v273NewBis')?.value||von;
+      if(!von){alert('Bitte neues Datum angeben.');return;}if(bis<von){alert('Das Bis-Datum darf nicht vor dem Von-Datum liegen.');return;}if(von<todayKey()){alert('Das neue Datum darf nicht in der Vergangenheit liegen.');return;}
+      data.newVon=von;data.newBis=bis;data.newSchicht=action==='swap_wunschfrei'?(document.getElementById('v273NewShift')?.value||r.data?.schicht||'Ganzer Tag'):(r.data?.schicht||'');
+      if(von===data.oldVon&&bis===data.oldBis&&(action!=='swap_wunschfrei'||data.newSchicht===data.oldSchicht)){alert('Bitte einen geänderten Zeitraum oder Umfang auswählen.');return;}
+      try{const blocked=window.V15Planning?.blockedInRange?.(von,bis,r.type)||[];if(blocked.length){alert('Der gewünschte neue Zeitraum ist gesperrt. Bitte einen anderen Zeitraum wählen oder die Filialleitung kontaktieren.');return;}}catch(_){}
+    }
+    const cid=addChange(String(r.uid),data);if(!cid){alert('Antrag konnte nicht gespeichert werden.');return;}close();refresh();showToast?.('📨 Änderungsantrag gesendet');
+  }
+  function withdrawOpen(id){
+    const r=findReq(id);if(!r||r.status!=='offen')return;if(!confirm('Diesen offenen Antrag wirklich zurückziehen?'))return;
+    // Für die bestehende Planlogik wird der Antrag technisch als abgelehnt markiert; das Zusatzfeld kennzeichnet ihn als vom Mitarbeiter zurückgezogen.
+    savePatch(id,{status:'abgelehnt',data:{withdrawnByEmployee:true,withdrawnAt:new Date().toISOString()},decidedBy:AppState.currentUser?.name||'Mitarbeiter',decidedAt:new Date().toISOString()});refreshPlans();refresh();showToast?.('↩ Antrag zurückgezogen');
+  }
+  function withdrawChange(id){const r=findReq(id);if(!r||r.type!==CHANGE_TYPE||r.status!=='offen')return;if(!confirm('Diesen Änderungsantrag zurückziehen?'))return;savePatch(id,{status:'zurueckgezogen',data:{withdrawnByEmployee:true},decidedAt:new Date().toISOString()});refresh();showToast?.('↩ Änderungsantrag zurückgezogen');}
+
+  function adminCard(c){
+    const target=findReq(c.data?.targetId),u=USERS?.[c.uid]||{},a=c.data?.action,open=c.status==='offen';
+    const oldTxt=`${fmtRange(c.data?.oldVon,c.data?.oldBis)}${c.data?.oldSchicht?' · '+c.data.oldSchicht:''}`;
+    const newTxt=a==='withdraw'?'entfällt':`${fmtRange(c.data?.newVon,c.data?.newBis)}${c.data?.newSchicht?' · '+c.data.newSchicht:''}`;
+    const st=open?'<span class="v273-state open">Offen</span>':c.status==='genehmigt'?'<span class="v273-state ok">Genehmigt</span>':c.status==='zurueckgezogen'?'<span class="v273-state off">Zurückgezogen</span>':'<span class="v273-state off">Abgelehnt</span>';
+    return `<div class="v273-change-card"><div class="v273-change-head"><div style="flex:1"><strong>${esc(u.name||c.uid)} · ${esc(actionLabel(a))}</strong><div class="v273-sub">${typeLabel(c.data?.targetType||target?.type)}</div></div>${st}</div><div class="v273-change-body"><span class="v273-old">${esc(oldTxt)}</span><span class="v273-arrow">→</span><span class="v273-new">${esc(newTxt)}</span>${c.data?.grund?`<div style="margin-top:5px;"><strong>Hinweis:</strong> ${esc(c.data.grund)}</div>`:''}${!target&&open?'<div style="color:#b42318;margin-top:5px;">Ursprünglicher Antrag nicht gefunden.</div>':''}</div>${open?`<div class="v273-admin-actions"><button class="v273-btn danger" onclick="NaschRequestActions273.adminReject('${esc(c.id)}')">✕ Ablehnen</button><button class="v273-btn primary" ${!target?'disabled':''} onclick="NaschRequestActions273.adminApprove('${esc(c.id)}')">✓ Genehmigen</button></div>`:''}</div>`;
+  }
+  function renderAdmin(){
+    const pane=document.getElementById('v15Pane_requests'),list=document.getElementById('v15RequestList');if(!pane||!list||!isManager())return;
+    let box=document.getElementById('v273AdminChanges');if(!box){box=document.createElement('div');box.id='v273AdminChanges';box.className='v273-admin';list.parentNode.insertBefore(box,list);}
+    const cs=changes().filter(c=>c.status!=='zurueckgezogen').sort((a,b)=>(a.status==='offen'?0:1)-(b.status==='offen'?0:1)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    const open=cs.filter(c=>c.status==='offen'),recent=cs.filter(c=>c.status!=='offen').slice(0,8);
+    box.innerHTML=`<h3>🔄 Rückzug / Tausch / Urlaubsänderung ${open.length?`<span class="v273-state open">${open.length} offen</span>`:''}</h3>${open.length?open.map(adminCard).join(''):'<div class="v273-sub">Keine offenen Änderungsanträge.</div>'}${recent.length?`<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:10px;font-weight:800;">Zuletzt bearbeitet (${recent.length})</summary><div style="margin-top:7px;">${recent.map(adminCard).join('')}</div></details>`:''}`;
+  }
+  function adminApprove(id){
+    if(!isManager())return;const c=findReq(id);if(!c||c.type!==CHANGE_TYPE||c.status!=='offen')return;const t=findReq(c.data?.targetId);if(!t){alert('Der ursprüngliche Antrag wurde nicht gefunden.');return;}if(!confirm(`${actionLabel(c.data?.action)} für ${USERS?.[c.uid]?.name||c.uid} genehmigen?`))return;
+    const a=c.data?.action;
+    if(a==='withdraw')savePatch(t.id,{status:'abgelehnt',data:{withdrawnByEmployee:true,withdrawnAt:new Date().toISOString(),withdrawApprovedFrom:c.id},decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:new Date().toISOString()});
+    else if(a==='swap_wunschfrei')savePatch(t.id,{status:'genehmigt',data:{von:c.data.newVon,bis:c.data.newBis,schicht:c.data.newSchicht||t.data?.schicht||'Ganzer Tag',changedFromVon:c.data.oldVon,changedFromBis:c.data.oldBis,changedByRequest:c.id},decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:new Date().toISOString()});
+    else if(a==='move_urlaub')savePatch(t.id,{status:'genehmigt',data:{von:c.data.newVon,bis:c.data.newBis,changedFromVon:c.data.oldVon,changedFromBis:c.data.oldBis,changedByRequest:c.id},decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:new Date().toISOString()});
+    savePatch(c.id,{status:'genehmigt',decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:new Date().toISOString()});refreshPlans();refresh();showToast?.('✓ Änderung genehmigt');
+  }
+  function adminReject(id){if(!isManager())return;const c=findReq(id);if(!c||c.status!=='offen')return;const note=prompt('Grund für die Ablehnung (optional):','');if(note===null)return;savePatch(id,{status:'abgelehnt',decisionNote:String(note||'').trim(),decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:new Date().toISOString()});refresh();showToast?.('✕ Änderung abgelehnt');}
+
+  // Nach bestehenden Renderern immer unsere komfortable Aktionsansicht ergänzen.
+  const oldWTab=window.wTab;if(typeof oldWTab==='function'){window.wTab=function(){const r=oldWTab.apply(this,arguments);setTimeout(()=>{renderEmployee();renderAdmin();},40);return r;};try{wTab=window.wTab}catch(_){}}
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(){const r=oldGo.apply(this,arguments);setTimeout(()=>{renderEmployee();renderAdmin();},70);return r;};try{goTo=window.goTo}catch(_){}}
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{renderEmployee();renderAdmin();},800);return r;};try{startApp=window.startApp}catch(_){}}
+  const oldWF=window.sendeWF;if(typeof oldWF==='function'){window.sendeWF=function(){const r=oldWF.apply(this,arguments);setTimeout(renderEmployee,80);return r;};try{sendeWF=window.sendeWF}catch(_){}}
+  const oldURL=window.sendeURL;if(typeof oldURL==='function'){window.sendeURL=function(){const r=oldURL.apply(this,arguments);setTimeout(renderEmployee,80);return r;};try{sendeURL=window.sendeURL}catch(_){}}
+  if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
+
+  window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
+  window.NASCH_APP_VERSION=VERSION;
+  setTimeout(()=>{renderEmployee();renderAdmin();},120);
+})();
+</script>
+
 </body>
 </html>
