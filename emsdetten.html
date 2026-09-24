@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.7</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.8</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1435,11 +1435,17 @@ window.PublishStore = PublishStore;
 const GUTSCHEIN_LIMIT   = 50;   // € pro Monat pro Mitarbeiter
 const SCHUERZEN_PREIS   = 5;    // € pro Stück
 const VORSCHUSS_ROLLEN  = ['admin','vertretung']; // Dauerhafter Vorschuss (Rollen)
-// VZ-Mitarbeiter ebenfalls dauerhaft: Vorschuss wird einmalig bestätigt und monatlich übernommen
+// Dauerhafter Vorschuss: nur Admin/Vertretung (ohne Wahlmöglichkeit)
 const isVorschussEligible = uid => {
   const u = USERS[uid];
   if(!u) return false;
-  return VORSCHUSS_ROLLEN.includes(u.role) || u.typ === 'VZ';
+  return VORSCHUSS_ROLLEN.includes(u.role);
+};
+// VZ/TZ: wahlweise dauerhaft oder einmalig
+const isVorschussWaehlbar = uid => {
+  const u = USERS[uid];
+  if(!u) return false;
+  return !VORSCHUSS_ROLLEN.includes(u.role) && ['VZ','TZ'].includes(u.typ||'');
 };
 
 // ── Aktueller Monat Key ────────────────────────────────────────
@@ -2746,6 +2752,14 @@ function wNav(d){
   const role=USERS[uid]?.role;
   if(role!=='admin' && role!=='vertretung' && !isAdminOrDeputy(uid)) return;
   AppState.weekOffset+=d;
+  // Sheets-Daten für neue Woche einlesen
+  if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
+    const _k=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset):'';
+    if(_k&&NASCH_SHEETS_IMPORT[_k]){
+      const _p=JSON.parse(JSON.stringify(NASCH_SHEETS_IMPORT[_k]));
+      Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,_p);
+    }
+  }
   renderPlan();
   buildAdminPlan();
   renderPersonalDailyHours();
@@ -3144,8 +3158,11 @@ function renderPlanTableDirect(tableId){
   h+='<th style="background:#1e3a5f;color:#e8f4fd;min-width:64px;">Woche</th></tr></thead><tbody>';
   const emps=Object.entries(USERS).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
   emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  // Sheets-Daten für die angezeigte Woche direkt verwenden wenn verfügbar
+  const _curKey=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
+  const _sheetsWeek=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[_curKey];
   emps.forEach(([uid,u])=>{
-    const sh=PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
+    const sh=(_sheetsWeek&&_sheetsWeek[uid])||PLAN[uid]||Array.from({length:7},()=>({t:'-',z:'',r:[]}));
     const wk=getEmployeeWeekStats(uid);
     h+=`<tr><td class="nc" style="font-size:11px;">${escapeHtml(u.name)}<br><small style="color:var(--muted);">${escapeHtml(u.typ||'')}</small></td>`;
     dates.forEach((_,i)=>{
@@ -3667,9 +3684,45 @@ function renderVorschussPanel() {
     </div>`;
   });
 
-  // Temporärer Vorschuss: alle Mitarbeiter
-  html += '<div class="sec" style="margin-top:8px;">Temporärer Vorschuss · dieser Monat</div>';
-  const allMA = entries.filter(([uid]) => !isVorschussEligible(uid));
+  // Vollzeit & Teilzeit: wahlweise dauerhaft oder einmalig
+  const vztzMA = entries.filter(([uid]) => isVorschussWaehlbar(uid));
+  if(vztzMA.length){
+    html += '<div class="sec" style="margin-top:8px;">Vorschuss · Vollzeit & Teilzeit</div>';
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Für jeden Mitarbeiter wählen: dauerhaft (jeden Monat) oder einmalig (nur dieser Monat).</div>';
+    vztzMA.forEach(([uid,u]) => {
+      const perm = VorschussStore.getPermanent(uid);
+      const tmp = VorschussStore.getMonthly(uid, mk);
+      const mode = VorschussStore.isPermanentConfirmed(uid) ? (perm > 0 ? 'perm' : 'tmp') : 'tmp';
+      html += `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${escapeHtml(u.initials)}</div>
+          <div><div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div><div style="font-size:10px;color:var(--muted);">${escapeHtml(u.typ)} · ${escapeHtml(u.label||'')}</div></div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="vp_mode_${uid}" value="perm" ${mode==='perm'?'checked':''} onchange="toggleVpMode('${uid}','perm')"> Dauerhaft
+          </label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="vp_mode_${uid}" value="tmp" ${mode!=='perm'?'checked':''} onchange="toggleVpMode('${uid}','tmp')"> Einmalig (dieser Monat)
+          </label>
+        </div>
+        <div id="vp_perm_wrap_${uid}" style="${mode==='perm'?'':'display:none;'}display:flex;align-items:center;gap:8px;">
+          <input type="number" min="0" step="1" value="${perm||''}" placeholder="0" id="vp_perm_${uid}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;">
+          <button onclick="savePermVorschuss('${uid}')" style="padding:7px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Speichern</button>
+          ${perm>0?`<span style="font-size:11px;color:#085041;font-weight:700;">${eurFmt(perm)}/Monat dauerhaft</span>`:''}
+        </div>
+        <div id="vp_tmp_wrap_${uid}" style="${mode!=='perm'?'':'display:none;'}display:flex;align-items:center;gap:8px;">
+          <input type="number" min="0" step="1" value="${tmp||''}" placeholder="0" id="vp_tmp_${uid}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;">
+          <button onclick="saveTmpVorschuss('${uid}')" style="padding:7px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:11px;font-weight:600;cursor:pointer;">OK</button>
+          ${tmp>0?`<span style="font-size:11px;color:#085041;font-weight:700;">${eurFmt(tmp)} einmalig</span>`:''}
+        </div>
+      </div>`;
+    });
+  }
+
+  // Aushilfen: nur einmalig
+  html += '<div class="sec" style="margin-top:8px;">Vorschuss · Aushilfen (einmalig)</div>';
+  const allMA = entries.filter(([uid,u]) => !isVorschussEligible(uid) && !isVorschussWaehlbar(uid));
   allMA.forEach(([uid,u]) => {
     const tmp = VorschussStore.getMonthly(uid, mk);
     html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;flex-wrap:wrap;">
@@ -3687,6 +3740,12 @@ function renderVorschussPanel() {
   box.innerHTML = html;
 }
 
+function toggleVpMode(uid, mode){
+  const pw=document.getElementById('vp_perm_wrap_'+uid);
+  const tw=document.getElementById('vp_tmp_wrap_'+uid);
+  if(pw)pw.style.display=mode==='perm'?'flex':'none';
+  if(tw)tw.style.display=mode!=='perm'?'flex':'none';
+}
 function savePermVorschuss(uid) {
   const inp = document.getElementById('vp_perm_'+uid);
   const betrag = parseFloat(inp?.value) || 0;
