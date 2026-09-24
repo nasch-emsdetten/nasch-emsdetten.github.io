@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.8</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.9</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -2694,23 +2694,20 @@ function _doStartApp(uid){
 
   // Auto-Veröffentlichung: Sheets-Plan für aktuelle KW publishen wenn nix da
   if(isAdminOrDeputy(uid)){
-    setTimeout(()=>{
+    // Auto-Publish: Sheets-Wochen direkt publizieren
+      setTimeout(()=>{
       try{
-        const bid=typeof PublishStore!=='undefined'?PublishStore.branchKey():'FIL001';
-        const wk =typeof PublishStore!=='undefined'?PublishStore.weekKey():'';
-        if(typeof PublishStore!=='undefined'&&!PublishStore.isPublished(bid,wk)){
-          const curKey=getMonday(0).toISOString().slice(0,10);
-          if(typeof NASCH_SHEETS_IMPORT!=='undefined'&&NASCH_SHEETS_IMPORT[curKey]){
-            Object.keys(PLAN).forEach(k=>delete PLAN[k]);
-            Object.assign(PLAN,JSON.parse(JSON.stringify(NASCH_SHEETS_IMPORT[curKey])));
-            if(typeof buildAdminPlan==='function') buildAdminPlan();
-          }
-          if(typeof publishPlan==='function') publishPlan();
-          if(typeof renderPlan==='function') renderPlan();
-          if(typeof showToast==='function') showToast('📋 Wochenplan KW39 veröffentlicht');
+        if(typeof NASCH_SHEETS_IMPORT==='undefined') return;
+        const curKey=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
+        const sd=NASCH_SHEETS_IMPORT[curKey];
+        if(sd){
+          Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+          Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));
         }
+        if(typeof renderPlan==='function') renderPlan();
+        if(typeof buildAdminPlan==='function') buildAdminPlan();
       }catch(e){console.warn('Auto-publish:',e);}
-    },3000);
+    },1500);
   }
 }
 
@@ -3139,13 +3136,14 @@ function buildAdminPlan(){
 function renderPlanTableDirect(tableId){
   const tbl=document.getElementById(tableId||'adminTbl');
   if(!tbl) return 0;
-  const existRows=tbl.querySelectorAll('tbody tr').length;
-  if(existRows>0){
-    // Prüfe ob echte Schichten da sind (nicht nur '-')
-    const hasRealData=Array.from(tbl.querySelectorAll('td')).some(td=>td.className==='nc'&&td.querySelector('strong'));
-    if(hasRealData) return existRows;
+  // Immer rendern wenn Sheets-Daten für diese Woche vorhanden
+  const _drk=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
+  const _drs=(typeof NASCH_SHEETS_IMPORT!=='undefined')&&NASCH_SHEETS_IMPORT[_drk];
+  if(!_drs){
+    // Kein Sheets-Daten → nur rendern wenn Tabelle leer
+    if(tbl.querySelectorAll('tbody tr').length>0) return tbl.querySelectorAll('tbody tr').length;
   }
-  // Keine Zeilen → direkt rendern
+  // Direkt rendern (Sheets-Daten verfügbar oder Tabelle leer)
   const mon=getMonday(AppState.weekOffset||0);
   const kw=getKW(mon);
   const lbl=document.getElementById(tableId==='adminTbl'?'adminWLbl':'wLbl');
@@ -4187,7 +4185,23 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   const originalRenderPlan=window.renderPlan;
   window.renderPlan=function(){if(!isAdminOrDeputy(AppState.currentUserId)&&AppState.weekOffset!==0)AppState.weekOffset=0;WeekPlanStore.loadOffset(AppState.weekOffset);originalRenderPlan();decoratePlanHeaders('planTbl',isAdminOrDeputy());};renderPlan=window.renderPlan;
   const originalBuildAdminPlan=window.buildAdminPlan;
-  window.buildAdminPlan=function(){WeekPlanStore.loadOffset(AppState.weekOffset);originalBuildAdminPlan();decoratePlanHeaders('adminTbl',true);addCopyButtons();};buildAdminPlan=window.buildAdminPlan;
+  window.buildAdminPlan=function(){
+    // Sheets-Daten direkt in PLAN schreiben (Übergangsbetrieb)
+    if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
+      const _k=typeof WeekPlanStore!=='undefined'?WeekPlanStore.keyForOffset(AppState.weekOffset):'';
+      const _sd=_k&&NASCH_SHEETS_IMPORT[_k];
+      if(_sd){
+        Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+        Object.assign(PLAN,JSON.parse(JSON.stringify(_sd)));
+        Object.keys(USERS).forEach(uid=>{if(!Array.isArray(PLAN[uid]))PLAN[uid]=Array.from({length:7},()=>({t:'-',z:'',r:[]}));});
+      } else {
+        WeekPlanStore.loadOffset(AppState.weekOffset);
+      }
+    } else {
+      WeekPlanStore.loadOffset(AppState.weekOffset);
+    }
+    originalBuildAdminPlan();decoratePlanHeaders('adminTbl',true);addCopyButtons();
+  };buildAdminPlan=window.buildAdminPlan;
 
   // Wochennavigation lädt/speichert jetzt echte unterschiedliche Wochenpläne.
   window.wNav=function(d){
