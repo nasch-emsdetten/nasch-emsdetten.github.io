@@ -231,7 +231,8 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.4b</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p></div>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v25.5</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+    <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
     <div id="loginBranchWrap"><label for="loginBranch" style="display:block;color:#d7e3ef;font-size:11px;margin:0 0 5px;">Filiale</label>
@@ -370,7 +371,8 @@ window.FILIAL_ID = 'FIL001';
         <div class="mi" onclick="goTo('pgStunden','Stundenzettel')">
           <div class="mi-icon" style="background:#E6F1FB;">📋</div><span class="mi-lbl">Stundenzettel</span><span class="mi-arr">›</span>
         </div>
-        <div class="mi" onclick="goTo('pgVerfueg','Verfügbarkeit')">
+        <div class="mi" onclick="goTo('pgHandbuch','Handbuch')"><div class="mi-icon" style="background:#E1F5EE;">📖</div><span class="mi-lbl">Hilfe & Handbuch</span><span class="mi-arr">›</span></div>
+<div class="mi" onclick="goTo('pgVerfueg','Verfügbarkeit')">
           <div class="mi-icon" style="background:#E1F5EE;">📅</div><span class="mi-lbl">Verfügbarkeit</span><span class="mi-arr">›</span>
         </div>
         <div class="mi" onclick="goTo('pgKalender','Kalender')">
@@ -2448,10 +2450,12 @@ function renderPlan() {
     if(!PublishStore.isPublished(bid, wk)) {
       const kw = getKW(monday);
       weekLabel.textContent = `KW ${kw}`;
+      const isAdm=typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);
       planTable.innerHTML = `<tr><td colspan="10" style="padding:32px 16px;text-align:center;color:var(--muted);">
         <div style="font-size:32px;margin-bottom:10px;">📅</div>
         <div style="font-size:14px;font-weight:600;color:var(--text);">Noch kein Wochenplan veröffentlicht</div>
-        <div style="font-size:12px;margin-top:6px;">Der Wochenplan für KW ${kw} wurde noch nicht veröffentlicht.<br>Lee Ko wird den Plan in Kürze freigeben.</div>
+        <div style="font-size:12px;margin-top:6px;">Der Wochenplan für KW ${kw} wurde noch nicht veröffentlicht.</div>
+        ${isAdm?`<button onclick="if(typeof publishPlan==='function'){publishPlan();renderPlan();}" style="margin-top:12px;padding:10px 20px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">📢 Jetzt veröffentlichen</button>`:'<div style="font-size:12px;margin-top:6px;">Lee Ko wird den Plan in Kürze freigeben.</div>'}
       </td></tr>`;
       return;
     }
@@ -2564,6 +2568,7 @@ function loginEmployeeChanged(){
   lPin=''; updLD(); document.getElementById('loginErr').textContent='';
 }
 updateLoginEmployeeOptions();
+try{const _ps=new URLSearchParams(location.search).get('preselect');if(_ps){setTimeout(()=>{const s=document.getElementById('loginEmployee');if(s&&[...s.options].some(o=>o.value===_ps)){s.value=_ps;}},400);}}catch(_){}
 function lKey(k){
   if(lAttempts>=3) return;
   if(k==='del'){lPin=lPin.slice(0,-1);}
@@ -2606,6 +2611,15 @@ function startApp(uid){
   _doStartApp(uid);
 }
 function _doStartApp(uid){
+  // Versions-Toast beim Login
+  try{setTimeout(()=>{
+    const v='v25.4b · KW36-41 geladen';
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+    t.textContent='✅ NASCH App '+v;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),5000);
+  },500);}catch(_){}
   AppState.currentUserId=uid;
   AppState.currentUser=USERS[uid];
   const u=AppState.currentUser;
@@ -2658,6 +2672,27 @@ function _doStartApp(uid){
   if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render();
   initSig();
   if(typeof updatePublishStatus==='function') setTimeout(updatePublishStatus, 200);
+
+  // Auto-Veröffentlichung: Sheets-Plan für aktuelle KW publishen wenn nix da
+  if(isAdminOrDeputy(uid)){
+    setTimeout(()=>{
+      try{
+        const bid=typeof PublishStore!=='undefined'?PublishStore.branchKey():'FIL001';
+        const wk =typeof PublishStore!=='undefined'?PublishStore.weekKey():'';
+        if(typeof PublishStore!=='undefined'&&!PublishStore.isPublished(bid,wk)){
+          const curKey=getMonday(0).toISOString().slice(0,10);
+          if(typeof NASCH_SHEETS_IMPORT!=='undefined'&&NASCH_SHEETS_IMPORT[curKey]){
+            Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+            Object.assign(PLAN,JSON.parse(JSON.stringify(NASCH_SHEETS_IMPORT[curKey])));
+            if(typeof buildAdminPlan==='function') buildAdminPlan();
+          }
+          if(typeof publishPlan==='function') publishPlan();
+          if(typeof renderPlan==='function') renderPlan();
+          if(typeof showToast==='function') showToast('📋 Wochenplan KW39 veröffentlicht');
+        }
+      }catch(e){console.warn('Auto-publish:',e);}
+    },3000);
+  }
 }
 
 // ── Navigation ────────────────────────────────────────────
@@ -2682,9 +2717,9 @@ function goTo(pgId, title){
   if(pgId==='pgAdminMA') buildMAList();
   if(pgId==='pgAdminPlan'){
     const d=document.getElementById('planDebug');if(d){d.style.display='none';d.textContent='';}
+    injectSheetsIfPlanEmpty(true); // Immer Sheets-Daten als Basis
     try{ buildAdminPlan(); } catch(e){ console.warn('buildAdminPlan:', e); }
-    // Fallback: direkt rendern wenn Tabelle noch leer
-    setTimeout(()=>renderPlanTableDirect('adminTbl'), 50);
+    setTimeout(()=>{ injectSheetsIfPlanEmpty(true); renderPlanTableDirect('adminTbl'); }, 100);
   }
   if(pgId==='pgVerfueg') if(typeof buildVerfDays==='function') buildVerfDays();
   if(pgId==='pgStunden') renderPersonalDailyHours();
@@ -3116,6 +3151,23 @@ function renderPlanTableDirect(tableId){
   h+='</tbody>';
   tbl.innerHTML=h;
   return emps.length;
+}
+
+// ── NOTFALL: Sheets-Daten direkt in PLAN wenn leer ──────────────────────────
+function injectSheetsIfPlanEmpty(force=false){
+  if(typeof NASCH_SHEETS_IMPORT==='undefined') return;
+  if(!force){
+    const hasReal=Object.values(PLAN).some(sh=>Array.isArray(sh)&&sh.some(s=>s&&s.t&&s.t!=='-'));
+    if(hasReal) return;
+  }
+  const key=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset||0):'';
+  const wd=NASCH_SHEETS_IMPORT[key];
+  if(!wd||!Object.keys(wd).length) return;
+  const p=JSON.parse(JSON.stringify(wd));
+  Object.keys(PLAN).forEach(k=>delete PLAN[k]);
+  Object.assign(PLAN,p);
+  console.log('🔧 Notfall-Injektion:',key,Object.keys(p).length,'MA');
+  try{if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore._resetLoaded)WeekPlanStore._resetLoaded();}catch(_){}
 }
 
 function toggleEdit(){
@@ -3699,6 +3751,15 @@ function saveGutschein(uid) {
 }
 
 // ── SCHÜRZEN PANEL ─────────────────────────────────────────────
+let _schuerzenNamenAus = false;
+function toggleSchuerzenNamen(){
+  _schuerzenNamenAus = !_schuerzenNamenAus;
+  try{localStorage.setItem('nasch-sz-namen',_schuerzenNamenAus?'1':'0');}catch(_){}
+  renderSchuerzenPanel();
+}
+// Zustand aus localStorage laden
+try{_schuerzenNamenAus=localStorage.getItem('nasch-sz-namen')==='1';}catch(_){}
+
 function renderSchuerzenPanel() {
   const box = document.getElementById('schuerzenPanel');
   if(!box || AppState.currentUser?.role !== 'admin') {
@@ -3707,7 +3768,11 @@ function renderSchuerzenPanel() {
   }
   const mk = currentMonthKey();
   const entries = typeof getOrderedUserEntries === 'function' ? getOrderedUserEntries() : Object.entries(USERS);
-  let html = '';
+  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <button onclick="toggleSchuerzenNamen()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:11px;cursor:pointer;">
+      ${_schuerzenNamenAus ? '👁 Namen einblenden' : '🙈 Namen ausblenden'}
+    </button>
+  </div>`;
   entries.forEach(([uid,u]) => {
     const saldo  = SchuerzenStore.getSaldo(uid);
     const netto  = SchuerzenStore.getMonthNet(uid, mk);
@@ -3716,7 +3781,7 @@ function renderSchuerzenPanel() {
     html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${escapeHtml(u.initials)}</div>
-        <div style="flex:1;min-width:80px;"><div style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</div><div style="font-size:10px;color:var(--muted);">Bestand: ${saldo} Stück · ${eurFmt(saldo*SCHUERZEN_PREIS)}</div></div>
+        <div style="flex:1;min-width:80px;">${_schuerzenNamenAus?'<span style="color:var(--muted);font-size:11px;">'+u.initials+'</span>':'<div style="font-size:13px;font-weight:600;">'+escapeHtml(u.name)+'</div>'}<div style="font-size:10px;color:var(--muted);">Bestand: ${saldo} Stück · ${eurFmt(saldo*SCHUERZEN_PREIS)}</div></div>
         ${netto !== 0 ? `<span style="font-size:11px;border-radius:6px;padding:3px 8px;font-weight:700;background:${netto>0?'var(--err)':'var(--ok)'};color:${netto>0?'var(--err-t)':'var(--ok-t)'};">${netto>0?`−${eurFmt(betrag)}`:`+${eurFmt(Math.abs(betrag))}`}</span>` : ''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -3801,7 +3866,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
 <script>
 // ── V13: echte Wochenpläne, Vorlagen, Kalenderhinweise und wichtige Termine ──
 (function(){
-  const V13_WEEK_KEY='nasch-sandbox-weekplans-v14';
+  const V13_WEEK_KEY='nasch-sandbox-weekplans-v15';
   const V13_EVENT_KEY='nasch-important-events-v13';
   const DAY_NAMES=['So','Mo','Di','Mi','Do','Fr','Sa'];
   const WEEKDAY_OPTIONS=[['1','Montag'],['2','Dienstag'],['3','Mittwoch'],['4','Donnerstag'],['5','Freitag'],['6','Samstag'],['0','Sonntag']];
@@ -3945,13 +4010,12 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     }
     function init(){
       loadState();const key=keyForOffset(0),mon=getMonday(0);
-      // Sheets-Import als Seed für alle importierten Wochen
+      // Sheets-Import IMMER als Basis (Übergangsbetrieb: Sheets = Quelle der Wahrheit)
       if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
         Object.entries(NASCH_SHEETS_IMPORT).forEach(([wk,planData])=>{
-          if(!state.weeks[wk]||Object.keys(state.weeks[wk]).length===0){
-            const p=deepClone(planData);ensureUserRows(p);state.weeks[wk]=p;
-          }
+          const p=deepClone(planData);ensureUserRows(p);state.weeks[wk]=p;
         });
+        console.log('✅ Sheets-Seed: alle',Object.keys(NASCH_SHEETS_IMPORT).length,'Wochen');
       }
       // Aktuelle Woche mit Demo-Plan füllen wenn noch leer
       const weekEmpty=!state.weeks[key]||Object.keys(state.weeks[key]).length===0;
@@ -5449,12 +5513,42 @@ if ('serviceWorker' in navigator) {
     const c=document.createElement('div');c.id='officeQrCard';c.className='card';c.innerHTML='<div class="card-h"><div class="card-t">📲 Mitarbeiter-App verteilen</div></div><div class="card-b"><div style="font-size:11px;color:var(--muted);">QR-Code der ausgewählten Filiale erstellen und an die Filialleitung weiterleiten.</div><button class="btn btn-outline" type="button" onclick="goTo(\'pgAdminQr\',\'App-QR & Versand\')">QR-Code öffnen</button></div>';box.appendChild(c);
   }
   function renderQrPage(){
-    injectQrPage();const box=document.getElementById('v254QrContent');if(!box)return;if(!isQrAdmin()){box.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Funktion ist nur für Leitung und Personalbüro verfügbar.</span></div>';return;}
+    // Mitarbeiter-QR ins Admin-QR Tab einbauen
+  const origQrPage=window.renderAdminQr||renderQrPage;
+  window.renderAdminQr=function(){
+    origQrPage();
+    if(!isQrAdmin())return;
+    const box=document.getElementById('v254QrContent');if(!box)return;
+    if(document.getElementById('v254MaQrSection'))return;
+    const sec=document.createElement('div');sec.id='v254MaQrSection';
+    sec.innerHTML='<div class="card" style="margin-top:12px;"><div class="card-h"><div class="card-t">👤 QR pro Mitarbeiter</div></div><div class="card-b"><p style="font-size:12px;color:var(--muted);">Individuelle QR-Codes zur App-Verteilung – der Name des Mitarbeiters wird beim Öffnen vorausgewählt.</p><select id="v254MaSelect" onchange="renderMitarbeiterQr(this.value)" style="margin-bottom:8px;"><option value="">Mitarbeiter wählen …</option>'+(Object.entries(window.USERS||{}).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office').map(([uid,u])=>`<option value="${uid}">${u.name}</option>`).join(''))+'</select><div id="v254MaQrBox"></div></div></div>';
+    box.appendChild(sec);
+  };
+  injectQrPage();const box=document.getElementById('v254QrContent');if(!box)return;if(!isQrAdmin()){box.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Funktion ist nur für Leitung und Personalbüro verfügbar.</span></div>';return;}
     const bs=qrAccessibleBranches(),selected=(document.getElementById('v254QrBranch')?.value)||currentBid254(),b=bs.find(x=>x.id===selected)||bs[0]||branchObj254(currentBid254()),link=appLink254(b.id),emails=loadQrEmails(),mail=emails[b.id]||'';
     const back=document.querySelector('#pgAdminQr .back');if(back){const office=window.BranchSandbox?.isOffice?.(AppState.currentUserId)===true;back.textContent=office?'‹ Zurück zum Büro':'‹ Zurück';back.onclick=()=>office?navTo('office'):goTo('pgAdmin','Admin');}
     box.innerHTML=`<div class="card"><div class="card-b"><label>Filiale</label><select id="v254QrBranch" onchange="renderAdminQr()">${bs.map(x=>`<option value="${esc254(x.id)}" ${x.id===b.id?'selected':''}>${esc254(x.name||x.id)}${x.state?' · '+esc254(x.state):''}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:8px;">Filialleitung: <strong>${esc254(b.managerName||'nicht hinterlegt')}</strong></div><img class="v254-qr-img" src="${qrImage254(link)}" alt="QR-Code NASCH Mitarbeiter-App ${esc254(b.name||b.id)}"><div style="font-size:10px;color:var(--muted);word-break:break-all;text-align:center;">${esc254(link)}</div><label>E-Mail Filialleitung (optional)</label><input id="v254QrEmail" type="email" value="${esc254(mail)}" placeholder="name@beispiel.de" oninput="saveAdminQrEmail('${esc254(b.id)}',this.value)"><div class="v254-qr-actions"><button class="btn btn-primary" type="button" onclick="emailAdminQr('${esc254(b.id)}')">✉️ Per E-Mail</button><button class="btn btn-outline" type="button" onclick="shareAdminQr('${esc254(b.id)}')">📤 QR teilen</button></div><button class="btn btn-outline" type="button" onclick="openAdminQrPng('${esc254(b.id)}')">🖼 QR als PNG öffnen</button></div></div><div class="banner binfo"><span>ℹ️</span><span>„QR teilen“ kann auf unterstützten Handys die PNG-Datei direkt an eine Mail-App übergeben. Falls das Gerät Dateifreigabe nicht unterstützt, öffnet „Per E-Mail“ eine vorbereitete Nachricht mit App-Link und QR-Link.</span></div>`;
   }
   window.renderAdminQr=renderQrPage;window.saveAdminQrEmail=saveQrEmail;
+
+  // ── Mitarbeiter-QR: individueller QR pro Mitarbeiter ──────────────────────
+  window.renderMitarbeiterQr=function(uid){
+    if(!isQrAdmin())return;
+    const u=window.USERS?.[uid];if(!u)return;
+    const baseLink=appLink254(currentBid254());
+    const link=baseLink+(baseLink.includes('?')?'&':'?')+'preselect='+encodeURIComponent(uid);
+    const qr=qrImage254(link,360);
+    const box=document.getElementById('v254MaQrBox');if(!box)return;
+    box.innerHTML=`<div class="card" style="margin-top:10px;"><div class="card-b" style="text-align:center;">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">${esc254(u.name)}</div>
+      <img src="${qr}" style="width:180px;height:180px;border-radius:8px;">
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;">QR öffnet App mit vorausgewähltem Namen</div>
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;">
+        <button class="btn btn-primary" type="button" onclick="window.open('${qr}','_blank')">🖼 PNG öffnen</button>
+        <button class="btn btn-outline" type="button" onclick="navigator.share&&navigator.share({title:'NASCH App · ${esc254(u.name)}',url:'${link}'}).catch(()=>window.open('${qr}','_blank'))">📤 Teilen</button>
+      </div>
+    </div></div>`;
+  };
   window.openAdminQrPng=function(bid){window.open(qrImage254(appLink254(bid),700),'_blank','noopener');};
   window.emailAdminQr=function(bid){if(!isQrAdmin())return;const b=branchObj254(bid),link=appLink254(bid),to=loadQrEmails()[bid]||'',qr=qrImage254(link,700),subject=`NASCH Mitarbeiter-App · ${b.name||bid}`,body=`Hallo,\n\nhier ist der Zugang zur NASCH Mitarbeiter-App für ${b.name||bid}.\n\nApp-Link:\n${link}\n\nQR-Code:\n${qr}\n\nBitte den Link einmal öffnen und die App anschließend auf dem Startbildschirm installieren.\n\nViele Grüße`;location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;};
   window.shareAdminQr=async function(bid){
@@ -5468,6 +5562,80 @@ if ('serviceWorker' in navigator) {
   const oldStart254=window.startApp;if(typeof oldStart254==='function'){window.startApp=function(){const r=oldStart254.apply(this,arguments);setTimeout(()=>{applyFirebaseVisibility();injectQrPage();if(firebasePrivileged()){const banner=document.getElementById('fbStatusBanner');if(banner&&firebase.auth?.().currentUser){banner.style.removeProperty('display');banner.style.display='flex';setTimeout(()=>{if(banner)banner.style.display='none';},2500);}}if(window.BranchSandbox?.isOffice?.(AppState.currentUserId))officeQrCard();},250);return r;};try{startApp=window.startApp}catch(_){}}
 })();
 </script>
+
+<div class="page" id="pgHandbuch">
+  <div class="back" onclick="history.back()">‹ Zurück</div>
+  <div style="padding:0 4px;">
+  <h2 style="font-size:18px;color:var(--navy);margin:0 0 16px;">📖 Mitarbeiter-Handbuch</h2>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🔐 Anmelden</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>1. Seite öffnen: <strong>nasch-emsdetten.github.io/emsdetten.html</strong></p>
+      <p>2. Deinen Namen in der Liste auswählen.</p>
+      <p>3. Deine 4-stellige PIN eingeben und auf <strong>Anmelden</strong> tippen.</p>
+      <p style="color:var(--muted);font-size:11px;">Erste PIN = deine Mitarbeiternummer (z. B. 1003). Bitte beim ersten Login sofort ändern.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">📅 Wochenplan ansehen</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Unten auf <strong>Plan</strong> tippen → dein Dienstplan für die aktuelle Woche wird angezeigt.</p>
+      <p>Mit <strong>‹ ›</strong> kannst du zwischen Wochen wechseln.</p>
+      <p>Bedeutung der Kürzel:</p>
+      <p>🟦 <strong>F</strong> = Frühschicht · 🟧 <strong>S</strong> = Spätschicht<br>
+         🟩 <strong>U</strong> = Urlaub · 🟥 <strong>K</strong> = Krank · ⬜ <strong>–</strong> = frei</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🕐 Stundenzettel</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Unter <strong>Mein Bereich → Stundenzettel</strong> siehst du deine Arbeitszeiten für die aktuelle Woche.</p>
+      <p>Pausen werden automatisch abgezogen: <strong>ab 5 Std. → 30 Min.</strong>, <strong>ab 9 Std. → 60 Min.</strong></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">📋 Verfügbarkeit eintragen</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Unter <strong>Mein Bereich → Verfügbarkeit</strong> kannst du eintragen, wann du in der kommenden Woche arbeiten kannst.</p>
+      <p>Optionen: <strong>Ganztags · Nur Früh · Nur Spät · Nicht verfügbar</strong></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🔑 PIN ändern</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>Nach dem Anmelden: <strong>Mein Bereich → PIN ändern</strong>.</p>
+      <p>Wähle eine 4-stellige Zahl die du dir gut merken kannst.</p>
+      <p style="color:#dc2626;font-size:11px;">⚠️ Teile deine PIN nie mit anderen!</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">📲 App auf dem Handy installieren</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p><strong>Android (Chrome):</strong><br>
+      Drei-Punkte-Menü oben rechts → <em>„Zum Startbildschirm hinzufügen"</em></p>
+      <p><strong>iPhone (Safari):</strong><br>
+      Teilen-Symbol unten → <em>„Zum Home-Bildschirm"</em></p>
+      <p style="color:var(--muted);font-size:11px;">Danach erscheint die App als Icon auf deinem Handy – genauso wie eine normale App.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-h"><div class="card-t">🆘 Probleme & Hilfe</div></div>
+    <div class="card-b" style="font-size:13px;line-height:1.7;">
+      <p>PIN vergessen? → Auf dem Login-Screen <strong>„PIN vergessen?"</strong> antippen.</p>
+      <p>Plan nicht sichtbar? → Seite neu laden (runterziehen) oder <strong>Browser-Cache leeren</strong> (Einstellungen → Verlauf löschen).</p>
+      <p>Sonstiges? → <strong>Lee Ko</strong> oder <strong>Jennifer</strong> ansprechen.</p>
+    </div>
+  </div>
+
+  </div>
+</div>
 </body>
 </html></script>
 </body>
