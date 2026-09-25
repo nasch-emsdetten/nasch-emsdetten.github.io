@@ -1,8 +1,6 @@
 {
   "name": "NASCH Emsdetten Mitarbeiter-App",
   "short_name": "NASCH",
-  "description": "NASCH Mitarbeiter-App für Dienstplan und Mitarbeiterbereich",
-  "lang": "de-DE",
   "start_url": "./emsdetten.html",
   "scope": "./",
   "display": "standalone",
@@ -11,30 +9,14 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
-      "src": "./icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "./icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
-  ],
-  "id": "./emsdetten.html",
-  "prefer_related_applications": false
+  ]
 }
