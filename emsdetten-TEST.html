@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.0 · Emsdetten</title>
+<title>NASCH v28.1 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.0</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.1</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p>
 </div>
   <div id="qrWelcomeBanner" style="display:none;margin-bottom:8px;"></div>
@@ -2463,12 +2463,20 @@ function shiftLabel(s) {
       <span style="display:block;border-top:1px solid rgba(12,68,124,.16);margin-top:2px;padding-top:2px;">${z2}</span>${a2?`<br><small style="font-size:8px;opacity:.82;">${escapeHtml(a2)}</small>`:''}
     </span>`;
   }
-  // Nur Job-Kürzel anzeigen, kein F/S
+  // Uhrzeit anzeigen + Job-Kürzel klein darunter (kein F/S)
+  const start = s.start || '';
+  const end = s.end || '';
+  const timeStr = (start && end) ? `${start}–${end}` : (start || '');
   const jobCode = s.z && !['F','S','TS','-'].includes(s.z) ? escapeHtml(s.z) : '';
   const txt=activityText(s.r);
-  const role = txt ? `<br><small style="font-size:8px;opacity:0.8;">${escapeHtml(txt)}</small>` : '';
-  const lbl = jobCode || '&nbsp;';
-  return `<span class="shift-pill ${shiftClass(s.t)}">${lbl}${role}</span>`;
+  const extra = txt || jobCode;
+  const extraLine = extra ? `<br><small style="font-size:8px;opacity:0.8;">${escapeHtml(extra)}</small>` : '';
+  const mainLine = timeStr ? escapeHtml(timeStr) : (jobCode || '&nbsp;');
+  // Wenn Zeit vorhanden: Zeit oben, Kürzel unten. Sonst nur Kürzel.
+  if(timeStr) {
+    return `<span class="shift-pill ${shiftClass(s.t)}" style="font-size:10px;line-height:1.3;">${escapeHtml(timeStr)}${extraLine}</span>`;
+  }
+  return `<span class="shift-pill ${shiftClass(s.t)}">${jobCode||'&nbsp;'}${txt?`<br><small style="font-size:8px;opacity:0.8;">${escapeHtml(txt)}</small>`:''}</span>`;
 }
 
 function getDayPlanStats(dayIdx) {
@@ -6338,10 +6346,16 @@ function planTableFromSheets(tableId, weekOffset){
   const lbl = document.getElementById(tableId==='adminTbl'?'adminWLbl':'wLbl');
   if(lbl) lbl.textContent = `KW ${kw} · ${formatDate(mon)}–${formatDate(sun)}`;
 
-  // Mitarbeiter sortiert
-  const emps = Object.entries(USERS)
-    .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office')
-    .sort((a,b) => (a[1].name||'').localeCompare(b[1].name||'','de'));
+  // Mitarbeiter + Reihenfolge aus App-Liste (getOrderedUserEntries)
+  let emps = [];
+  try {
+    emps = (typeof getOrderedUserEntries==='function' ? getOrderedUserEntries() : [])
+      .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office');
+  } catch(_) {}
+  if(!emps.length) {
+    emps = Object.entries(USERS)
+      .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office');
+  }
 
   const isEdit = typeof editMode !== 'undefined' && editMode;
   const isAdmin = tableId === 'adminTbl';
