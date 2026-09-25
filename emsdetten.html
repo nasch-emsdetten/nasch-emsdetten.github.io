@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.11 · Emsdetten</title>
+<title>NASCH v28.14 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -303,6 +303,10 @@ window.FILIAL_ID = 'FIL001';
       <button class="btn btn-primary" type="button" onclick="BranchSandbox.systemAdminLogin()">Anmelden</button>
     </div>
     <div id="sysAdminPanel" style="display:none;">
+      <div id="sysAdminQrCard" class="card" style="margin-bottom:12px;">
+        <div class="card-h"><div class="card-t">📲 NASCH App Emsdetten</div></div>
+        <div class="card-b" id="sysAdminQrBox" style="text-align:center;"></div>
+      </div>
       <div class="banner binfo"><span>🛡️</span><span>Neue Filialen werden zuerst vorbereitet und erst nach Bestätigung aktiviert.</span></div>
       <label>Filialname</label><input id="sysDraftName" type="text" placeholder="z. B. Cloppenburg">
       <label>Filialleitung</label><input id="sysDraftManager" type="text" placeholder="Name der Filialleitung">
@@ -363,7 +367,7 @@ window.FILIAL_ID = 'FIL001';
         <button class="pwa-install-btn" type="button" onclick="triggerPwaInstall()" style="background:#98C01F;color:#1e3a5f;border:none;border-radius:20px;padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">App installieren</button>
       </div>
       <div class="stat-grid" style="grid-template-columns:1fr;">
-        <div class="stat"><div class="stat-l">Resturlaub</div><div class="stat-v" id="profUrlaub">12</div></div>
+        <div class="stat"><div class="stat-l">Resturlaub</div><div class="stat-v" id="profUrlaub">–</div></div>
       </div>
       <div class="sec">Meine Bereiche</div>
       <div class="card menu-list">
@@ -484,8 +488,8 @@ window.FILIAL_ID = 'FIL001';
       </div>
       <div id="wp2" style="display:none;">
         <div class="stat-grid">
-          <div class="stat"><div class="stat-l">Jahresanspruch</div><div class="stat-v" id="urlAnsp">25</div></div>
-          <div class="stat"><div class="stat-l">Resturlaub</div><div class="stat-v" id="urlRest">12</div></div>
+          <div class="stat"><div class="stat-l">Jahresanspruch</div><div class="stat-v" id="urlAnsp">–</div></div>
+          <div class="stat"><div class="stat-l">Resturlaub</div><div class="stat-v" id="urlRest">–</div></div>
         </div>
         <div class="card">
           <div class="card-h"><div class="card-t">Urlaubsantrag</div></div>
@@ -574,10 +578,13 @@ window.FILIAL_ID = 'FIL001';
       <div class="back" onclick="goTo('pgProfil','Mein Bereich')">‹ Zurück</div>
       <div class="sec">Kalender</div>
       <div class="card">
-        <div class="card-h"><div class="card-t">🗓 Arbeitszeiten als Kalenderdatei</div></div>
+        <div class="card-h"><div class="card-t">🗓 Dienstplan-Kalender</div></div>
         <div class="card-b">
-          <div style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px;">Die aktuell angezeigte Kalenderwoche wird als <strong>.ics</strong>-Datei erzeugt. Diese Datei kann in Google Kalender, Outlook oder Apple Kalender importiert werden.</div>
-          <button class="btn btn-primary" type="button" onclick="NaschCalendar.exportCurrentWeek()">⬇️ Aktuelle KW als .ics herunterladen</button>
+          <label style="margin-top:0;">Jahr</label>
+          <select id="calendarYear" style="margin-bottom:8px;"></select>
+          <button class="btn btn-primary" type="button" onclick="NaschCalendar.exportYear()">📅 Jahreskalender erstellen</button>
+          <button class="btn btn-outline" type="button" onclick="NaschCalendar.shareYear()">📤 Kalenderdatei senden</button>
+          <button class="btn btn-outline" type="button" onclick="NaschCalendar.exportCurrentWeek()">⬇️ Nur aktuelle KW</button>
           <div id="calendarExportInfo" style="font-size:10px;color:var(--muted);margin-top:8px;"></div>
         </div>
       </div>
@@ -665,11 +672,11 @@ window.FILIAL_ID = 'FIL001';
     </div>
     <div>
       <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Von</label>
-      <select id="abwVon" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></select>
+      <input type="date" id="abwVon" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
     </div>
     <div>
       <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Bis</label>
-      <select id="abwBis" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></select>
+      <input type="date" id="abwBis" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
     </div>
     <div>
       <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Typ</label>
@@ -877,21 +884,21 @@ window.FILIAL_ID = 'FIL001';
 /* js/data.js */
 // ── Mitarbeiterdaten ────────────────────────────────────────
 const USERS = {
-  '1001': { name: 'Lee Ko',              initials: 'LK', typ: 'VZ', role: 'admin',    label: 'Vollzeit · Filialleiterin', urlaubRest: 12, wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1002': { name: 'Jenny Haak',       initials: 'JH', typ: 'VZ', role: 'vertretung',label: 'Vollzeit · Vertretung',     urlaubRest: 8,  wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1003': { name: 'Filiz Bektik',        initials: 'FB', typ: 'VZ', role: 'user',     label: 'Vollzeit',                  urlaubRest: 15, wunschKont: 3, homeoffice: false, sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 13.90, urlaubAnspruch: 20, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1004': { name: 'Suba Srikunathan',    initials: 'SS', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 10, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1005': { name: 'Lina Will',           initials: 'LW', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 6,  wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1006': { name: 'Aneta Michalska',     initials: 'AM', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 9,  wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1007': { name: 'Leon Neubauer',       initials: 'LN', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 14, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1008': { name: 'Liubov Ovcharenko',   initials: 'LO', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: 11, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: 12, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1009': { name: 'Robin Berkenheide',   initials: 'RB', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1010': { name: 'Zaira Jara',          initials: 'ZJ', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, azubi: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1011': { name: 'Tissa Rajan',         initials: 'TR', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1012': { name: 'Assol Ovcharenko',    initials: 'AO', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1013': { name: 'Carina Botkin',       initials: 'CB', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1014': { name: 'Luisa Hosch',         initials: 'LH', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
-  '1015': { name: 'Altmas Khan',         initials: 'AK', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: 0,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: 8, urlaubGenommen: 0, urlaubVorjahr: 0 },
+  '1001': { name: 'Lee Ko',              initials: 'LK', typ: 'VZ', role: 'admin',    label: 'Vollzeit · Filialleiterin', urlaubRest: null, wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1002': { name: 'Jenny Haak',       initials: 'JH', typ: 'VZ', role: 'vertretung',label: 'Vollzeit · Vertretung',     urlaubRest: null,  wunschKont: 3, homeoffice: true,  sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 18.50, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1003': { name: 'Filiz Bektik',        initials: 'FB', typ: 'VZ', role: 'user',     label: 'Vollzeit',                  urlaubRest: null, wunschKont: 3, homeoffice: false, sollStundenMonat: 160, arbeitstageWoche: 5, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1004': { name: 'Suba Srikunathan',    initials: 'SS', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: null, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1005': { name: 'Lina Will',           initials: 'LW', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: null,  wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1006': { name: 'Aneta Michalska',     initials: 'AM', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: null,  wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1007': { name: 'Leon Neubauer',       initials: 'LN', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: null, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1008': { name: 'Liubov Ovcharenko',   initials: 'LO', typ: 'TZ', role: 'user',     label: 'Teilzeit',                  urlaubRest: null, wunschKont: 2, homeoffice: false, sollStundenMonat: 80, arbeitstageWoche: 3, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1009': { name: 'Robin Berkenheide',   initials: 'RB', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1010': { name: 'Zaira Jara',          initials: 'ZJ', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, azubi: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1011': { name: 'Tissa Rajan',         initials: 'TR', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1012': { name: 'Assol Ovcharenko',    initials: 'AO', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1013': { name: 'Carina Botkin',       initials: 'CB', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1014': { name: 'Luisa Hosch',         initials: 'LH', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
+  '1015': { name: 'Altmas Khan',         initials: 'AK', typ: 'AH', role: 'user',     label: 'Aushilfe',                  urlaubRest: null,  wunschKont: 1, homeoffice: false, arbeitstageWoche: 2, stundenlohn: 13.90, urlaubAnspruch: null, urlaubGenommen: null, urlaubVorjahr: null, urlaubConfirmedYear: null },
 };
 
 // PINs werden in Produktion aus Firebase geladen
@@ -1001,6 +1008,13 @@ const FirestoreStore = (() => {
                 if(USERS[uid]){
                   // Rolle niemals aus Firebase überschreiben (ist im Code festgelegt)
                   const {role:_r, ...rest} = u;
+                  // v28.14: alte/ungeprüfte Urlaubswerte nicht mehr als echte Daten übernehmen.
+                  const _vacYear = new Date().getFullYear();
+                  if(Number(rest.urlaubConfirmedYear)!==_vacYear){
+                    delete rest.urlaubRest; delete rest.urlaubAnspruch;
+                    delete rest.urlaubVorjahr; delete rest.urlaubGenommen;
+                    rest.urlaubConfirmedYear=null;
+                  }
                   Object.assign(USERS[uid], rest);
                 } else USERS[uid] = u;
               });
@@ -1999,7 +2013,7 @@ function adminCreateEmployee(){
   if((typeof BLOCKED_PINS!=='undefined'&&BLOCKED_PINS.includes(pin)) || (typeof BLOCKED!=='undefined'&&BLOCKED.includes(pin))){ alert('Diese PIN ist nicht erlaubt. Bitte eine andere 4-stellige PIN wählen.'); return; }
   const uid=adminNextEmployeeId();
   const typeLabel=typ==='VZ'?'Vollzeit':typ==='AH'?'Aushilfe':'Teilzeit';
-  USERS[uid]={name,initials:adminInitials(name),typ,role,label:role==='vertretung'?`${typeLabel} · Vertretung`:typeLabel,urlaubRest:0,homeoffice:false,sandboxCreated:true};
+  USERS[uid]={name,initials:adminInitials(name),typ,role,label:role==='vertretung'?`${typeLabel} · Vertretung`:typeLabel,urlaubRest:null,urlaubAnspruch:null,urlaubVorjahr:null,urlaubGenommen:null,urlaubConfirmedYear:null,homeoffice:false,sandboxCreated:true};
   PINS[uid]=pin;
   PLAN[uid]=Array.from({length:7},()=>({t:'-',z:'',r:''}));
   if(typeof SandboxStore!=='undefined'){ SandboxStore.saveEmployee(uid); SandboxStore.savePins(); SandboxStore.savePlan(); }
@@ -2517,12 +2531,12 @@ function _doStartApp(uid){
   document.getElementById('profAv').textContent=u.initials;
   document.getElementById('profName').textContent=u.name;
   document.getElementById('profMeta').textContent=u.label+(typeof NaschTempDeputy!=='undefined'&&NaschTempDeputy.is(uid)?' · Temporäre Vertretung':'');
-  document.getElementById('profUrlaub').textContent=u.urlaubRest||0;
+  document.getElementById('profUrlaub').textContent=(u.urlaubRest===null||u.urlaubRest===undefined)?'–':String(u.urlaubRest).replace('.',',');
   document.getElementById('stzSoll').textContent=u.sollStundenMonat?u.sollStundenMonat+'h':'–';
   document.getElementById('signedName').textContent=u.name;
   // Wunschfrei Anspruch
-  document.getElementById('urlAnsp').textContent=u.typ==='VZ'?25:u.typ==='TZ'?20:0;
-  document.getElementById('urlRest').textContent=u.urlaubRest||0;
+  document.getElementById('urlAnsp').textContent=(u.urlaubAnspruch===null||u.urlaubAnspruch===undefined)?'–':String(u.urlaubAnspruch).replace('.',',');
+  document.getElementById('urlRest').textContent=(u.urlaubRest===null||u.urlaubRest===undefined)?'–':String(u.urlaubRest).replace('.',',');
 
   // Benutzerabhängige Sichtbarkeit bei jedem Login sauber neu setzen
   const isAdmin=isAdminOrDeputy(uid);
@@ -3135,43 +3149,114 @@ function setAbwTyp(t){
     btn.style.color=active?'#fff':'var(--text)';
   });
 }
+function _abwISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _abwDate(v){
+  const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12,0,0,0):null;
+}
+function _abwMondayKey(d){
+  const x=new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);
+  const day=x.getDay();x.setDate(x.getDate()+(day===0?-6:1-day));
+  return _abwISO(x);
+}
+function _abwDayIndex(d){const x=d.getDay();return x===0?6:x-1;}
+function _abwClone(o){return JSON.parse(JSON.stringify(o||{}));}
+function _abwEmpty(){return {t:'-',z:'',r:[]};}
 function buildAbwPanel(){
-  // Mitarbeiter-Dropdown füllen
   const sel=document.getElementById('abwMA');
   if(!sel) return;
-  const emps=(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
-  emps.sort((a,b)=>a[1].name.localeCompare(b[1].name,'de'));
+  // Die festgelegte Mitarbeiter-Reihenfolge beibehalten; nicht erneut alphabetisch sortieren.
+  const emps=(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS))
+    .filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office');
+  const current=sel.value;
   sel.innerHTML=emps.map(([uid,u])=>`<option value="${uid}">${u.name}</option>`).join('');
-  // Tage-Dropdowns füllen (Mo–So der aktuellen Woche)
-  const mon=getMonday(AppState.weekOffset||0);
-  const vonSel=document.getElementById('abwVon');
-  const bisSel=document.getElementById('abwBis');
-  if(!vonSel||!bisSel) return;
-  const opts=Array.from({length:7},(_,i)=>{
-    const d=new Date(mon);d.setDate(mon.getDate()+i);
-    const label=DAYS[i]+' '+formatDate(d);
-    return `<option value="${i}">${label}</option>`;
-  }).join('');
-  vonSel.innerHTML=opts; bisSel.innerHTML=opts;
-  // Standard: So=6 für Bis
-  bisSel.value='6';
+  if(current&&USERS[current])sel.value=current;
+
+  // Datumswahl ist nicht mehr an die angezeigte KW gebunden.
+  // Standard bleibt die aktuell angezeigte Woche, kann aber auf jedes Datum geändert werden.
+  const mon=getMonday(AppState.weekOffset||0),sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const von=document.getElementById('abwVon'),bis=document.getElementById('abwBis');
+  if(von){von.removeAttribute('min');von.removeAttribute('max');if(!von.value)von.value=_abwISO(mon);}
+  if(bis){bis.removeAttribute('min');bis.removeAttribute('max');if(!bis.value)bis.value=_abwISO(sun);}
+  const panel=document.getElementById('abwesenheitsPanel');
+  if(panel&&!document.getElementById('abwYearHint')){
+    const h=document.createElement('div');h.id='abwYearHint';
+    h.style.cssText='font-size:10px;color:var(--muted);margin-top:7px;line-height:1.35;';
+    h.textContent='Datum frei wählbar – nicht auf die angezeigte Kalenderwoche begrenzt. Urlaub/Wunschfrei wird in den betroffenen Kalenderwochen als Entwurf gespeichert und nach Veröffentlichung für Mitarbeiter sichtbar.';
+    panel.appendChild(h);
+  }
   setAbwTyp(_abwTyp);
 }
-function doAbwesenheit(){
+async function doAbwesenheit(){
   const uid=document.getElementById('abwMA')?.value;
-  const von=parseInt(document.getElementById('abwVon')?.value??'0');
-  const bis=parseInt(document.getElementById('abwBis')?.value??'6');
+  const vonStr=document.getElementById('abwVon')?.value||'';
+  const bisStr=document.getElementById('abwBis')?.value||vonStr;
   const msg=document.getElementById('abwMsg');
   if(!uid||!USERS[uid]){if(msg)msg.textContent='❌ Mitarbeiter fehlt';return;}
-  if(von>bis){if(msg)msg.textContent='❌ "Von" muss vor "Bis" liegen';return;}
-  if(!Array.isArray(PLAN[uid])) PLAN[uid]=Array.from({length:7},()=>({t:'-',z:'',r:[]}));
-  for(let i=von;i<=bis;i++) PLAN[uid][i]={t:_abwTyp,z:'',r:[]};
-  // Im WeekPlanStore persistieren
-  try{if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore.persistCurrent)WeekPlanStore.persistCurrent();}catch(_){}
-  buildAdminPlan();
-  const labels={'U':'Urlaub','WF':'Wunschfrei','K':'Krank'};
-  if(msg)msg.textContent='✅ '+labels[_abwTyp]+' für '+USERS[uid].name+' (Tag '+(von+1)+'–'+(bis+1)+') eingetragen';
-  setTimeout(()=>{if(msg)msg.textContent='';},3000);
+  const von=_abwDate(vonStr),bis=_abwDate(bisStr);
+  if(!von||!bis){if(msg)msg.textContent='❌ Bitte Von- und Bis-Datum wählen';return;}
+  if(bis<von){if(msg)msg.textContent='❌ „Von“ muss vor „Bis“ liegen';return;}
+  const days=Math.round((bis-von)/86400000)+1;
+  if(days>366){if(msg)msg.textContent='❌ Maximal 366 Tage pro Eingabe';return;}
+  if(typeof firebase==='undefined'||!firebase.firestore){if(msg)msg.textContent='❌ Firebase ist nicht verfügbar';return;}
+
+  const labels={U:'Urlaub',WF:'Wunschfrei',K:'Krank'};
+  const requestTypes={U:'urlaub',WF:'wunschfrei',K:'krank'};
+  const groups=new Map();
+  for(let d=new Date(von);d<=bis;d.setDate(d.getDate()+1)){
+    const copy=new Date(d),key=_abwMondayKey(copy),idx=_abwDayIndex(copy);
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(idx);
+  }
+
+  if(msg)msg.textContent='☁️ Speichere '+labels[_abwTyp]+' …';
+  const btn=document.querySelector('#abwesenheitsPanel button[onclick="doAbwesenheit()"]');
+  if(btn)btn.disabled=true;
+  try{
+    const db=firebase.firestore(),fid=window.FILIAL_ID||'FIL001';
+    let currentKey='';try{currentKey=window.CloudWeekMigration?.key?.(AppState.weekOffset)||_abwMondayKey(getMonday(AppState.weekOffset||0));}catch(_){currentKey=_abwMondayKey(getMonday(AppState.weekOffset||0));}
+    let currentPlan=null;
+    for(const [key,idxs] of groups.entries()){
+      const ref=db.collection('nasch').doc(fid).collection('plan').doc(key);
+      const snap=await ref.get(),data=snap.exists?(snap.data()||{}):{};
+      let plan;
+      if(key===currentKey) plan=_abwClone(PLAN);
+      else plan=_abwClone(data.draftPlan||data.publishedPlan||data.plan||{});
+      if(!Array.isArray(plan[uid]))plan[uid]=Array.from({length:7},_abwEmpty);
+      while(plan[uid].length<7)plan[uid].push(_abwEmpty());
+      idxs.forEach(i=>{plan[uid][i]={t:_abwTyp,z:labels[_abwTyp],r:[],autoSource:requestTypes[_abwTyp],manual:false};});
+      await ref.set({
+        draftPlan:plan,
+        draftUpdatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        draftUpdatedBy:AppState.currentUser?.name||'Filialleitung',
+        version:data.version||1
+      },{merge:true});
+      if(key===currentKey)currentPlan=plan;
+    }
+
+    // Schnelleingabe durch die Filialleitung gilt als bereits genehmigte Abwesenheit.
+    // Dadurch bleibt sie auch beim späteren Laden der betroffenen KW erhalten.
+    try{
+      SandboxStore?.addRequest?.(requestTypes[_abwTyp],uid,{
+        von:vonStr,bis:bisStr,schicht:'Ganzer Tag',
+        hinweis:'Schnelleingabe Filialleitung'
+      },'genehmigt');
+    }catch(e){console.warn('Schnelleingabe Request:',e);}
+
+    if(currentPlan){
+      Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,_abwClone(currentPlan));
+      try{WeekPlanStore?.persistCurrent?.();}catch(_){}
+      try{buildAdminPlan();renderPlan();}catch(_){}
+    }
+    const range=vonStr===bisStr?von.toLocaleDateString('de-DE'):von.toLocaleDateString('de-DE')+'–'+bis.toLocaleDateString('de-DE');
+    if(msg)msg.textContent=`✅ ${labels[_abwTyp]} für ${USERS[uid].name}: ${range} · ${groups.size} KW als Entwurf gespeichert`;
+    showToast?.(`✓ ${labels[_abwTyp]} gespeichert`);
+  }catch(e){
+    console.error('Schnelleingabe Abwesenheit:',e);
+    if(msg)msg.textContent='❌ Speichern fehlgeschlagen: '+(e.code||e.message||e);
+  }finally{if(btn)btn.disabled=false;}
 }
 function toggleAbwPanel(){
   const p=document.getElementById('abwesenheitsPanel');
@@ -5544,6 +5629,7 @@ window.NASCH_SANDBOX_VERSION='V19';
     const pin=String(document.getElementById('sysAdminPin')?.value||'');const err=document.getElementById('sysAdminErr');
     if(pin!=='8808'){if(err)err.textContent='PIN nicht korrekt.';return;}
     systemAdminUnlocked=true;if(err)err.textContent='';document.getElementById('sysAdminLogin').style.display='none';document.getElementById('sysAdminPanel').style.display='block';
+    setTimeout(()=>{try{window.renderCentralAppQr?.();}catch(e){console.warn('Central QR:',e)}},0);
   }
   function activateDraftBranch(){
     if(!systemAdminUnlocked)return;
@@ -5560,7 +5646,7 @@ window.NASCH_SANDBOX_VERSION='V19';
   }
 
   // API
-  window.BranchSandbox={meta:()=>deep(meta),active:activeBranch,branch,accessBranches,workerIn,canAccess,switchBranch,loginBranchChanged,updateBranch,setHome,setStaff,addBranch,renderBranchesPage,renderOfficePage,isCentral,isOffice,isBranchActive,activateExistingBranch,logoTap,openSystemAdmin,closeSystemAdmin,systemAdminLogin,activateDraftBranch};
+  window.BranchSandbox={meta:()=>deep(meta),active:activeBranch,branch,accessBranches,workerIn,canAccess,switchBranch,loginBranchChanged,updateBranch,setHome,setStaff,addBranch,renderBranchesPage,renderOfficePage,isCentral,isOffice,isBranchActive,activateExistingBranch,logoTap,openSystemAdmin,closeSystemAdmin,systemAdminLogin,activateDraftBranch,isSystemAdminUnlocked:()=>systemAdminUnlocked};
 
   // Init after all legacy scripts.
   if(FIXED_BRANCH)localStorage.setItem(ACTIVE_KEY,FIXED_BRANCH);
@@ -5573,7 +5659,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 <!-- v28.8: Service Worker wird einmal zentral registriert. -->
 
 <script id="nasch-v2811-time-store">
-/* NASCH v28.11 · echte Arbeitszeiterfassung/Korrektur über Firestore */
+/* NASCH v28.14 · echte Arbeitszeiterfassung/Korrektur über Firestore */
 (()=>{
   const clone=o=>JSON.parse(JSON.stringify(o));
   const branchId=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -5634,6 +5720,1255 @@ window.NASCH_SANDBOX_VERSION='V19';
 })();
 </script>
 
+<script id="nasch-local-qr">
+/* Local QR generator. QRCode algorithm Copyright (c) 2009 Kazuhiko Arase, MIT licensed. */
+(()=>{const __m={"QRMode":function(module,exports,__r){
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+},"QR8bitByte":function(module,exports,__r){
+var QRMode = __r("QRMode");
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+},"QRBitBuffer":function(module,exports,__r){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+},"QRErrorCorrectLevel":function(module,exports,__r){
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+},"QRMaskPattern":function(module,exports,__r){
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+},"QRMath":function(module,exports,__r){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+},"QRPolynomial":function(module,exports,__r){
+var QRMath = __r("QRMath");
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+},"QRRSBlock":function(module,exports,__r){
+var QRErrorCorrectLevel = __r("QRErrorCorrectLevel");
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+},"QRUtil":function(module,exports,__r){
+var QRMode = __r("QRMode");
+var QRPolynomial = __r("QRPolynomial");
+var QRMath = __r("QRMath");
+var QRMaskPattern = __r("QRMaskPattern");
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+},"index":function(module,exports,__r){
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = __r("QR8bitByte");
+var QRUtil = __r("QRUtil");
+var QRPolynomial = __r("QRPolynomial");
+var QRRSBlock = __r("QRRSBlock");
+var QRBitBuffer = __r("QRBitBuffer");
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+}},__c={};function __r(id){if(__c[id])return __c[id].exports;if(!__m[id])throw new Error('QR module '+id+' fehlt');const module={exports:{}};__c[id]=module;__m[id](module,module.exports,__r);return module.exports;}const QRCode=__r('index'),EC=__r('QRErrorCorrectLevel');function matrix(text){const q=new QRCode(-1,EC.M);q.addData(String(text));q.make();return q;}function dataURL(text,size=420){const q=matrix(text),n=q.getModuleCount(),quiet=4,total=n+quiet*2,scale=Math.max(1,Math.floor(Number(size||420)/total)),px=total*scale,c=document.createElement('canvas');c.width=px;c.height=px;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,px,px);x.fillStyle='#000';for(let r=0;r<n;r++)for(let col=0;col<n;col++)if(q.isDark(r,col))x.fillRect((col+quiet)*scale,(r+quiet)*scale,scale,scale);return c.toDataURL('image/png');}function blob(text,size=700){return fetch(dataURL(text,size)).then(r=>r.blob());}window.NaschQR={matrix,dataURL,blob};})();
+</script>
 <script>
 /* NASCH V25.4 · automatische Pausen + Firebase-Sichtbarkeit + Admin-QR */
 (() => {
@@ -5730,86 +7065,55 @@ window.NASCH_SANDBOX_VERSION='V19';
   setTimeout(applyFirebaseVisibility,0);
   const fbBanner=document.getElementById('fbStatusBanner');if(fbBanner){new MutationObserver(()=>{if(!firebasePrivileged()&&fbBanner.style.display!=='none')fbBanner.style.setProperty('display','none','important');}).observe(fbBanner,{attributes:true,attributeFilter:['style']});}
 
-  // ── APP-QR: ausschließlich Leitung / Personalbüro ─────────
-  const qrEmailsKey='nasch-v254-qr-emails';
-  function loadQrEmails(){try{return JSON.parse(localStorage.getItem(qrEmailsKey)||'{}')||{};}catch(_){return {};}}
-  function saveQrEmail(bid,val){const x=loadQrEmails();x[bid]=String(val||'').trim();try{localStorage.setItem(qrEmailsKey,JSON.stringify(x));}catch(_){}}
-  function isQrAdmin(){const uid=window.AppState?.currentUserId,u=uid&&window.USERS?.[uid];return !!u&&(u.role==='admin'||window.BranchSandbox?.isOffice?.(uid)===true||window.BranchSandbox?.isCentral?.(uid)===true);}
-  function branchObj254(bid){try{return window.BranchSandbox?.branch?.(bid)||{id:bid,name:bid,state:''};}catch(_){return {id:bid,name:bid,state:''};}}
-  function currentBid254(){try{return window.BranchSandbox?.active?.()||window.PublishStore?.branchKey?.()||window.FILIAL_ID||'FIL001';}catch(_){return window.FILIAL_ID||'FIL001';}}
-  function appLink254(bid){try{return window.PublishStore?.branchLink?.(bid)||location.origin+location.pathname;}catch(_){return location.origin+location.pathname;}}
-  function qrImage254(link,size=420){return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=12&data=${encodeURIComponent(link)}`;}
-  function qrAccessibleBranches(){
-    const uid=window.AppState?.currentUserId;if(window.BranchSandbox?.isOffice?.(uid)||window.BranchSandbox?.isCentral?.(uid)){try{return Object.values(window.BranchSandbox.meta()?.branches||{}).filter(b=>b&&b.active!==false);}catch(_){}}
-    return [branchObj254(currentBid254())];
+  // ── APP-QR v28.14: genau EIN QR-Code zur Emsdetten-App, nur Zentral/System-Admin ──
+  const EMSDETTEN_APP_LINK='https://nasch-emsdetten.github.io/emsdetten.html';
+  function centralQrAllowed(){
+    try{
+      return window.BranchSandbox?.isSystemAdminUnlocked?.()===true ||
+             window.BranchSandbox?.isCentral?.(window.AppState?.currentUserId)===true;
+    }catch(_){return false;}
   }
-  function injectQrPage(){
-    const wrap=document.querySelector('.page-wrap');if(wrap&&!document.getElementById('pgAdminQr')){const p=document.createElement('div');p.id='pgAdminQr';p.className='page';p.innerHTML='<div class="back" onclick="goTo(\'pgAdmin\',\'Admin\')">‹ Zurück</div><div class="banner binfo"><span>📲</span><span>Nur Leitung und Personalbüro: QR-Code für den Mitarbeiter-App-Zugang der jeweiligen Filiale erstellen und weitergeben.</span></div><div id="v254QrContent"></div>';wrap.appendChild(p);}
-    const menu=document.querySelector('#pgAdmin .menu-list');if(menu&&!document.getElementById('adminQrMenu')){const row=document.createElement('div');row.className='mi';row.id='adminQrMenu';row.onclick=()=>goTo('pgAdminQr','QR Code zur App');row.innerHTML='<div class="mi-icon" style="background:#E1F5EE;">📲</div><span class="mi-lbl">QR Code zur App</span><span class="mi-arr">›</span>';menu.appendChild(row);}
+  function qrImage254(link,size=420){try{return window.NaschQR?.dataURL?.(link,size)||'';}catch(e){console.warn('QR:',e);return'';}}
+  function safeFile(s){return String(s||'NASCH').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'')||'NASCH';}
+  function downloadCentralQr(){
+    if(!centralQrAllowed())return;
+    const a=document.createElement('a');a.href=qrImage254(EMSDETTEN_APP_LINK,900);a.download='NASCH-Emsdetten-QR.png';document.body.appendChild(a);a.click();a.remove();
   }
-  function officeQrCard(){
-    const box=document.getElementById('v20OfficeContent');if(!box||!window.BranchSandbox?.isOffice?.(AppState.currentUserId))return;if(document.getElementById('officeQrCard'))return;
-    const c=document.createElement('div');c.id='officeQrCard';c.className='card';c.innerHTML='<div class="card-h"><div class="card-t">📲 Mitarbeiter-App verteilen</div></div><div class="card-b"><div style="font-size:11px;color:var(--muted);">QR-Code der ausgewählten Filiale erstellen und an die Filialleitung weiterleiten.</div><button class="btn btn-outline" type="button" onclick="goTo(\'pgAdminQr\',\'QR Code zur App\')">QR Code zur App erzeugen</button></div>';box.appendChild(c);
+  async function shareCentralQr(){
+    if(!centralQrAllowed())return;
+    try{
+      const blob=await window.NaschQR.blob(EMSDETTEN_APP_LINK,900),file=new File([blob],'NASCH-Emsdetten-QR.png',{type:'image/png'});
+      if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({title:'NASCH App Emsdetten',text:EMSDETTEN_APP_LINK,files:[file]});return;}
+    }catch(e){if(e?.name==='AbortError')return;console.warn('QR teilen:',e)}
+    if(navigator.share){try{await navigator.share({title:'NASCH App Emsdetten',text:EMSDETTEN_APP_LINK,url:EMSDETTEN_APP_LINK});return;}catch(e){if(e?.name==='AbortError')return;}}
+    downloadCentralQr();showToast?.('QR gespeichert');
   }
-  function renderQrPage(){
-    // Mitarbeiter-QR ins Admin-QR Tab einbauen
-  const origQrPage=window.renderAdminQr||renderQrPage;
-  window.renderAdminQr=function(){
-    origQrPage();
-    if(!isQrAdmin())return;
-    const box=document.getElementById('v254QrContent');if(!box)return;
-    if(document.getElementById('v254MaQrSection'))return;
-    const sec=document.createElement('div');sec.id='v254MaQrSection';
-    sec.innerHTML='<div class="card" style="margin-top:12px;"><div class="card-h"><div class="card-t">👤 QR pro Mitarbeiter</div></div><div class="card-b"><p style="font-size:12px;color:var(--muted);">Individuelle QR-Codes zur App-Verteilung – der Name des Mitarbeiters wird beim Öffnen vorausgewählt.</p><select id="v254MaSelect" onchange="renderMitarbeiterQr(this.value)" style="margin-bottom:8px;"><option value="">Mitarbeiter wählen …</option>'+(Object.entries(window.USERS||{}).filter(([,u])=>u&&u.name&&!['BU','SYS'].includes(u.typ||'')&&u.role!=='office').map(([uid,u])=>`<option value="${uid}">${u.name}</option>`).join(''))+'</select><div id="v254MaQrBox"></div></div></div>';
-    box.appendChild(sec);
+  async function copyCentralAppLink(){
+    if(!centralQrAllowed())return;
+    try{await navigator.clipboard.writeText(EMSDETTEN_APP_LINK);showToast?.('Link kopiert');}
+    catch(_){prompt('NASCH App Emsdetten',EMSDETTEN_APP_LINK);}
+  }
+  window.renderCentralAppQr=function(){
+    const box=document.getElementById('sysAdminQrBox');if(!box)return;
+    if(!centralQrAllowed()){box.innerHTML='';return;}
+    const qr=qrImage254(EMSDETTEN_APP_LINK,520);
+    box.innerHTML=`<img src="${qr}" alt="QR-Code NASCH App Emsdetten" style="width:220px;height:220px;max-width:100%;border-radius:10px;display:block;margin:0 auto 10px;">`+
+      `<a href="${EMSDETTEN_APP_LINK}" target="_blank" rel="noopener" style="display:block;font-size:11px;word-break:break-all;margin-bottom:10px;color:var(--navy);">${EMSDETTEN_APP_LINK}</a>`+
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`+
+      `<button class="btn btn-primary" type="button" onclick="shareCentralQr()">📤 Senden</button>`+
+      `<button class="btn btn-outline" type="button" onclick="downloadCentralQr()">⬇️ Speichern</button>`+
+      `<button class="btn btn-outline" type="button" onclick="copyCentralAppLink()" style="grid-column:1/-1;">🔗 Link kopieren</button>`+
+      `</div>`;
   };
-  injectQrPage();const box=document.getElementById('v254QrContent');if(!box)return;if(!isQrAdmin()){box.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Funktion ist nur für Leitung und Personalbüro verfügbar.</span></div>';return;}
-    const bs=qrAccessibleBranches(),selected=(document.getElementById('v254QrBranch')?.value)||currentBid254(),b=bs.find(x=>x.id===selected)||bs[0]||branchObj254(currentBid254()),link=appLink254(b.id),emails=loadQrEmails(),mail=emails[b.id]||'';
-    const back=document.querySelector('#pgAdminQr .back');if(back){const office=window.BranchSandbox?.isOffice?.(AppState.currentUserId)===true;back.textContent=office?'‹ Zurück zum Büro':'‹ Zurück';back.onclick=()=>office?navTo('office'):goTo('pgAdmin','Admin');}
-    box.innerHTML=`<div class="card"><div class="card-b"><label>Filiale</label><select id="v254QrBranch" onchange="renderAdminQr()">${bs.map(x=>`<option value="${esc254(x.id)}" ${x.id===b.id?'selected':''}>${esc254(x.name||x.id)}${x.state?' · '+esc254(x.state):''}</option>`).join('')}</select><div style="font-size:11px;color:var(--muted);margin-top:8px;">Filialleitung: <strong>${esc254(b.managerName||'nicht hinterlegt')}</strong></div><img class="v254-qr-img" src="${qrImage254(link)}" alt="QR-Code NASCH Mitarbeiter-App ${esc254(b.name||b.id)}"><div style="font-size:10px;color:var(--muted);word-break:break-all;text-align:center;">${esc254(link)}</div><div class="v254-qr-actions"><button class="btn btn-primary" type="button" onclick="emailAdminQr('${esc254(b.id)}')">✉️ Per E-Mail</button><button class="btn btn-outline" type="button" onclick="shareAdminQr('${esc254(b.id)}')">📤 QR teilen</button></div><button class="btn btn-outline" type="button" onclick="openAdminQrPng('${esc254(b.id)}')">🖼 QR als PNG öffnen</button></div></div><div class="banner binfo"><span>ℹ️</span><span>„QR teilen“ kann auf unterstützten Handys die PNG-Datei direkt an eine Mail-App übergeben. Falls das Gerät Dateifreigabe nicht unterstützt, öffnet „Per E-Mail“ eine vorbereitete Nachricht mit App-Link und QR-Link.</span></div>`;
-  }
-  window.renderAdminQr=renderQrPage;window.saveAdminQrEmail=saveQrEmail;
+  window.shareCentralQr=shareCentralQr;
+  window.downloadCentralQr=downloadCentralQr;
+  window.copyCentralAppLink=copyCentralAppLink;
 
-  // ── Mitarbeiter-QR: individueller QR pro Mitarbeiter ──────────────────────
+  // Alte QR-Funktionen bewusst entfernen: kein Filialleiter-, Büro-, Filialauswahl- oder Mitarbeiter-QR mehr.
+  document.getElementById('adminQrMenu')?.remove();
+  document.getElementById('officeQrCard')?.remove();
+  document.getElementById('pgAdminQr')?.remove();
 
-  window.shareWaQr=function(uid,firstName,link){
-    const msg='Hallo '+firstName+' 👋\nHier ist dein Link zur NASCH Mitarbeiter-App:\n'+link+'\n\nEinfach öffnen und auf dem Handy installieren!';
-    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
-  };
-  window.renderMitarbeiterQr=function(uid){
-    if(!isQrAdmin())return;
-    const u=window.USERS?.[uid];if(!u)return;
-    const baseLink=appLink254(currentBid254());
-    const link=baseLink+(baseLink.includes('?')?'&':'?')+'preselect='+encodeURIComponent(uid);
-    const qr=qrImage254(link,360);
-    const box=document.getElementById('v254MaQrBox');if(!box)return;
-    box.innerHTML=`<div class="card" style="margin-top:10px;"><div class="card-b" style="text-align:center;">
-      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">${esc254(u.name)}</div>
-      <img src="${qr}" style="width:180px;height:180px;border-radius:8px;">
-      <div style="font-size:10px;color:var(--muted);margin-top:4px;">QR öffnet App mit vorausgewähltem Namen</div>
-      <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;">
-        <button class="btn btn-primary" type="button" onclick="window.open('${qr}','_blank')">🖼 PNG öffnen</button>
-        <button class="btn btn-outline" type="button" onclick="navigator.share&&navigator.share({title:'NASCH App · ${esc254(u.name)}',url:'${link}'}).catch(()=>window.open('${qr}','_blank'))">📤 Teilen</button>
-        <button class="btn btn-primary" type="button" onclick="shareWaQr('${esc254(uid)}','${esc254(u.name.split(' ')[0])}','${esc254(link)}')">📱 WhatsApp</button>
-      </div>
-    </div></div>`;
-  };
-  window.openAdminQrPng=function(bid){window.open(qrImage254(appLink254(bid),700),'_blank','noopener');};
-  window.emailAdminQr=function(bid){
-    if(!isQrAdmin())return;
-    const b=branchObj254(bid),link=appLink254(bid);
-    const text=`NASCH Mitarbeiter-App ${b.name||bid}:\n${link}\n\nBitte den Link öffnen und die App auf dem Startbildschirm installieren.`;
-    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
-  };
-  window.shareAdminQr=async function(bid){
-    if(!isQrAdmin())return;const b=branchObj254(bid),link=appLink254(bid),url=qrImage254(link,700);
-    try{const res=await fetch(url);if(!res.ok)throw new Error('QR konnte nicht geladen werden');const blob=await res.blob();const file=new File([blob],`NASCH-${String(b.name||bid).replace(/[^a-z0-9_-]+/gi,'-')}-QR.png`,{type:blob.type||'image/png'});if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({title:`NASCH Mitarbeiter-App · ${b.name||bid}`,text:`Mitarbeiter-App ${b.name||bid}\n${link}`,files:[file]});return;}}catch(e){console.warn('QR share:',e);}window.emailAdminQr(bid);
-  };
-
-  injectQrPage();
-  const oldGo254=window.goTo;if(typeof oldGo254==='function'){window.goTo=function(pg,title){const r=oldGo254.apply(this,arguments);if(pg==='pgAdminQr')renderQrPage();return r;};try{goTo=window.goTo}catch(_){}}
-  const oldNav254=window.navTo;if(typeof oldNav254==='function'){window.navTo=function(key){const r=oldNav254.apply(this,arguments);if(key==='office')setTimeout(officeQrCard,0);return r;};try{navTo=window.navTo}catch(_){}}
-  const oldStart254=window.startApp;if(typeof oldStart254==='function'){window.startApp=function(){const r=oldStart254.apply(this,arguments);setTimeout(()=>{applyFirebaseVisibility();injectQrPage();if(firebasePrivileged()){const banner=document.getElementById('fbStatusBanner');if(banner&&firebase.auth?.().currentUser){banner.style.removeProperty('display');banner.style.display='flex';setTimeout(()=>{if(banner)banner.style.display='none';},2500);}}if(window.BranchSandbox?.isOffice?.(AppState.currentUserId))officeQrCard();},250);return r;};try{startApp=window.startApp}catch(_){}}
 })();
 </script>
 
@@ -6008,7 +7312,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='28.11';
+  window.NASCH_APP_VERSION='28.14';
 })();
 </script>
 
@@ -6620,72 +7924,68 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
     return e.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.NaschEmployees?.isInactive?.(uid))&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,window.BranchSandbox?.active?.()||'FIL001')));
   };
 
-  // ── Urlaub: bestehende Restwerte einmalig verlustfrei in Anspruch/Vorjahr/Genommen aufteilen ──
-  let vacState={};
-  try{vacState=JSON.parse(localStorage.getItem(VAC_KEY)||'{}')||{};}catch(_){vacState={};}
-  const saveVacLocal=()=>{try{localStorage.setItem(VAC_KEY,JSON.stringify(vacState));}catch(_){}};
+  // ── Urlaub v28.14: nur bestätigte Echtdaten; Resturlaub wird manuell eingetragen ──
+  const VAC_YEAR=new Date().getFullYear();
+  const finiteOrNull=v=>{if(v===null||v===undefined||String(v).trim()==='')return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?Math.max(0,n):null;};
   function inferVacation(uid){
-    uid=String(uid); const u=USERS?.[uid]; if(!u)return null;
-    if(vacState[uid]) return vacState[uid];
-    let anspruch=Math.max(0,num(u.urlaubAnspruch,0));
-    let vorjahr=Math.max(0,num(u.urlaubVorjahr,0));
-    let genommen=Math.max(0,num(u.urlaubGenommen,0));
-    const restRaw=Number(u.urlaubRest);
-    // Alte App hatte Restwerte, aber Genommen/Vorjahr meist 0. Diese Restwerte bleiben erhalten.
-    if(Number.isFinite(restRaw) && vorjahr===0 && genommen===0){
-      if(restRaw>anspruch) vorjahr=Math.max(0,restRaw-anspruch);
-      else genommen=Math.max(0,anspruch-restRaw);
-    }
-    vacState[uid]={anspruch,vorjahr,genommen}; saveVacLocal();
-    return vacState[uid];
+    uid=String(uid);const u=USERS?.[uid];if(!u)return null;
+    const confirmed=Number(u.urlaubConfirmedYear)===VAC_YEAR;
+    return {
+      confirmed,
+      anspruch:confirmed?finiteOrNull(u.urlaubAnspruch):null,
+      vorjahr:confirmed?finiteOrNull(u.urlaubVorjahr):null,
+      genommen:confirmed?finiteOrNull(u.urlaubGenommen):null,
+      rest:confirmed?finiteOrNull(u.urlaubRest):null
+    };
   }
   function applyVacation(uid){
-    const u=USERS?.[String(uid)],v=inferVacation(uid);if(!u||!v)return;
-    u.urlaubAnspruch=Math.max(0,num(v.anspruch,0));
-    u.urlaubVorjahr=Math.max(0,num(v.vorjahr,0));
-    u.urlaubGenommen=Math.max(0,num(v.genommen,0));
-    u.urlaubRest=Math.round((u.urlaubAnspruch+u.urlaubVorjahr-u.urlaubGenommen)*100)/100;
-  }
-  Object.keys(USERS||{}).forEach(applyVacation);
-
-  function refreshVacationDisplays(uid){
     const u=USERS?.[String(uid)];if(!u)return;
+    if(Number(u.urlaubConfirmedYear)!==VAC_YEAR){u.urlaubAnspruch=null;u.urlaubVorjahr=null;u.urlaubGenommen=null;u.urlaubRest=null;}
+  }
+  Object.keys(USERS||{}).filter(uid=>/^10\d\d$/.test(uid)).forEach(applyVacation);
+
+  function vacFmt(v){return v===null||v===undefined?'–':String(v).replace('.',',');}
+  function refreshVacationDisplays(uid){
+    const u=USERS?.[String(uid)];if(!u)return;applyVacation(uid);const v=inferVacation(uid);
     if(String(AppState?.currentUserId||'')===String(uid)){
-      const p=document.getElementById('profUrlaub');if(p)p.textContent=String(u.urlaubRest??0).replace('.',',');
-      const a=document.getElementById('urlAnsp');if(a)a.textContent=String((num(u.urlaubAnspruch)+num(u.urlaubVorjahr))).replace('.',',');
-      const r=document.getElementById('urlRest');if(r)r.textContent=String(u.urlaubRest??0).replace('.',',');
+      const p=document.getElementById('profUrlaub');if(p)p.textContent=vacFmt(v?.rest);
+      const a=document.getElementById('urlAnsp');if(a)a.textContent=vacFmt(v?.anspruch);
+      const r=document.getElementById('urlRest');if(r)r.textContent=vacFmt(v?.rest);
     }
   }
-  window.adminVacationChange=function(uid,field,value){
-    uid=String(uid);if(!USERS?.[uid])return;
-    const v=inferVacation(uid); if(!v)return;
-    const n=Math.max(0,num(value,0));
-    if(field==='urlaubAnspruch')v.anspruch=n;
-    if(field==='urlaubVorjahr')v.vorjahr=n;
-    if(field==='urlaubGenommen')v.genommen=n;
-    vacState[uid]=v;saveVacLocal();applyVacation(uid);
-    try{SandboxStore?.saveEmployee?.(uid);}catch(_){}
-    refreshVacationDisplays(uid);
-    try{NaschAdminSettings?.buildAdminSettings?.();}catch(_){}
-    try{buildMAList?.();}catch(_){}
-    showToast?.('✓ Urlaubstage gespeichert');
+  window.saveVacationAdmin=async function(uid){
+    uid=String(uid);const u=USERS?.[uid];if(!u)return;
+    const get=id=>document.getElementById(id)?.value??'';
+    const anspruch=finiteOrNull(get('vacAnspruch-'+uid));
+    const vorjahr=finiteOrNull(get('vacVorjahr-'+uid));
+    const genommen=finiteOrNull(get('vacGenommen-'+uid));
+    const rest=finiteOrNull(get('vacRest-'+uid));
+    if(rest===null){alert('Bitte den aktuellen Resturlaub eintragen.');document.getElementById('vacRest-'+uid)?.focus();return;}
+    u.urlaubAnspruch=anspruch;u.urlaubVorjahr=vorjahr;u.urlaubGenommen=genommen;u.urlaubRest=rest;
+    u.urlaubConfirmedYear=VAC_YEAR;u.urlaubConfirmedAt=new Date().toISOString();
+    try{await Promise.resolve(SandboxStore?.saveEmployee?.(uid));}catch(e){console.warn('Urlaub speichern:',e);alert('Urlaubsdaten konnten nicht gespeichert werden.');return;}
+    refreshVacationDisplays(uid);showToast?.('✓ Urlaubsdaten gespeichert');
+    const st=document.getElementById('vacState-'+uid);if(st){st.textContent='Gespeichert für '+VAC_YEAR;st.style.color='var(--ok-t)';}
   };
+  // Kompatibilität mit älteren onchange-Aufrufen; v28.14 speichert bewusst nur über den Speichern-Button.
+  window.adminVacationChange=function(){};
   function injectVacationEditors(){
     const root=document.getElementById('adminEmployeeSettings');if(!root)return;
     const cards=[...root.children].filter(x=>x.classList?.contains('card'));
     const ents=NaschAdminSettings?.entries?.()||activeEntries();
     ents.forEach(([uid,u],i)=>{
-      const card=cards[i];if(!card||card.querySelector('.v270-vac'))return;
-      applyVacation(uid);const v=inferVacation(uid);const rest=num(u.urlaubRest,0);
+      const card=cards[i];if(!card)return;
+      card.querySelector('.v270-vac')?.remove();applyVacation(uid);const v=inferVacation(uid)||{};
+      const val=x=>x===null||x===undefined?'':String(x);
       const box=document.createElement('div');box.className='v270-vac';
-      box.innerHTML=`<div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:7px;">🏖 Urlaubstage</div>
+      box.innerHTML=`<div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:7px;">🏖 Jahresurlaub ${VAC_YEAR}</div>
         <div class="v270-vac-grid">
-          <div><label style="margin-top:0;">Anspruch aktuelles Jahr</label><input type="number" min="0" step="0.5" value="${v.anspruch}" onchange="adminVacationChange('${esc(uid)}','urlaubAnspruch',this.value)"></div>
-          <div><label style="margin-top:0;">Urlaub aus Vorjahr</label><input type="number" min="0" step="0.5" value="${v.vorjahr}" onchange="adminVacationChange('${esc(uid)}','urlaubVorjahr',this.value)"></div>
-          <div><label style="margin-top:0;">Bereits genommen</label><input type="number" min="0" step="0.5" value="${v.genommen}" onchange="adminVacationChange('${esc(uid)}','urlaubGenommen',this.value)"></div>
-          <div><label style="margin-top:0;">Rest</label><input type="text" value="${String(rest).replace('.',',')} Tage" readonly style="background:#f8fafc;font-weight:800;"></div>
+          <div><label style="margin-top:0;">Anspruch aktuelles Jahr</label><input id="vacAnspruch-${esc(uid)}" type="number" min="0" step="0.5" value="${val(v.anspruch)}" placeholder="eintragen"></div>
+          <div><label style="margin-top:0;">Rest aus Vorjahr</label><input id="vacVorjahr-${esc(uid)}" type="number" min="0" step="0.5" value="${val(v.vorjahr)}" placeholder="optional"></div>
+          <div><label style="margin-top:0;">Bereits genommen</label><input id="vacGenommen-${esc(uid)}" type="number" min="0" step="0.5" value="${val(v.genommen)}" placeholder="optional"></div>
+          <div><label style="margin-top:0;">Resturlaub aktuell *</label><input id="vacRest-${esc(uid)}" type="number" min="0" step="0.5" value="${val(v.rest)}" placeholder="Resturlaub"></div>
         </div>
-        <div class="v270-vac-rest">Rest = Anspruch aktuelles Jahr + Urlaub aus Vorjahr − bereits genommen. Alte Restwerte wurden beim ersten Öffnen übernommen.</div>`;
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;"><button class="btn btn-primary" type="button" style="width:auto;margin:0;padding:8px 12px;" onclick="saveVacationAdmin('${esc(uid)}')">💾 Urlaubsdaten speichern</button><span id="vacState-${esc(uid)}" style="font-size:10px;color:${v.confirmed?'var(--ok-t)':'#b45309'};">${v.confirmed?'Gespeichert für '+VAC_YEAR:'Noch nicht eingetragen'}</span></div>`;
       card.appendChild(box);
     });
   }
@@ -6945,7 +8245,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='28.11';
+  window.NASCH_APP_VERSION='28.14';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -6955,8 +8255,8 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 .v288-mod-grid{display:grid;grid-template-columns:1fr;gap:6px}.v288-mod-row{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:9px;padding:8px 9px;background:#fff}.v288-mod-label{font-size:12px;font-weight:700;flex:1}.v288-mode{width:auto;min-width:105px;padding:6px 8px;font-size:11px;font-weight:800}.v288-office-delegated{border:1px solid #facc15;background:#fffbeb}.v288-office-delegated button{width:auto;margin:0;padding:7px 9px;font-size:11px}
 </style>
 <script id="nasch-v288-fixes">
-/* NASCH v28.11 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='28.11';
+/* NASCH v28.14 · produktive Bereinigung ohne Demo-Oberflächen */
+window.NASCH_APP_VERSION='28.14';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks']
@@ -7094,8 +8394,8 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 .real-notif{display:flex;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);align-items:flex-start}.real-notif:last-child{border-bottom:0}.real-notif .ico{width:34px;height:34px;border-radius:9px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.real-notif .title{font-size:12px;font-weight:800}.real-notif .body{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}.real-notif .status{font-size:9px;font-weight:800;border-radius:999px;padding:3px 7px;white-space:nowrap}
 </style>
 <script id="nasch-v2811-production-cleanup">
-/* NASCH v28.11 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='28.11';
+/* NASCH v28.14 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
+window.NASCH_APP_VERSION='28.14';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -7107,12 +8407,22 @@ window.NASCH_APP_VERSION='28.11';
   const localStamp=(d,hhmm)=>{const m=String(hhmm||'00:00').match(/\d{1,2}:\d{2}/),parts=(m?m[0]:'00:00').split(':').map(Number);return `${dayKey(d)}T${pad(parts[0])}${pad(parts[1])}00`;};
   const icsEsc=s=>String(s??'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
   function rangesForShift(s){if(!s||!s.t||s.t==='-')return[];if(s.t==='TS'){return[s.z1,s.z2].filter(Boolean).map(v=>String(v).match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/)).filter(Boolean).map(m=>[m[1],m[2]])}if(s.start&&s.end)return[[s.start,s.end]];const m=String(s.z||'').match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);return m?[[m[1],m[2]]]:[];}
-  function exportCurrentWeek(){const uid=String(AppState?.currentUserId||'');if(!uid||!USERS?.[uid]){showToast?.('❌ Kein Mitarbeiter angemeldet');return}const mon=getMonday(AppState.weekOffset||0),days=PLAN?.[uid]||[],events=[],labels={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};days.forEach((s,i)=>{if(!s||!s.t||s.t==='-')return;const d=new Date(mon);d.setDate(mon.getDate()+i);const ranges=rangesForShift(s),summary=`NASCH Emsdetten – ${labels[s.t]||s.t}`,desc=[s.z,Array.isArray(s.r)?s.r.join(', '):s.r].filter(Boolean).join(' · ');if(ranges.length){ranges.forEach(([a,b],idx)=>{let endDate=d;if(String(b)<=String(a))endDate=addDay(d);events.push(['BEGIN:VEVENT',`UID:${uid}-${dayKey(d)}-${i}-${idx}@nasch-emsdetten`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}`,`DTSTART;TZID=Europe/Berlin:${localStamp(d,a)}`,`DTEND;TZID=Europe/Berlin:${localStamp(endDate,b)}`,`SUMMARY:${icsEsc(summary)}`,`DESCRIPTION:${icsEsc(desc)}`,'END:VEVENT'].join('\r\n'))})}else events.push(['BEGIN:VEVENT',`UID:${uid}-${dayKey(d)}-${i}@nasch-emsdetten`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}`,`DTSTART;VALUE=DATE:${dayKey(d)}`,`DTEND;VALUE=DATE:${dayKey(addDay(d))}`,`SUMMARY:${icsEsc(summary)}`,`DESCRIPTION:${icsEsc(desc)}`,'END:VEVENT'].join('\r\n'))});if(!events.length){showToast?.('ℹ️ Für diese KW gibt es keine Einträge');return}const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//NASCH//Mitarbeiter-App//DE','CALSCALE:GREGORIAN','METHOD:PUBLISH',...events,'END:VCALENDAR'].join('\r\n'),blob=new Blob([ics],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`NASCH-${uid}-KW${getKW(mon)}.ics`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);const info=document.getElementById('calendarExportInfo');if(info)info.textContent=`${events.length} Kalendereintrag${events.length===1?'':'e'} für KW ${getKW(mon)} erzeugt.`;}
-  window.NaschCalendar={exportCurrentWeek};
+  const calLabels={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
+  function shiftEvents(uid,mon,days,yearFilter=null){const events=[];for(let i=0;i<7;i++){const s=days?.[i];if(!s||!s.t||s.t==='-')continue;const d=new Date(mon);d.setDate(mon.getDate()+i);if(yearFilter!==null&&d.getFullYear()!==yearFilter)continue;const ranges=rangesForShift(s),summary=`NASCH Emsdetten – ${calLabels[s.t]||s.t}`,desc=[s.z,Array.isArray(s.r)?s.r.join(', '):s.r].filter(Boolean).join(' · '),stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');if(ranges.length){ranges.forEach(([a,b],idx)=>{let endDate=d;if(String(b)<=String(a))endDate=addDay(d);events.push(['BEGIN:VEVENT',`UID:nasch-${uid}-${dayKey(d)}-${idx}@emsdetten`,`DTSTAMP:${stamp}`,`DTSTART;TZID=Europe/Berlin:${localStamp(d,a)}`,`DTEND;TZID=Europe/Berlin:${localStamp(endDate,b)}`,`SUMMARY:${icsEsc(summary)}`,`DESCRIPTION:${icsEsc(desc)}`,'END:VEVENT'].join('\r\n'))})}else events.push(['BEGIN:VEVENT',`UID:nasch-${uid}-${dayKey(d)}-all@emsdetten`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${dayKey(d)}`,`DTEND;VALUE=DATE:${dayKey(addDay(d))}`,`SUMMARY:${icsEsc(summary)}`,`DESCRIPTION:${icsEsc(desc)}`,'END:VEVENT'].join('\r\n'))}return events;}
+  function icsFile(events){return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//NASCH//Mitarbeiter-App//DE','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:NASCH Emsdetten',...events,'END:VCALENDAR'].join('\r\n');}
+  function downloadIcs(content,name){const blob=new Blob([content],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);return blob;}
+  function setCalInfo(t,err=false){const x=document.getElementById('calendarExportInfo');if(x){x.textContent=t||'';x.style.color=err?'#b91c1c':'var(--muted)';}}
+  function setupYearSelect(){const s=document.getElementById('calendarYear');if(!s)return;const y=new Date().getFullYear(),old=s.value;s.innerHTML=[y-1,y,y+1].map(v=>`<option value="${v}" ${String(v)===String(old||y)?'selected':''}>${v}</option>`).join('');}
+  async function yearEvents(year){const uid=String(AppState?.currentUserId||'');if(!uid||!USERS?.[uid])throw new Error('Kein Mitarbeiter angemeldet');if(typeof firebase==='undefined'||!firebase.firestore)throw new Error('Firebase ist nicht verfügbar');const snap=await firebase.firestore().collection('nasch').doc(window.FILIAL_ID||'FIL001').collection('plan').get(),events=[];snap.forEach(doc=>{const key=doc.id;if(!/^\d{4}-\d{2}-\d{2}$/.test(key))return;const mon=new Date(key+'T12:00:00'),d=doc.data()||{},plan=d.publishedPlan||(d.published===true?d.plan:null);if(!plan||!Array.isArray(plan[uid]))return;events.push(...shiftEvents(uid,mon,plan[uid],year));});return events;}
+  function exportCurrentWeek(){const uid=String(AppState?.currentUserId||'');if(!uid||!USERS?.[uid]){showToast?.('❌ Kein Mitarbeiter angemeldet');return}const mon=getMonday(AppState.weekOffset||0),events=shiftEvents(uid,mon,PLAN?.[uid]||[]);if(!events.length){setCalInfo('Für diese KW gibt es keine Einträge.');return}downloadIcs(icsFile(events),`NASCH-${uid}-KW${getKW(mon)}.ics`);setCalInfo(`${events.length} Kalendereinträge für KW ${getKW(mon)} erstellt.`);}
+  async function buildYear(){setupYearSelect();const year=Number(document.getElementById('calendarYear')?.value||new Date().getFullYear());setCalInfo('Kalender wird aus veröffentlichten Wochenplänen geladen …');const events=await yearEvents(year);if(!events.length){setCalInfo(`Keine veröffentlichten Kalendereinträge für ${year}.`);return null}return{year,events,content:icsFile(events),name:`NASCH-${AppState.currentUserId}-${year}.ics`};}
+  async function exportYear(){try{const x=await buildYear();if(!x)return;downloadIcs(x.content,x.name);setCalInfo(`${x.events.length} Kalendereinträge für ${x.year} erstellt.`);}catch(e){console.warn('Kalender:',e);setCalInfo('Kalender konnte nicht geladen werden: '+(e.code||e.message||e),true);}}
+  async function shareYear(){try{const x=await buildYear();if(!x)return;const file=new File([x.content],x.name,{type:'text/calendar;charset=utf-8'});if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({title:`NASCH Kalender ${x.year}`,files:[file]});setCalInfo(`Kalenderdatei ${x.year} zum Senden geöffnet.`);return}downloadIcs(x.content,x.name);setCalInfo('Kalenderdatei gespeichert – bitte in der Kalender-App importieren.');}catch(e){if(e?.name==='AbortError')return;console.warn('Kalender teilen:',e);setCalInfo('Kalender konnte nicht gesendet werden.',true);}}
+  window.NaschCalendar={exportCurrentWeek,exportYear,shareYear,setupYearSelect};
   window.buildStzList=function(){const c=document.getElementById('stzList');if(!c)return;const entries=(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{})).filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||''));let signed=0,html='<div class="card">';entries.forEach(([uid,u])=>{const ok=!!window.SandboxStore?.getSignature?.(uid);if(ok)signed++;html+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);"><div style="width:26px;height:26px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${esc(u.initials||'')}</div><div style="flex:1;font-size:12px;font-weight:600;">${esc(u.name)}</div><span style="font-size:10px;border-radius:4px;padding:2px 7px;font-weight:600;background:${ok?'var(--ok)':'var(--err)'};color:${ok?'var(--ok-t)':'var(--err-t)'};">${ok?'Fertig':'Fehlt'}</span></div>`});html+='</div>';c.innerHTML=html;const a=document.getElementById('stzSignedCount'),b=document.getElementById('stzOpenCount');if(a)a.textContent=String(signed);if(b)b.textContent=String(Math.max(0,entries.length-signed));};try{buildStzList=window.buildStzList}catch(_){}
   function patchAdminMenus(){[...document.querySelectorAll('#pgAdmin .mi')].forEach(x=>{const t=x.querySelector('.mi-lbl')?.textContent?.trim();if(t==='Krankmeldungen')x.onclick=()=>{goTo('pgAdminPlanning','Planung & Infos');setTimeout(()=>window.V15Planning?.tab?.('requests'),0)};if(t==='KV-System'){x.querySelector('.mi-lbl').textContent='KV im Wochenplan';x.onclick=()=>goTo('pgAdminPlan','Planung')}})}
   const oldNav=window.navTo;if(typeof oldNav==='function'){window.navTo=function(k){const r=oldNav.apply(this,arguments);if(k==='notif')setTimeout(refreshNotifications,0);if(k==='office')setTimeout(()=>window.TimeCorrectionStore?.renderOfficeApprovals?.(),80);return r};try{navTo=window.navTo}catch(_){}}
-  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(pg==='pgAdminStz')setTimeout(()=>window.buildStzList?.(),0);if(pg==='pgKalender')setTimeout(()=>{const x=document.getElementById('calendarExportInfo');if(x)x.textContent='Exportiert wird die aktuell angezeigte Kalenderwoche.'},0);patchAdminMenus();return r};try{goTo=window.goTo}catch(_){}}
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(pg==='pgAdminStz')setTimeout(()=>window.buildStzList?.(),0);if(pg==='pgKalender')setTimeout(()=>{window.NaschCalendar?.setupYearSelect?.();const x=document.getElementById('calendarExportInfo');if(x)x.textContent='';},0);patchAdminMenus();return r};try{goTo=window.goTo}catch(_){}}
   const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{refreshNotifications();window.buildStzList?.();patchAdminMenus();window.TimeCorrectionStore?.ensureLoaded?.().then(()=>window.TimeCorrectionStore?.renderOfficeApprovals?.())},650);return r};try{startApp=window.startApp}catch(_){}}
   // PIN vergessen: echte Firestore-Anträge statt gerätegebundener lokaler Einträge.
   const pinReqCol=()=>firebase.firestore().collection('nasch').doc(window.FILIAL_ID||'FIL001').collection('pinRequests');
@@ -7133,5 +8443,23 @@ window.NASCH_APP_VERSION='28.11';
   patchAdminMenus();setTimeout(()=>{refreshNotifications();window.buildStzList?.()},0);
 })();
 </script>
+
+<script id="nasch-v2813-final-fixes">
+/* NASCH v28.14 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
+window.NASCH_APP_VERSION='28.14';
+(()=>{
+  const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
+  function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
+  async function clearLegacyVacationCloudOnce(){
+    if(AppState?.currentUser?.role!=='admin'||typeof firebase==='undefined'||!firebase.firestore)return;
+    try{const db=firebase.firestore(),fid=window.FILIAL_ID||'FIL001',mref=db.collection('nasch').doc(fid).collection('config').doc('migrations'),ms=await mref.get();if(ms.exists&&ms.data()?.vacationResetV2813===true)return;const patch={};Object.entries(USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u||Number(u.urlaubConfirmedYear)===YEAR)return;patch[uid]={...u,urlaubRest:null,urlaubAnspruch:null,urlaubVorjahr:null,urlaubGenommen:null,urlaubConfirmedYear:null};});if(Object.keys(patch).length)await db.collection('nasch').doc(fid).collection('config').doc('users').set(patch,{merge:true});await mref.set({vacationResetV2813:true,vacationResetAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}catch(e){console.warn('Urlaubs-Migration:',e)}
+  }
+  function wholeYearDates(){['wfVon','wfBis','urlVon','urlBis','abwVon','abwBis'].forEach(id=>{const e=document.getElementById(id);if(e){e.removeAttribute('min');e.removeAttribute('max');}});}
+  clearUnverifiedLocal();setTimeout(wholeYearDates,0);
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{clearUnverifiedLocal();wholeYearDates();if(AppState?.currentUserId){const u=USERS?.[AppState.currentUserId],v=u&&Number(u.urlaubConfirmedYear)===YEAR?u:null;const p=document.getElementById('profUrlaub');if(p)p.textContent=v&&u.urlaubRest!=null?String(u.urlaubRest).replace('.',','):'–';const a=document.getElementById('urlAnsp');if(a)a.textContent=v&&u.urlaubAnspruch!=null?String(u.urlaubAnspruch).replace('.',','):'–';const rr=document.getElementById('urlRest');if(rr)rr.textContent=v&&u.urlaubRest!=null?String(u.urlaubRest).replace('.',','):'–';}clearLegacyVacationCloudOnce();},900);return r};try{startApp=window.startApp}catch(_){}}
+  const oldGo=window.goTo;if(typeof oldGo==='function'){window.goTo=function(pg,title){const r=oldGo.apply(this,arguments);if(['pgWunsch','pgAdminPlan'].includes(pg))setTimeout(wholeYearDates,0);return r};try{goTo=window.goTo}catch(_){}}
+})();
+</script>
+
 </body>
 </html>
