@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.6</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v26.7</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p>
     <button class="pwa-install-btn" onclick="triggerPwaInstall()" style="display:none;margin-top:8px;padding:7px 16px;border:none;border-radius:20px;background:#1e3a5f;color:#fff;font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:6px;"><span>📲</span><span>App installieren</span></button></div>
   <div id="qrWelcomeBanner" style="display:none;margin-bottom:8px;"></div>
@@ -6207,6 +6207,100 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 </body>
-</html></script>
+</html>
+
+// ══════════════════════════════════════════════════════════════
+// SHEETS DIREKT-RENDERER – läuft nach allem, überschreibt alles
+// ══════════════════════════════════════════════════════════════
+function planTableFromSheets(tableId, weekOffset){
+  if(typeof NASCH_SHEETS_IMPORT === 'undefined') return false;
+  const off = weekOffset !== undefined ? weekOffset : (AppState?.weekOffset || 0);
+  const mon = getMonday(off);
+  const key = mon.toISOString().slice(0,10);
+  const data = NASCH_SHEETS_IMPORT[key];
+  if(!data || !Object.keys(data).length) return false;
+
+  const tbl = document.getElementById(tableId || 'adminTbl');
+  if(!tbl) return false;
+
+  const kw = getKW(mon);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dates = Array.from({length:7}, (_,i)=>{
+    const d = new Date(mon); d.setDate(mon.getDate()+i); return d;
+  });
+
+  // KW-Label aktualisieren
+  const lbl = document.getElementById(tableId==='adminTbl'?'adminWLbl':'wLbl');
+  if(lbl) lbl.textContent = `KW ${kw} · ${formatDate(mon)}–${formatDate(sun)}`;
+
+  // Mitarbeiter sortiert
+  const emps = Object.entries(USERS)
+    .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office')
+    .sort((a,b) => (a[1].name||'').localeCompare(b[1].name||'','de'));
+
+  const isEdit = typeof editMode !== 'undefined' && editMode;
+  const isAdmin = tableId === 'adminTbl';
+
+  let h = '<thead><tr><th class="nc">Name</th>';
+  dates.forEach((d,i) => {
+    const isT = d.toDateString() === today.toDateString();
+    h += `<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;
+  });
+  h += '<th style="background:#1e3a5f;color:#e8f4fd;min-width:52px;">Woche</th></tr></thead><tbody>';
+
+  emps.forEach(([uid, u]) => {
+    const shifts = data[uid] || Array.from({length:7},()=>({t:'-',z:'',r:[]}));
+    const wk = typeof getEmployeeWeekStats==='function' ? getEmployeeWeekStats(uid) : {f:0,s:0,hours:0};
+    h += `<tr><td class="nc" style="font-size:11px;">${escapeHtml(u.name)}<br><small style="color:var(--muted);">${escapeHtml(u.typ||'')}</small></td>`;
+    dates.forEach((_,i) => {
+      const s = shifts[i] || {t:'-'};
+      const isT = dates[i].toDateString() === today.toDateString();
+      let style = isT ? 'background:rgba(30,58,95,.04);' : '';
+      if(isEdit && isAdmin) {
+        h += `<td onclick="openShiftEditor('${uid}',${i})" style="${style}cursor:pointer;">
+          <div style="position:relative;">${shiftLabel(s)}
+          <div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div></td>`;
+      } else {
+        h += `<td style="${style}">${shiftLabel(s)}</td>`;
+      }
+    });
+    h += `<td style="background:#f8fafc;text-align:center;font-size:9px;">
+      <span style="color:var(--early-t);display:block;">F:${wk.f}</span>
+      <span style="color:var(--late-t);display:block;">S:${wk.s}</span>
+      <strong style="color:var(--navy);display:block;">${typeof formatHours==='function'?formatHours(wk.hours):wk.hours+'h'}</strong>
+    </td></tr>`;
+  });
+  h += '</tbody>';
+  tbl.innerHTML = h;
+
+  // Diagnose-Banner aktualisieren
+  const banner = document.getElementById('sheetsSyncBanner');
+  if(banner){
+    banner.textContent = `📋 KW${kw} · ${emps.length} Mitarbeiter · ${key}`;
+    banner.style.cssText = 'display:block;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:6px;background:#E1F5EE;color:#085041;';
+    setTimeout(()=>{ if(banner) banner.style.display='none'; }, 5000);
+  }
+  return true;
+}
+
+// Hooks: nach buildAdminPlan und nach renderPlan aufrufen
+const _origBuildAdminPlanFinal = window.buildAdminPlan;
+window.buildAdminPlan = function(){
+  try{ _origBuildAdminPlanFinal.apply(this, arguments); } catch(e){}
+  setTimeout(()=>{ planTableFromSheets('adminTbl', AppState?.weekOffset||0); }, 30);
+};
+try{ buildAdminPlan = window.buildAdminPlan; }catch(_){}
+
+const _origRenderPlanFinal = window.renderPlan;
+if(typeof _origRenderPlanFinal === 'function'){
+  window.renderPlan = function(){
+    try{ _origRenderPlanFinal.apply(this, arguments); } catch(e){}
+    setTimeout(()=>{ planTableFromSheets('planTbl', AppState?.weekOffset||0); }, 30);
+  };
+  try{ renderPlan = window.renderPlan; }catch(_){}
+}
+
+</script>
 </body>
 </html>
