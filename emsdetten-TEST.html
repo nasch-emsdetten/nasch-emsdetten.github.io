@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.1 · Emsdetten</title>
+<title>NASCH v28.2 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.1</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.2</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p>
 </div>
   <div id="qrWelcomeBanner" style="display:none;margin-bottom:8px;"></div>
@@ -3259,16 +3259,14 @@ function applyModuleVisibility(){
 }
 
 function forceSheetsSync(){
-  if(typeof NASCH_SHEETS_IMPORT==='undefined'){showToast('❌ Keine Sheets-Daten verfügbar');return;}
   const k=getMonday(AppState.weekOffset||0).toISOString().slice(0,10);
-  const sd=NASCH_SHEETS_IMPORT[k];
-  if(!sd){showToast('⚠ Keine Sheets-Daten für diese Woche ('+k+')');return;}
-  Object.keys(PLAN).forEach(x=>delete PLAN[x]);
-  Object.assign(PLAN,JSON.parse(JSON.stringify(sd)));
+  if(!loadSheetsIntoPlan(AppState.weekOffset||0)){
+    showToast('⚠ Keine Sheets-Daten für diese Woche ('+k+')');return;
+  }
   if(typeof WeekPlanStore!=='undefined'&&WeekPlanStore._resetLoaded) WeekPlanStore._resetLoaded();
-  buildAdminPlan();
-  renderPlan();
-  showToast('✅ Sheets-Plan für '+k+' geladen · '+Object.keys(sd).length+' Mitarbeiter');
+  if(typeof buildAdminPlan==='function') buildAdminPlan();
+  if(typeof renderPlan==='function') renderPlan();
+  showToast('✅ Sheets-Plan für '+k+' geladen');
 }
 function wNav(d){
   const u=AppState.currentUser;
@@ -6324,101 +6322,54 @@ if ('serviceWorker' in navigator) {
 // ══════════════════════════════════════════════════════════════
 // SHEETS DIREKT-RENDERER – läuft nach allem, überschreibt alles
 // ══════════════════════════════════════════════════════════════
-function planTableFromSheets(tableId, weekOffset){
+// ══════════════════════════════════════════════════════════════
+// SHEETS-SYNC · lädt Schichtdaten in PLAN, Original-Renderer macht Rest
+// ══════════════════════════════════════════════════════════════
+function loadSheetsIntoPlan(weekOffset){
   if(typeof NASCH_SHEETS_IMPORT === 'undefined') return false;
   const off = weekOffset !== undefined ? weekOffset : (AppState?.weekOffset || 0);
   const mon = getMonday(off);
   const key = mon.toISOString().slice(0,10);
   const data = NASCH_SHEETS_IMPORT[key];
   if(!data || !Object.keys(data).length) return false;
-
-  const tbl = document.getElementById(tableId || 'adminTbl');
-  if(!tbl) return false;
-
-  const kw = getKW(mon);
-  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const dates = Array.from({length:7}, (_,i)=>{
-    const d = new Date(mon); d.setDate(mon.getDate()+i); return d;
+  // Schichtdaten in PLAN schreiben (nur für Mitarbeiter die in USERS existieren)
+  Object.keys(PLAN).forEach(k => delete PLAN[k]);
+  Object.keys(data).forEach(uid => {
+    if(uid.startsWith('_')) return; // _order etc. überspringen
+    if(USERS[uid]) PLAN[uid] = JSON.parse(JSON.stringify(data[uid]));
   });
-
-  // KW-Label aktualisieren
-  const lbl = document.getElementById(tableId==='adminTbl'?'adminWLbl':'wLbl');
-  if(lbl) lbl.textContent = `KW ${kw} · ${formatDate(mon)}–${formatDate(sun)}`;
-
-  // Mitarbeiter + Reihenfolge aus App-Liste (getOrderedUserEntries)
-  let emps = [];
-  try {
-    emps = (typeof getOrderedUserEntries==='function' ? getOrderedUserEntries() : [])
-      .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office');
-  } catch(_) {}
-  if(!emps.length) {
-    emps = Object.entries(USERS)
-      .filter(([,u]) => u && u.name && !['BU','SYS'].includes(u.typ||'') && u.role !== 'office');
-  }
-
-  const isEdit = typeof editMode !== 'undefined' && editMode;
-  const isAdmin = tableId === 'adminTbl';
-
-  let h = '<thead><tr><th class="nc">Name</th>';
-  dates.forEach((d,i) => {
-    const isT = d.toDateString() === today.toDateString();
-    h += `<th class="${isT?'today-th':''}">${DAYS[i]}<br><small>${formatDate(d)}</small></th>`;
+  // Fehlende Mitarbeiter aus Liste mit leeren Schichten
+  Object.keys(USERS).forEach(uid => {
+    if(!PLAN[uid]) PLAN[uid] = Array.from({length:7},()=>({t:'-',z:'',r:[]}));
   });
-  h += '<th style="background:#1e3a5f;color:#e8f4fd;min-width:52px;">Woche</th></tr></thead><tbody>';
-
-  emps.forEach(([uid, u]) => {
-    const shifts = data[uid] || Array.from({length:7},()=>({t:'-',z:'',r:[]}));
-    const wk = typeof getEmployeeWeekStats==='function' ? getEmployeeWeekStats(uid) : {f:0,s:0,hours:0};
-    h += `<tr><td class="nc" style="font-size:11px;">${escapeHtml(u.name)}<br><small style="color:var(--muted);">${escapeHtml(u.typ||'')}</small></td>`;
-    dates.forEach((_,i) => {
-      const s = shifts[i] || {t:'-'};
-      const isT = dates[i].toDateString() === today.toDateString();
-      let style = isT ? 'background:rgba(30,58,95,.04);' : '';
-      if(isEdit && isAdmin) {
-        h += `<td onclick="openShiftEditor('${uid}',${i})" style="${style}cursor:pointer;">
-          <div style="position:relative;">${shiftLabel(s)}
-          <div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div></td>`;
-      } else {
-        h += `<td style="${style}">${shiftLabel(s)}</td>`;
-      }
-    });
-    h += `<td style="background:#f8fafc;text-align:center;font-size:9px;">
-      <span style="color:var(--early-t);display:block;">F:${wk.f}</span>
-      <span style="color:var(--late-t);display:block;">S:${wk.s}</span>
-      <strong style="color:var(--navy);display:block;">${typeof formatHours==='function'?formatHours(wk.hours):wk.hours+'h'}</strong>
-    </td></tr>`;
-  });
-  h += '</tbody>';
-  tbl.innerHTML = h;
-
-  // Diagnose-Banner aktualisieren
+  // Diagnose-Banner
   const banner = document.getElementById('sheetsSyncBanner');
   if(banner){
-    banner.textContent = `📋 KW${kw} · ${emps.length} Mitarbeiter · ${key}`;
+    const kw = getKW(mon);
+    const cnt = Object.keys(data).filter(k=>!k.startsWith('_')&&USERS[k]).length;
+    banner.textContent = `📋 KW${kw} · ${cnt} Mitarbeiter · ${key}`;
     banner.style.cssText = 'display:block;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:6px;background:#E1F5EE;color:#085041;';
     setTimeout(()=>{ if(banner) banner.style.display='none'; }, 5000);
   }
   return true;
 }
 
-// Hooks: nach buildAdminPlan und nach renderPlan aufrufen
+// Hooks: Sheets-Daten VOR dem Rendern in PLAN laden, dann Original rendern
 const _origBuildAdminPlanFinal = window.buildAdminPlan;
 window.buildAdminPlan = function(){
-  try{ _origBuildAdminPlanFinal.apply(this, arguments); } catch(e){}
-  setTimeout(()=>{ planTableFromSheets('adminTbl', AppState?.weekOffset||0); }, 30);
+  loadSheetsIntoPlan(AppState?.weekOffset||0);
+  try{ _origBuildAdminPlanFinal.apply(this, arguments); } catch(e){ console.warn('buildAdminPlan:',e); }
 };
 try{ buildAdminPlan = window.buildAdminPlan; }catch(_){}
 
 const _origRenderPlanFinal = window.renderPlan;
 if(typeof _origRenderPlanFinal === 'function'){
   window.renderPlan = function(){
-    try{ _origRenderPlanFinal.apply(this, arguments); } catch(e){}
-    setTimeout(()=>{ planTableFromSheets('planTbl', AppState?.weekOffset||0); }, 30);
+    loadSheetsIntoPlan(AppState?.weekOffset||0);
+    try{ _origRenderPlanFinal.apply(this, arguments); } catch(e){ console.warn('renderPlan:',e); }
   };
   try{ renderPlan = window.renderPlan; }catch(_){}
 }
-
 </script>
 </body>
 </html>
