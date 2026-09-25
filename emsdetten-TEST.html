@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.2 · Emsdetten</title>
+<title>NASCH v28.4 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.2</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.4</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p>
 </div>
   <div id="qrWelcomeBanner" style="display:none;margin-bottom:8px;"></div>
@@ -3269,19 +3269,11 @@ function forceSheetsSync(){
   showToast('✅ Sheets-Plan für '+k+' geladen');
 }
 function wNav(d){
-  const u=AppState.currentUser;
   const uid=AppState.currentUserId;
   const role=USERS[uid]?.role;
   if(role!=='admin' && role!=='vertretung' && !isAdminOrDeputy(uid)) return;
   AppState.weekOffset+=d;
-  // Sheets-Daten für neue Woche einlesen
-  if(typeof NASCH_SHEETS_IMPORT!=='undefined'){
-    const _k=typeof keyForOffset==='function'?keyForOffset(AppState.weekOffset):'';
-    if(_k&&NASCH_SHEETS_IMPORT[_k]){
-      const _p=JSON.parse(JSON.stringify(NASCH_SHEETS_IMPORT[_k]));
-      Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,_p);
-    }
-  }
+  // renderPlan + buildAdminPlan laden Sheets-Daten selbst (via loadSheetsIntoPlan Hook)
   renderPlan();
   buildAdminPlan();
   renderPersonalDailyHours();
@@ -4814,14 +4806,17 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   }
 
   const originalRenderPlan=window.renderPlan;
-  window.renderPlan=function(){if(!isAdminOrDeputy(AppState.currentUserId)&&AppState.weekOffset!==0)AppState.weekOffset=0;WeekPlanStore.loadOffset(AppState.weekOffset);originalRenderPlan();decoratePlanHeaders('planTbl',isAdminOrDeputy());};renderPlan=window.renderPlan;
+  window.renderPlan=function(){
+    if(!isAdminOrDeputy(AppState.currentUserId)&&AppState.weekOffset!==0)AppState.weekOffset=0;
+    if(!(typeof loadSheetsIntoPlan==='function' && loadSheetsIntoPlan(AppState.weekOffset))){
+      WeekPlanStore.loadOffset(AppState.weekOffset);
+    }
+    originalRenderPlan();decoratePlanHeaders('planTbl',isAdminOrDeputy());
+  };renderPlan=window.renderPlan;
   const originalBuildAdminPlan=window.buildAdminPlan;
   window.buildAdminPlan=function(){
-    const synced=sheetsSync(AppState.weekOffset);
-    if(!synced) WeekPlanStore.loadOffset(AppState.weekOffset);
+    WeekPlanStore.loadOffset(AppState.weekOffset);
     originalBuildAdminPlan();
-    const k=getMonday(AppState.weekOffset).toISOString().slice(0,10);
-    updateSheetsBanner(synced?k:'',synced?Object.keys(PLAN).length:0);
     decoratePlanHeaders('adminTbl',true);addCopyButtons();
   };buildAdminPlan=window.buildAdminPlan;
 
@@ -4829,7 +4824,13 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   window.wNav=function(d){
     if(!isAdminOrDeputy(AppState.currentUserId))return;
     if(typeof editMode!=='undefined'&&editMode){alert('Bitte die laufende Bearbeitung zuerst speichern oder abbrechen.');return;}
-    WeekPlanStore.persistCurrent();AppState.weekOffset+=d;WeekPlanStore.loadOffset(AppState.weekOffset);
+    AppState.weekOffset+=d;
+    // Sheets-Daten laden falls vorhanden, sonst WeekPlanStore
+    if(typeof loadSheetsIntoPlan==='function' && loadSheetsIntoPlan(AppState.weekOffset)){
+      // Sheets-Daten geladen
+    } else {
+      WeekPlanStore.loadOffset(AppState.weekOffset);
+    }
     renderPlan();buildAdminPlan();renderPersonalDailyHours();renderAdminDailyHours();
   };wNav=window.wNav;
 
@@ -6354,22 +6355,8 @@ function loadSheetsIntoPlan(weekOffset){
   return true;
 }
 
-// Hooks: Sheets-Daten VOR dem Rendern in PLAN laden, dann Original rendern
-const _origBuildAdminPlanFinal = window.buildAdminPlan;
-window.buildAdminPlan = function(){
-  loadSheetsIntoPlan(AppState?.weekOffset||0);
-  try{ _origBuildAdminPlanFinal.apply(this, arguments); } catch(e){ console.warn('buildAdminPlan:',e); }
-};
-try{ buildAdminPlan = window.buildAdminPlan; }catch(_){}
-
-const _origRenderPlanFinal = window.renderPlan;
-if(typeof _origRenderPlanFinal === 'function'){
-  window.renderPlan = function(){
-    loadSheetsIntoPlan(AppState?.weekOffset||0);
-    try{ _origRenderPlanFinal.apply(this, arguments); } catch(e){ console.warn('renderPlan:',e); }
-  };
-  try{ renderPlan = window.renderPlan; }catch(_){}
-}
+// Sheets-Integration erfolgt in den WeekPlanStore-Overrides oben (loadSheetsIntoPlan)
+// Keine zusätzlichen Hooks nötig.
 </script>
 </body>
 </html>
