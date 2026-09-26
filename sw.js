@@ -1,4 +1,4 @@
-const VERSION='28.22';
+const VERSION='28.23';
 const CACHE=`nasch-app-v${VERSION}`;
 const CORE=['./emsdetten.html','./manifest-emsdetten.webmanifest','./version.json','./icon-180.png','./icon-192.png','./icon-512.png'];
 

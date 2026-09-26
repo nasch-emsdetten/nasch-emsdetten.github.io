@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.22 · Emsdetten</title>
+<title>NASCH v28.23 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -145,6 +145,20 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
+/* Einstellungs-Module v28.23 */
+.settings-module{margin-bottom:10px;}
+.settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
+.settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
+.settings-module-toggle{border:1px solid var(--border);background:#fff;color:var(--navy);border-radius:8px;padding:6px 9px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.settings-module.collapsed .settings-module-body{display:none!important;}
+.settings-module.collapsed{margin-bottom:2px;}
+.settings-module.collapsed .settings-module-head{border-bottom:1px solid #eef2f7;}
+.settings-overview-actions{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 12px;}
+.pin-overview-row{display:grid;grid-template-columns:minmax(120px,1fr) 70px auto;gap:8px;align-items:center;padding:9px 11px;border-bottom:1px solid #eef2f7;}
+.pin-overview-row:last-child{border-bottom:none;}
+.pin-overview-pin{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:800;letter-spacing:2px;text-align:center;background:#f8fafc;border:1px solid var(--border);border-radius:7px;padding:6px;}
+@media(max-width:420px){.pin-overview-row{grid-template-columns:minmax(0,1fr) 62px auto;gap:6px}.pin-overview-row button{padding-left:7px!important;padding-right:7px!important}.pin-overview-pin{letter-spacing:1px;}}
+
 /* PIN-Punkte hell */
 .chg-pd{width:22px;height:22px;border-radius:50%;border:2px solid #cbd5e1;background:transparent;transition:all .15s;}
 
@@ -231,7 +245,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.22</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.23</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -745,37 +759,61 @@ window.FILIAL_ID = 'FIL001';
     <div class="page" id="pgAdminSettings">
       <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
       <div class="banner binfo"><span>☁️</span><span>Änderungen werden gespeichert und – soweit cloudfähig – mit Firebase synchronisiert.</span></div>
-
-      <div class="sec" style="color:#b45309;">🔑 PIN-Anträge</div>
-      <div class="card" style="margin-bottom:12px;">
-        <div style="padding:10px 14px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-size:13px;font-weight:600;">Mitarbeiter haben PIN vergessen</div>
-          <button onclick="renderPinAntraege()" style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;font-size:11px;cursor:pointer;">Aktualisieren</button>
-        </div>
-        <div style="padding:4px 0;" id="adminPinAntraege">
-          <div style="font-size:12px;color:#6b7280;padding:10px 14px;">Wird geladen…</div>
-        </div>
+      <div class="settings-overview-actions">
+        <button class="btn btn-outline" onclick="adminSettingsSetAll(false)" style="width:auto;margin:0;">▾ Alle einblenden</button>
+        <button class="btn btn-outline" onclick="adminSettingsSetAll(true)" style="width:auto;margin:0;">▴ Alle ausblenden</button>
       </div>
-      <div class="sec">Neuen Mitarbeiter anlegen</div>
-      <div id="adminNewEmployee" style="margin-bottom:14px;"></div>
 
-      <div class="sec">Temporäre Vertretung</div>
-      <div id="adminTempDeputy" style="margin-bottom:14px;"></div>
+      <div class="settings-module collapsed" data-settings-module="pinRequests">
+        <div class="settings-module-head"><div class="settings-module-title" style="color:#b45309;">🔑 PIN-Anträge</div><button class="settings-module-toggle" onclick="adminSettingsToggle('pinRequests')">Einblenden</button></div>
+        <div class="settings-module-body"><div class="card" style="margin-bottom:12px;">
+          <div style="padding:10px 14px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:13px;font-weight:600;">Mitarbeiter haben PIN vergessen</div>
+            <button onclick="renderPinAntraege()" style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;font-size:11px;cursor:pointer;">Aktualisieren</button>
+          </div>
+          <div style="padding:4px 0;" id="adminPinAntraege"><div style="font-size:12px;color:#6b7280;padding:10px 14px;">Wird geladen…</div></div>
+        </div></div>
+      </div>
 
-      <div class="sec">Filialmodule · AUS / FILIALE / BÜRO</div>
-      <div id="v288ModuleAdmin" style="margin-bottom:14px;"></div>
+      <div class="settings-module collapsed" data-settings-module="pinOverview">
+        <div class="settings-module-head"><div class="settings-module-title">🔐 Mitarbeiter-PIN Übersicht</div><button class="settings-module-toggle" onclick="adminSettingsToggle('pinOverview')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="adminPinOverview"></div></div>
+      </div>
 
-      <div class="sec">Verfügbarkeit aller Mitarbeiter</div>
-      <div id="adminAvailabilityMatrix" style="margin-bottom:14px;"></div>
+      <div class="settings-module collapsed" data-settings-module="newEmployee">
+        <div class="settings-module-head"><div class="settings-module-title">👤 Neuen Mitarbeiter anlegen</div><button class="settings-module-toggle" onclick="adminSettingsToggle('newEmployee')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="adminNewEmployee" style="margin-bottom:14px;"></div></div>
+      </div>
 
-      <div class="sec">Reihenfolge · Monatsstunden · Arbeitstage · Stundenlohn · Zuschläge · Tätigkeit</div>
-      <div id="adminEmployeeSettings"></div>
+      <div class="settings-module collapsed" data-settings-module="tempDeputy">
+        <div class="settings-module-head"><div class="settings-module-title">🪪 Temporäre Vertretung</div><button class="settings-module-toggle" onclick="adminSettingsToggle('tempDeputy')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="adminTempDeputy" style="margin-bottom:14px;"></div></div>
+      </div>
 
-      <div class="sec">Tätigkeits-Legende · Kürzel & Bezeichnung</div>
-      <div class="card" style="padding:10px 12px;overflow:visible;"><div id="adminActivities"></div></div>
+      <div class="settings-module collapsed" data-settings-module="branchModules">
+        <div class="settings-module-head"><div class="settings-module-title">🧩 Filialmodule · AUS / FILIALE / BÜRO</div><button class="settings-module-toggle" onclick="adminSettingsToggle('branchModules')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="v288ModuleAdmin" style="margin-bottom:14px;"></div></div>
+      </div>
 
-      <div class="sec">Zeitvorschläge für Früh, Spät und Teilschicht</div>
-      <div id="adminTimeSuggestions"></div>
+      <div class="settings-module collapsed" data-settings-module="availability">
+        <div class="settings-module-head"><div class="settings-module-title">📅 Verfügbarkeit aller Mitarbeiter</div><button class="settings-module-toggle" onclick="adminSettingsToggle('availability')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="adminAvailabilityMatrix" style="margin-bottom:14px;"></div></div>
+      </div>
+
+      <div class="settings-module collapsed" data-settings-module="employeeSettings">
+        <div class="settings-module-head"><div class="settings-module-title">⚙️ Mitarbeiterdaten · Stunden · Lohn · Zuschläge · Tätigkeit</div><button class="settings-module-toggle" onclick="adminSettingsToggle('employeeSettings')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="adminEmployeeSettings"></div></div>
+      </div>
+
+      <div class="settings-module collapsed" data-settings-module="activities">
+        <div class="settings-module-head"><div class="settings-module-title">🏷️ Tätigkeits-Legende · Kürzel & Bezeichnung</div><button class="settings-module-toggle" onclick="adminSettingsToggle('activities')">Einblenden</button></div>
+        <div class="settings-module-body"><div class="card" style="padding:10px 12px;overflow:visible;"><div id="adminActivities"></div></div></div>
+      </div>
+
+      <div class="settings-module collapsed" data-settings-module="times">
+        <div class="settings-module-head"><div class="settings-module-title">🕒 Zeitvorschläge für Früh, Spät und Teilschicht</div><button class="settings-module-toggle" onclick="adminSettingsToggle('times')">Einblenden</button></div>
+        <div class="settings-module-body"><div id="adminTimeSuggestions"></div></div>
+      </div>
     </div>
 
     <div class="page" id="pgAdminStz">
@@ -1020,7 +1058,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v28.22: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v28.23: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -1893,6 +1931,8 @@ const NaschAdminSettings = (() => {
       const title=type==='F'?'🌅 Frühschicht':type==='S'?'🌙 Spätschicht':type==='TS1'?'⏱ Teilschicht 1 (früh)':'⏱ Teilschicht 2 (spät)';
       return `<div class="card" style="padding:10px 12px;margin-bottom:8px;overflow:visible;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">${title}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${times(type).map(z=>`<span style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:20px;padding:6px 9px;background:#fff;font-size:11px;">${esc(z)}<button onclick="adminRemoveTime('${type}','${encodeURIComponent(z)}')" style="border:none;background:transparent;color:#dc2626;cursor:pointer;font-size:14px;line-height:1;">×</button></span>`).join('')||'<span style="font-size:11px;color:var(--muted);">Keine Vorschläge</span>'}</div><div style="display:flex;gap:8px;"><input id="timeInput_${type}" type="text" placeholder="08:00–15:30"><button class="btn btn-outline" onclick="adminAddTime('${type}')" style="width:auto;min-width:100px;margin-top:0;">+ Zeit</button></div></div>`;
     }).join('');
+    if(typeof renderAdminPinOverview==='function') renderAdminPinOverview();
+    if(typeof adminSettingsApplyState==='function') adminSettingsApplyState();
   }
 
   function reset(){ try{localStorage.removeItem(KEY);}catch(_){} }
@@ -2084,6 +2124,55 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
+// ── v28.23: Einstellungs-Module ein-/ausblenden ─────────────
+const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
+function adminSettingsReadState(){
+  try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
+}
+function adminSettingsSaveState(st){try{localStorage.setItem(ADMIN_SETTINGS_MODULE_KEY,JSON.stringify(st||{}));}catch(_){}}
+function adminSettingsApplyState(){
+  const st=adminSettingsReadState();
+  document.querySelectorAll('#pgAdminSettings [data-settings-module]').forEach(mod=>{
+    const key=mod.dataset.settingsModule;
+    // Neue Module starten bewusst eingeklappt; danach gilt die gespeicherte Auswahl.
+    const collapsed=Object.prototype.hasOwnProperty.call(st,key)?!!st[key]:true;
+    mod.classList.toggle('collapsed',collapsed);
+    const btn=mod.querySelector('.settings-module-toggle');
+    if(btn){btn.textContent=collapsed?'Einblenden':'Ausblenden';btn.setAttribute('aria-expanded',collapsed?'false':'true');}
+  });
+}
+function adminSettingsToggle(key){
+  const mod=document.querySelector(`#pgAdminSettings [data-settings-module="${key}"]`); if(!mod)return;
+  const next=!mod.classList.contains('collapsed');
+  const st=adminSettingsReadState(); st[key]=next; adminSettingsSaveState(st); adminSettingsApplyState();
+  if(!next && key==='pinOverview') renderAdminPinOverview();
+}
+function adminSettingsSetAll(collapsed){
+  const st=adminSettingsReadState();
+  document.querySelectorAll('#pgAdminSettings [data-settings-module]').forEach(mod=>{st[mod.dataset.settingsModule]=!!collapsed;});
+  adminSettingsSaveState(st); adminSettingsApplyState();
+  if(!collapsed) renderAdminPinOverview();
+}
+function renderAdminPinOverview(){
+  const box=document.getElementById('adminPinOverview');
+  if(!box || AppState.currentUser?.role!=='admin') return;
+  const rows=(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS))
+    .filter(([uid,u])=>u && u.name && u.role!=='system' && u.role!=='office');
+  if(!rows.length){box.innerHTML='<div class="card" style="padding:12px;color:var(--muted);font-size:12px;">Keine Mitarbeiter vorhanden.</div>';return;}
+  box.innerHTML=`<div class="card" style="overflow:hidden;">\
+    <div style="padding:9px 11px;background:#f8fafc;border-bottom:1px solid #eef2f7;font-size:10px;color:var(--muted);">Nur für Admin sichtbar · Nach einem PIN-Reset wird die Übersicht sofort aktualisiert.</div>\
+    ${rows.map(([uid,u])=>`<div class="pin-overview-row"><div><div style="font-size:12px;font-weight:700;">${String(u.name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div><div style="font-size:10px;color:var(--muted);">${u.typ||''}${u.role==='vertretung'?' · Vertretung':''}</div></div><div class="pin-overview-pin">${String(PINS[uid]??'—')}</div><button onclick="adminResetPin('${uid}')" style="padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:10px;font-weight:700;white-space:nowrap;">🔄 Reset</button></div>`).join('')}\
+  </div>`;
+}
+function markLocalPinRequestsDone(uid){
+  try{
+    const list=JSON.parse(localStorage.getItem('nasch-pin-antraege-v1')||'[]');
+    let changed=false;
+    list.forEach(a=>{if(String(a.uid)===String(uid)&&a.status==='offen'){a.status='erledigt';a.completedAt=new Date().toISOString();changed=true;}});
+    if(changed)localStorage.setItem('nasch-pin-antraege-v1',JSON.stringify(list));
+  }catch(_){ }
+}
+
 function adminInitials(name){
   const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
   if(!parts.length) return 'MA';
@@ -2132,6 +2221,9 @@ function adminResetPin(uid){
   if((typeof BLOCKED_PINS!=='undefined'&&BLOCKED_PINS.includes(clean)) || (typeof BLOCKED!=='undefined'&&BLOCKED.includes(clean))){ alert('Diese PIN ist nicht erlaubt. Bitte eine andere PIN wählen.'); return; }
   PINS[uid]=clean;
   if(typeof SandboxStore!=='undefined') SandboxStore.savePins();
+  if(typeof markLocalPinRequestsDone==='function') markLocalPinRequestsDone(uid);
+  if(typeof renderAdminPinOverview==='function') renderAdminPinOverview();
+  if(typeof renderPinAntraege==='function') renderPinAntraege();
   if(typeof updateLoginEmployeeOptions==='function') updateLoginEmployeeOptions(uid);
   if(typeof showToast==='function') showToast(`✓ PIN für ${USERS[uid].name} zurückgesetzt`);
 }
@@ -2609,7 +2701,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'28.22');
+    const v='v'+(window.NASCH_APP_VERSION||'28.23');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -2713,7 +2805,7 @@ function goTo(pgId, title){
   document.getElementById('tbTitle').textContent=title||'';
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.querySelector('.page-wrap').scrollTop=0;
-  if(pgId==='pgAdminSettings' && typeof NaschAdminSettings!=='undefined') { NaschAdminSettings.buildAdminSettings(); setTimeout(renderPinAntraege, 100); if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render(); }
+  if(pgId==='pgAdminSettings' && typeof NaschAdminSettings!=='undefined') { NaschAdminSettings.buildAdminSettings(); if(typeof adminSettingsApplyState==='function') adminSettingsApplyState(); if(typeof renderAdminPinOverview==='function') renderAdminPinOverview(); setTimeout(renderPinAntraege, 100); if(typeof NaschTempDeputy!=='undefined') NaschTempDeputy.render(); }
   if(pgId==='pgAdminMA') buildMAList();
   if(pgId==='pgAdminPlan'){
     const d=document.getElementById('planDebug');if(d){d.style.display='none';d.textContent='';}
@@ -3787,12 +3879,9 @@ function adminPinResetDirekt(uid, idx){
   if(blocked.includes(clean)){ alert('Diese PIN ist nicht erlaubt.'); return; }
   PINS[uid] = clean;
   if(typeof SandboxStore !== 'undefined') SandboxStore.savePins();
-  // Antrag als erledigt markieren
-  try{
-    const antraege = JSON.parse(localStorage.getItem('nasch-pin-antraege-v1') || '[]');
-    if(antraege[idx]) antraege[idx].status = 'erledigt';
-    localStorage.setItem('nasch-pin-antraege-v1', JSON.stringify(antraege));
-  }catch(_){}
+  // Alle offenen PIN-Anträge dieses Mitarbeiters als erledigt markieren.
+  if(typeof markLocalPinRequestsDone==='function') markLocalPinRequestsDone(uid);
+  if(typeof renderAdminPinOverview==='function') renderAdminPinOverview();
   renderPinAntraege();
   if(typeof showToast === 'function') showToast(`✓ PIN für ${USERS[uid].name} auf ${clean} gesetzt`);
 }
@@ -4116,7 +4205,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v28.22: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v28.23: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -7404,7 +7493,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='28.22';
+  window.NASCH_APP_VERSION='28.23';
 })();
 </script>
 
@@ -8339,7 +8428,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='28.22';
+  window.NASCH_APP_VERSION='28.23';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8350,7 +8439,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks']
@@ -8489,7 +8578,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8540,7 +8629,7 @@ window.NASCH_APP_VERSION='28.22';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8559,7 +8648,7 @@ window.NASCH_APP_VERSION='28.22';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -8890,7 +8979,7 @@ window.NASCH_APP_VERSION='28.22';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.22')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.23')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -8910,7 +8999,7 @@ window.NASCH_APP_VERSION='28.22';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9377,9 +9466,9 @@ window.NASCH_APP_VERSION='28.22';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (()=>{
-  const VERSION='28.22';
+  const VERSION='28.23';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9572,7 +9661,7 @@ window.NASCH_APP_VERSION='28.22';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='28.22';
+window.NASCH_APP_VERSION='28.23';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -9691,9 +9780,9 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v28.22 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v28.23 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='28.22';
+  const CURRENT='28.23';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
