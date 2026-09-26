@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.14 · Emsdetten</title>
+<title>NASCH v28.16 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -385,7 +385,7 @@ window.FILIAL_ID = 'FIL001';
           <div class="mi-icon" style="background:#E1F5EE;">📅</div><span class="mi-lbl">Verfügbarkeit</span><span class="mi-arr">›</span>
         </div>
         <div class="mi" onclick="goTo('pgKalender','Kalender')">
-          <div class="mi-icon" style="background:#E6F1FB;">🗓</div><span class="mi-lbl">Kalender exportieren</span><span class="mi-arr">›</span>
+          <div class="mi-icon" style="background:#E6F1FB;">🗓</div><span class="mi-lbl">Kalender synchronisieren</span><span class="mi-arr">›</span>
         </div>
         <div class="mi" id="miHO" onclick="goTo('pgHO','Home-Office')" style="display:none;">
           <div class="mi-icon" style="background:#E6F1FB;">🏠</div><span class="mi-lbl">Home-Office</span><span class="mi-arr">›</span>
@@ -2515,7 +2515,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v25.4b · KW36-41 geladen';
+    const v='v'+(window.NASCH_APP_VERSION||'28.16');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -5659,7 +5659,7 @@ window.NASCH_SANDBOX_VERSION='V19';
 <!-- v28.8: Service Worker wird einmal zentral registriert. -->
 
 <script id="nasch-v2811-time-store">
-/* NASCH v28.14 · echte Arbeitszeiterfassung/Korrektur über Firestore */
+/* NASCH v28.16 · echte Arbeitszeiterfassung/Korrektur über Firestore */
 (()=>{
   const clone=o=>JSON.parse(JSON.stringify(o));
   const branchId=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -7312,7 +7312,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='28.14';
+  window.NASCH_APP_VERSION='28.16';
 })();
 </script>
 
@@ -8245,7 +8245,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='28.14';
+  window.NASCH_APP_VERSION='28.16';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8255,8 +8255,8 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 .v288-mod-grid{display:grid;grid-template-columns:1fr;gap:6px}.v288-mod-row{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:9px;padding:8px 9px;background:#fff}.v288-mod-label{font-size:12px;font-weight:700;flex:1}.v288-mode{width:auto;min-width:105px;padding:6px 8px;font-size:11px;font-weight:800}.v288-office-delegated{border:1px solid #facc15;background:#fffbeb}.v288-office-delegated button{width:auto;margin:0;padding:7px 9px;font-size:11px}
 </style>
 <script id="nasch-v288-fixes">
-/* NASCH v28.14 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='28.14';
+/* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
+window.NASCH_APP_VERSION='28.16';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks']
@@ -8394,8 +8394,8 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 .real-notif{display:flex;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);align-items:flex-start}.real-notif:last-child{border-bottom:0}.real-notif .ico{width:34px;height:34px;border-radius:9px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.real-notif .title{font-size:12px;font-weight:800}.real-notif .body{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}.real-notif .status{font-size:9px;font-weight:800;border-radius:999px;padding:3px 7px;white-space:nowrap}
 </style>
 <script id="nasch-v2811-production-cleanup">
-/* NASCH v28.14 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='28.14';
+/* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
+window.NASCH_APP_VERSION='28.16';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8445,8 +8445,8 @@ window.NASCH_APP_VERSION='28.14';
 </script>
 
 <script id="nasch-v2813-final-fixes">
-/* NASCH v28.14 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='28.14';
+/* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
+window.NASCH_APP_VERSION='28.16';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8461,5 +8461,349 @@ window.NASCH_APP_VERSION='28.14';
 })();
 </script>
 
+
+
+<script id="nasch-v2815-kv-calendar-sync">
+/* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
+window.NASCH_APP_VERSION='28.16';
+(()=>{
+  const KV_MAX=4;
+  const FID=()=>window.FILIAL_ID||'FIL001';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pad=n=>String(n).padStart(2,'0');
+  const dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const clone=o=>JSON.parse(JSON.stringify(o));
+
+  // ── KV: Bereitschaft zählt nicht als geleistete Arbeitszeit ──────────────
+  const baseGetShiftHours=window.getShiftHours;
+  window.getShiftHours=function(s){
+    if(s?.t==='KV') return 0;
+    return typeof baseGetShiftHours==='function'?baseGetShiftHours(s):0;
+  };
+  try{getShiftHours=window.getShiftHours}catch(_){}
+
+  const baseShiftLabel=window.shiftLabel;
+  window.shiftLabel=function(s){
+    if(s?.t==='KV'){
+      const fromZ=String(s.z||'').match(/^KV([1-4])$/i);
+      const n=Number(s.kvPriority||(fromZ?fromZ[1]:0))||0;
+      const label=n?`KV${n}`:'KV';
+      const warn=s.kvOverflow===true?' · zu viele KV':'';
+      return `<span class="shift-pill s-kv" title="Krankenvertretung${n?` · Priorität ${n}`:''}${warn}">${label}${s.kvOverflow===true?'<br><small style="font-size:7px;">prüfen</small>':''}</span>`;
+    }
+    return typeof baseShiftLabel==='function'?baseShiftLabel(s):'';
+  };
+  try{shiftLabel=window.shiftLabel}catch(_){}
+
+  const baseShiftTypeText=window.shiftTypeText;
+  window.shiftTypeText=function(s){
+    if(s?.t==='KV'){
+      const m=String(s.z||'').match(/^KV([1-4])$/i),n=Number(s.kvPriority||(m?m[1]:0))||0;
+      return n?`KV${n}`:'KV';
+    }
+    return typeof baseShiftTypeText==='function'?baseShiftTypeText(s):'';
+  };
+  try{shiftTypeText=window.shiftTypeText}catch(_){}
+
+  const kvHistory={lastByUid:{}};
+  let kvHistoryLoaded=false;
+  function orderedEntries(){
+    try{return (typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{})).filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||''));}
+    catch(_){return Object.entries(typeof USERS!=='undefined'?USERS:{});}
+  }
+  function weekHoursWithoutKV(uid){
+    return (PLAN?.[uid]||[]).slice(0,7).reduce((sum,s)=>sum+(s?.t==='KV'?0:Number(window.getShiftHours?.(s)||0)),0);
+  }
+  function lastKvBefore(uid,dayIdx){
+    const mon=getMonday(AppState.weekOffset||0),target=new Date(mon);target.setDate(mon.getDate()+dayIdx);const tk=dateKey(target);
+    let best='';
+    const hist=String(kvHistory.lastByUid?.[uid]||'');
+    if(hist&&hist<tk)best=hist;
+    for(let i=0;i<dayIdx;i++){
+      if(PLAN?.[uid]?.[i]?.t!=='KV')continue;
+      const d=new Date(mon);d.setDate(mon.getDate()+i);const k=dateKey(d);if(k<tk&&k>best)best=k;
+    }
+    return best;
+  }
+  function stripKvTime(s){
+    if(!s)return s;
+    delete s.start;delete s.end;delete s.z1;delete s.z2;delete s.start1;delete s.end1;delete s.start2;delete s.end2;
+    s.r=[];return s;
+  }
+  function rebalanceDay(dayIdx){
+    if(typeof PLAN==='undefined'||!PLAN||dayIdx<0||dayIdx>6)return false;
+    const order=orderedEntries(),orderMap=new Map(order.map(([uid],i)=>[String(uid),i]));
+    const rows=order.filter(([uid])=>PLAN?.[uid]?.[dayIdx]?.t==='KV').map(([uid,u])=>({uid:String(uid),u,h:weekHoursWithoutKV(uid),last:lastKvBefore(uid,dayIdx)}));
+    rows.sort((a,b)=>{
+      const dh=a.h-b.h;if(Math.abs(dh)>.001)return dh;
+      const ta=a.last?Date.parse(a.last+'T12:00:00'):0,tb=b.last?Date.parse(b.last+'T12:00:00'):0;
+      if(ta!==tb)return ta-tb; // nie bzw. länger nicht KV => niedrigere Nummer
+      return (orderMap.get(a.uid)??9999)-(orderMap.get(b.uid)??9999);
+    });
+    let changed=false;
+    rows.forEach((x,i)=>{
+      const sh=PLAN[x.uid][dayIdx],n=i<KV_MAX?i+1:0,oldN=Number(sh.kvPriority||0),oldZ=String(sh.z||'');
+      stripKvTime(sh);sh.kvPriority=n||null;sh.kvOverflow=i>=KV_MAX;sh.z=n?`KV${n}`:'KV';
+      if(oldN!==n||oldZ!==sh.z)changed=true;
+    });
+    return changed;
+  }
+  function rebalanceAll(){let c=false;for(let i=0;i<7;i++)c=rebalanceDay(i)||c;return c;}
+
+  async function loadKvHistory(){
+    if(typeof firebase==='undefined'||!firebase.firestore)return;
+    try{
+      const snap=await firebase.firestore().collection('nasch').doc(FID()).collection('config').doc('kvHistory').get();
+      if(snap.exists&&snap.data()?.lastByUid)kvHistory.lastByUid={...snap.data().lastByUid};
+      kvHistoryLoaded=true;
+      const changed=rebalanceAll();
+      if(changed){try{WeekPlanStore?.persistCurrent?.()}catch(_){};try{window.buildAdminPlan?.();window.renderPlan?.()}catch(_){}}
+      renderKvPage();
+    }catch(e){console.warn('KV-Historie laden:',e)}
+  }
+  async function persistPublishedKvHistory(){
+    if(typeof firebase==='undefined'||!firebase.firestore)return;
+    const mon=getMonday(AppState.weekOffset||0),next={...kvHistory.lastByUid};
+    for(const [uid] of orderedEntries())for(let i=0;i<7;i++){
+      if(PLAN?.[uid]?.[i]?.t!=='KV')continue;
+      const d=new Date(mon);d.setDate(mon.getDate()+i);const k=dateKey(d);
+      if(!next[uid]||k>next[uid])next[uid]=k;
+    }
+    kvHistory.lastByUid=next;
+    try{await firebase.firestore().collection('nasch').doc(FID()).collection('config').doc('kvHistory').set({lastByUid:next,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
+    catch(e){console.warn('KV-Historie speichern:',e)}
+  }
+
+  // KV hat keine Uhrzeit; Priorität wird automatisch berechnet.
+  const baseBuildZeitOpts=window.buildZeitOpts;
+  window.buildZeitOpts=function(){
+    if(typeof mS!=='undefined'&&mS?.t==='KV'){
+      stripKvTime(mS);mS.z='KV';
+      const sec=document.getElementById('zeitSec');if(sec)sec.style.display='none';
+      const opts=document.getElementById('zeitOpts');if(opts)opts.innerHTML='';
+      return;
+    }
+    return typeof baseBuildZeitOpts==='function'?baseBuildZeitOpts.apply(this,arguments):undefined;
+  };
+  try{buildZeitOpts=window.buildZeitOpts}catch(_){}
+
+  const baseSelST=window.selST;
+  window.selST=function(t){
+    const r=typeof baseSelST==='function'?baseSelST.apply(this,arguments):undefined;
+    if(t==='KV'&&typeof mS!=='undefined'){
+      stripKvTime(mS);mS.z='KV';mS.kvPriority=null;
+      const sec=document.getElementById('zeitSec');if(sec)sec.style.display='none';
+      const hint=document.getElementById('modalAvailabilityHint');if(hint)hint.innerHTML='Krankenvertretung · KV1–KV4 wird automatisch nach den Wochenstunden vergeben.';
+    }
+    return r;
+  };
+  try{selST=window.selST}catch(_){}
+
+  const baseOpenShiftEditor=window.openShiftEditor;
+  window.openShiftEditor=function(uid,dayIdx){
+    const r=typeof baseOpenShiftEditor==='function'?baseOpenShiftEditor.apply(this,arguments):undefined;
+    if(typeof mS!=='undefined'&&mS?.t==='KV'){
+      stripKvTime(mS);mS.z='KV';
+      const sec=document.getElementById('zeitSec');if(sec)sec.style.display='none';
+      const hint=document.getElementById('modalAvailabilityHint');if(hint)hint.innerHTML='Krankenvertretung · KV1–KV4 wird automatisch nach den Wochenstunden vergeben.';
+    }
+    return r;
+  };
+  try{openShiftEditor=window.openShiftEditor}catch(_){}
+
+  const baseApplyShift=window.applyShift;
+  window.applyShift=function(){
+    const day=Number(typeof curDay!=='undefined'?curDay:0),uid=String(typeof curUID!=='undefined'?curUID:'');
+    const wasKv=PLAN?.[uid]?.[day]?.t==='KV';
+    if(typeof mS!=='undefined'&&mS?.t==='KV'){
+      const other=orderedEntries().filter(([x])=>String(x)!==uid&&PLAN?.[x]?.[day]?.t==='KV').length;
+      if(!wasKv&&other>=KV_MAX){alert('Für diesen Tag sind bereits KV1 bis KV4 vergeben. Maximal 4 Krankenvertretungen sind möglich.');return;}
+      stripKvTime(mS);mS.z='KV';mS.kvPriority=null;mS.kvOverflow=false;
+    }
+    const r=typeof baseApplyShift==='function'?baseApplyShift.apply(this,arguments):undefined;
+    if(wasKv||PLAN?.[uid]?.[day]?.t==='KV'){
+      rebalanceDay(day);
+      try{WeekPlanStore?.persistCurrent?.()}catch(_){}
+      try{window.buildAdminPlan?.();window.renderPlan?.();renderKvPage()}catch(_){ }
+    }
+    return r;
+  };
+  try{applyShift=window.applyShift}catch(_){}
+
+  // Vor jedem Rendern alte KV-Daten (z.B. Uhrzeiten) normalisieren.
+  const baseBuildAdminPlan=window.buildAdminPlan;
+  if(typeof baseBuildAdminPlan==='function'){
+    window.buildAdminPlan=function(){rebalanceAll();const r=baseBuildAdminPlan.apply(this,arguments);renderKvPage();return r;};
+    try{buildAdminPlan=window.buildAdminPlan}catch(_){}
+  }
+  const baseRenderPlan=window.renderPlan;
+  if(typeof baseRenderPlan==='function'){
+    window.renderPlan=function(){rebalanceAll();return baseRenderPlan.apply(this,arguments);};
+    try{renderPlan=window.renderPlan}catch(_){}
+  }
+
+  // Nach erfolgreicher Veröffentlichung wird die letzte KV-Zuordnung für faire Gleichstände gespeichert.
+  const baseAdminPublish=window.adminPublishCurrentWeek;
+  if(typeof baseAdminPublish==='function'){
+    window.adminPublishCurrentWeek=async function(){
+      const before=Number(window.CloudWeekMigration?.state?.().version||0);
+      const r=await baseAdminPublish.apply(this,arguments);
+      const after=window.CloudWeekMigration?.state?.()||{};
+      if(after.published&&Number(after.version||0)>=before)await persistPublishedKvHistory();
+      return r;
+    };
+  }
+
+  // ── Richtige KV-Übersicht ────────────────────────────────────────────────
+  function renderKvPage(){
+    const page=document.getElementById('pgAdminKV');if(!page)return;
+    const mon=getMonday(AppState.weekOffset||0),sun=new Date(mon);sun.setDate(mon.getDate()+6),kw=getKW(mon);
+    rebalanceAll();
+    let rows='';
+    for(let i=0;i<7;i++){
+      const d=new Date(mon);d.setDate(mon.getDate()+i);
+      const kv=orderedEntries().filter(([uid])=>PLAN?.[uid]?.[i]?.t==='KV').map(([uid,u])=>({uid:String(uid),u,s:PLAN[uid][i],h:weekHoursWithoutKV(uid)})).sort((a,b)=>(Number(a.s.kvPriority)||99)-(Number(b.s.kvPriority)||99));
+      const items=kv.length?kv.map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);"><span style="min-width:34px;font-weight:900;color:#854d0e;">${x.s.kvPriority?`KV${x.s.kvPriority}`:'KV?'}</span><strong style="flex:1;font-size:12px;">${esc(x.u.name)}</strong><span style="font-size:10px;color:var(--muted);">${esc(formatHours(x.h))} Woche</span></div>`).join(''):'<div style="font-size:11px;color:var(--muted);padding:6px 0;">Keine KV eingetragen.</div>';
+      const over=kv.some(x=>x.s.kvOverflow)?'<div style="font-size:10px;color:#b42318;font-weight:700;margin-top:4px;">⚠ Mehr als vier KV vorhanden – bitte Wochenplan korrigieren.</div>':'';
+      rows+=`<div class="card" style="margin-bottom:8px;"><div class="card-h"><div class="card-t">${DAYS[i]} · ${formatDate(d)}</div></div><div class="card-b">${items}${over}</div></div>`;
+    }
+    page.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div class="sec">KV im Wochenplan</div><div class="banner binfo"><span>👥</span><span>KW ${kw} · ${formatDate(mon)}–${formatDate(sun)} · KV1 = geringste Wochenstunden. Bei Gleichstand erhält die Person Vorrang, die länger nicht als KV eingetragen war.</span></div>${rows}<button class="btn btn-primary" onclick="goTo('pgAdminPlan','Planung')">Wochenplan bearbeiten</button>`;
+  }
+  function patchKvMenu(){
+    document.querySelectorAll('#pgAdmin .mi').forEach(x=>{const l=x.querySelector('.mi-lbl');if(l&&l.textContent.trim()==='KV im Wochenplan')x.onclick=()=>{goTo('pgAdminKV','KV im Wochenplan');setTimeout(renderKvPage,0);};});
+  }
+  window.NaschKV={rebalanceDay,rebalanceAll,renderPage:renderKvPage,weekHours:weekHoursWithoutKV,history:()=>clone(kvHistory)};
+
+  // ── Google Kalender: echte Synchronisierung direkt im Browser ────────────
+  // Kein Client-Secret und kein kostenpflichtiges Backend erforderlich.
+  const GOOGLE_CLIENT_ID='791791893008-h78e4psheouomih6reg5m606fi23rmaq.apps.googleusercontent.com';
+  const GOOGLE_CAL_SCOPE='https://www.googleapis.com/auth/calendar.app.created';
+  const GOOGLE_API='https://www.googleapis.com/calendar/v3';
+  const G_CAL_LABELS={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
+  function gRanges(s){if(!s||!s.t||s.t==='-')return[];if(s.t==='TS'){const vals=[s.z1,s.z2].filter(Boolean),out=[];for(const v of vals){const m=String(v).match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);if(m)out.push([m[1],m[2]])}if(out.length)return out;}if(s.start&&s.end)return[[String(s.start),String(s.end)]];const m=String(s.z||'').match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);return m?[[m[1],m[2]]]:[];}
+  let googleToken=null,googleTokenExpiresAt=0,googleTokenClient=null,gisPromise=null;
+  const gStateKey=uid=>`nasch-google-calendar-v2816-${FID()}-${uid}`;
+  function gState(uid=String(AppState?.currentUserId||'')){try{return JSON.parse(localStorage.getItem(gStateKey(uid))||'{}')||{}}catch(_){return{}}}
+  function setGState(v,uid=String(AppState?.currentUserId||'')){try{localStorage.setItem(gStateKey(uid),JSON.stringify(v||{}))}catch(_){}}
+  function hasGoogleToken(){return !!googleToken&&Date.now()<googleTokenExpiresAt-30000;}
+  function loadGIS(){
+    if(window.google?.accounts?.oauth2)return Promise.resolve();
+    if(gisPromise)return gisPromise;
+    gisPromise=new Promise((resolve,reject)=>{
+      let sc=document.querySelector('script[data-nasch-gis="1"]');
+      if(!sc){sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.defer=true;sc.dataset.naschGis='1';document.head.appendChild(sc)}
+      const t=Date.now();(function wait(){if(window.google?.accounts?.oauth2)return resolve();if(Date.now()-t>12000)return reject(new Error('Google-Anmeldung konnte nicht geladen werden.'));setTimeout(wait,100)})();
+    });
+    return gisPromise;
+  }
+  function authHeader(){if(!hasGoogleToken())throw new Error('Google-Anmeldung erforderlich.');return {'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'};}
+  async function gFetch(path,opts={}){
+    const r=await fetch(GOOGLE_API+path,{...opts,headers:{...authHeader(),...(opts.headers||{})}});
+    if(r.status===204)return null;
+    let data=null;try{data=await r.json()}catch(_){}
+    if(!r.ok){const e=new Error(data?.error?.message||`Google Kalender: HTTP ${r.status}`);e.status=r.status;throw e}
+    return data;
+  }
+  async function requestGoogleToken(){
+    await loadGIS();
+    return await new Promise((resolve,reject)=>{
+      googleTokenClient=google.accounts.oauth2.initTokenClient({
+        client_id:GOOGLE_CLIENT_ID,scope:GOOGLE_CAL_SCOPE,
+        callback:r=>{
+          if(r?.error)return reject(new Error(r.error_description||r.error));
+          if(!r?.access_token)return reject(new Error('Kein Google-Zugriffstoken erhalten.'));
+          googleToken=r.access_token;googleTokenExpiresAt=Date.now()+Math.max(300,Number(r.expires_in||3600))*1000;resolve(r);
+        },
+        error_callback:e=>reject(new Error(e?.message||e?.type||'Google-Anmeldung abgebrochen.'))
+      });
+      const st=gState();googleTokenClient.requestAccessToken({prompt:st.connected?'':'consent'});
+    });
+  }
+  async function ensureGoogleCalendar(){
+    const uid=String(AppState?.currentUserId||'');if(!uid)throw new Error('Kein Mitarbeiter angemeldet.');
+    const st=gState(uid);
+    if(st.calendarId){
+      try{await gFetch('/calendars/'+encodeURIComponent(st.calendarId));return st.calendarId}catch(e){if(e.status!==404&&e.status!==403)throw e}
+    }
+    const cal=await gFetch('/calendars',{method:'POST',body:JSON.stringify({summary:'NASCH Emsdetten – Meine Schichten',description:'Veröffentlichte Schichten aus der NASCH Mitarbeiter-App.',timeZone:'Europe/Berlin'})});
+    if(!cal?.id)throw new Error('Google-Kalender konnte nicht erstellt werden.');
+    setGState({...st,connected:true,calendarId:cal.id,createdAt:new Date().toISOString()},uid);return cal.id;
+  }
+  function isoDate(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+  function plusDayIso(d){const x=new Date(d);x.setDate(x.getDate()+1);return isoDate(x)}
+  function googleEvent(uid,weekKey,dayIdx,partIdx,date,s,range){
+    const key=`${weekKey}|${dayIdx}|${partIdx}`;
+    const base={summary:`NASCH Emsdetten – ${G_CAL_LABELS[s.t]||s.t}`,description:[s.z,Array.isArray(s.r)?s.r.join(', '):s.r].filter(Boolean).join(' · '),extendedProperties:{private:{nasch:'1',naschUid:String(uid),naschKey:key}}};
+    if(range){const [a,b]=range;let endDate=new Date(date);if(String(b)<=String(a))endDate.setDate(endDate.getDate()+1);base.start={dateTime:`${isoDate(date)}T${a}:00`,timeZone:'Europe/Berlin'};base.end={dateTime:`${isoDate(endDate)}T${b}:00`,timeZone:'Europe/Berlin'};}
+    else{base.start={date:isoDate(date)};base.end={date:plusDayIso(date)};}
+    return {key,event:base};
+  }
+  async function publishedGoogleEvents(year){
+    const uid=String(AppState?.currentUserId||'');if(!uid||!USERS?.[uid])throw new Error('Kein Mitarbeiter angemeldet.');
+    if(typeof firebase==='undefined'||!firebase.firestore)throw new Error('Firebase ist nicht verfügbar.');
+    const snap=await firebase.firestore().collection('nasch').doc(FID()).collection('plan').get(),out=[];
+    snap.forEach(doc=>{
+      const wk=doc.id;if(!/^\d{4}-\d{2}-\d{2}$/.test(wk))return;
+      const mon=new Date(wk+'T12:00:00'),data=doc.data()||{},plan=data.publishedPlan||(data.published===true?data.plan:null),days=plan?.[uid];if(!Array.isArray(days))return;
+      for(let i=0;i<7;i++){
+        const s=days[i];if(!s||!s.t||s.t==='-')continue;const d=new Date(mon);d.setDate(mon.getDate()+i);if(d.getFullYear()!==year)continue;
+        const ranges=gRanges(s);if(ranges.length)ranges.forEach((r,j)=>out.push(googleEvent(uid,wk,i,j,d,s,r)));else out.push(googleEvent(uid,wk,i,0,d,s,null));
+      }
+    });
+    return out;
+  }
+  async function listGoogleNaschEvents(calendarId,uid,year){
+    const t0=encodeURIComponent(`${year}-01-01T00:00:00+01:00`),t1=encodeURIComponent(`${year+1}-01-01T00:00:00+01:00`),priv=encodeURIComponent(`naschUid=${uid}`);
+    let token='',items=[];
+    do{const q=`?singleEvents=true&maxResults=2500&timeMin=${t0}&timeMax=${t1}&privateExtendedProperty=${priv}${token?'&pageToken='+encodeURIComponent(token):''}`;const d=await gFetch(`/calendars/${encodeURIComponent(calendarId)}/events${q}`);items.push(...(d?.items||[]));token=d?.nextPageToken||'';}while(token);
+    return items.filter(e=>e?.extendedProperties?.private?.nasch==='1');
+  }
+  function eventComparable(e){return JSON.stringify({summary:e.summary||'',description:e.description||'',start:e.start||{},end:e.end||{},key:e.extendedProperties?.private?.naschKey||''})}
+  async function syncGoogleYear(year){
+    if(!hasGoogleToken())throw new Error('Bitte zuerst Google Kalender verbinden.');
+    const uid=String(AppState?.currentUserId||''),calendarId=await ensureGoogleCalendar(),desired=await publishedGoogleEvents(year),existing=await listGoogleNaschEvents(calendarId,uid,year),byKey=new Map(existing.map(e=>[e.extendedProperties?.private?.naschKey,e]));
+    let created=0,updated=0,deleted=0;
+    for(const x of desired){const old=byKey.get(x.key);if(old){if(eventComparable(old)!==eventComparable(x.event)){await gFetch(`/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(old.id)}`,{method:'PUT',body:JSON.stringify(x.event)});updated++;}byKey.delete(x.key)}else{await gFetch(`/calendars/${encodeURIComponent(calendarId)}/events`,{method:'POST',body:JSON.stringify(x.event)});created++;}}
+    for(const old of byKey.values()){await gFetch(`/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(old.id)}`,{method:'DELETE'});deleted++;}
+    const st=gState(uid);setGState({...st,connected:true,calendarId,lastSync:new Date().toISOString(),lastYear:year},uid);return{created,updated,deleted,total:desired.length,calendarId};
+  }
+  function selectedCalendarYear(){const y=Number(document.getElementById('calendarYear')?.value||new Date().getFullYear());return Number.isFinite(y)?y:new Date().getFullYear()}
+  async function connectGoogleCalendar(){
+    const stEl=document.getElementById('googleCalendarStatus');try{if(stEl)stEl.textContent='Google-Anmeldung wird geöffnet …';await requestGoogleToken();await ensureGoogleCalendar();const y=selectedCalendarYear();if(stEl)stEl.textContent=`Verbunden · ${y} wird synchronisiert …`;const r=await syncGoogleYear(y);if(stEl)stEl.textContent=`Google Kalender verbunden · ${r.total} Einträge für ${y} synchronisiert.`;renderGoogleCalendarCard();showToast?.('✓ Google Kalender synchronisiert');}catch(e){console.warn('Google Kalender verbinden:',e);if(stEl)stEl.textContent='Verbindung fehlgeschlagen: '+(e.message||e);}}
+  async function syncGoogleCalendar(){
+    const stEl=document.getElementById('googleCalendarStatus');try{if(!hasGoogleToken()){if(stEl)stEl.textContent='Google-Anmeldung erforderlich …';await requestGoogleToken()}const y=selectedCalendarYear();if(stEl)stEl.textContent=`Veröffentlichte Schichten ${y} werden synchronisiert …`;const r=await syncGoogleYear(y);if(stEl)stEl.textContent=`Fertig · ${r.created} neu, ${r.updated} aktualisiert, ${r.deleted} entfernt · ${r.total} insgesamt.`;renderGoogleCalendarCard();showToast?.('✓ Google Kalender aktualisiert');}catch(e){console.warn('Google Kalender Sync:',e);if(stEl)stEl.textContent='Synchronisierung fehlgeschlagen: '+(e.message||e);}}
+  async function disconnectGoogleCalendar(){
+    const uid=String(AppState?.currentUserId||''),st=gState(uid);try{if(googleToken&&window.google?.accounts?.oauth2)await new Promise(res=>google.accounts.oauth2.revoke(googleToken,()=>res()));}catch(_){}googleToken=null;googleTokenExpiresAt=0;setGState({...st,connected:false,lastDisconnected:new Date().toISOString()},uid);renderGoogleCalendarCard();
+  }
+  function openGoogleCalendar(){window.open('https://calendar.google.com/calendar/u/0/r','_blank','noopener')}
+  function renderGoogleCalendarCard(){
+    const page=document.getElementById('pgKalender');if(!page)return;let card=document.getElementById('googleCalendarSyncCard');if(!card){card=document.createElement('div');card.id='googleCalendarSyncCard';card.className='card';card.style.marginTop='10px';page.querySelector('.card')?.insertAdjacentElement('afterend',card)}
+    const st=gState(),connected=st.connected===true,last=st.lastSync?new Date(st.lastSync).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    card.innerHTML=`<div class="card-h"><div class="card-t">📅 Google Kalender</div></div><div class="card-b"><div id="googleCalendarStatus" style="font-size:11px;color:var(--muted);margin-bottom:9px;line-height:1.4;">${connected?(last?`Bereits eingerichtet · letzte Synchronisierung ${esc(last)}.`:'Bereits eingerichtet.'): 'Noch nicht verbunden.'}</div>${connected?`<button class="btn btn-primary" type="button" onclick="NaschGoogleCalendar.sync()">🔄 Jetzt synchronisieren</button><button class="btn btn-outline" type="button" onclick="NaschGoogleCalendar.open()">📅 Google Kalender öffnen</button><button class="btn btn-outline" type="button" onclick="NaschGoogleCalendar.disconnect()">Verbindung trennen</button>`:`<button class="btn btn-primary" type="button" onclick="NaschGoogleCalendar.connect()">Google Kalender verbinden</button>`}<div style="font-size:10px;color:var(--muted);margin-top:9px;line-height:1.45;">Synchronisiert nur veröffentlichte NASCH-Einträge des angemeldeten Mitarbeiters für das oben ausgewählte Jahr. Die Google-Berechtigung gilt ausschließlich für von NASCH erstellte Kalender.</div></div>`;
+  }
+  window.NaschGoogleCalendar={connect:connectGoogleCalendar,sync:syncGoogleCalendar,disconnect:disconnectGoogleCalendar,open:openGoogleCalendar,render:renderGoogleCalendarCard,clientId:GOOGLE_CLIENT_ID};
+  // Menü, Kalenderseite und Version nachziehen.
+  function patchCalendarMenu(){document.querySelectorAll('#pgProfil .mi-lbl').forEach(l=>{if(l.textContent.trim()==='Kalender exportieren')l.textContent='Kalender synchronisieren';});}
+  function versionInfo(){
+    if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
+    const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.16')}</strong></span>`;pg.appendChild(d);
+  }
+  const baseGo=window.goTo;
+  if(typeof baseGo==='function'){
+    window.goTo=function(pg,title){const r=baseGo.apply(this,arguments);patchKvMenu();patchCalendarMenu();if(pg==='pgAdminKV')setTimeout(renderKvPage,0);if(pg==='pgKalender')setTimeout(()=>{window.NaschCalendar?.setupYearSelect?.();renderGoogleCalendarCard();},0);if(pg==='pgAdminSettings')setTimeout(versionInfo,0);return r;};
+    try{goTo=window.goTo}catch(_){}
+  }
+  const baseStart=window.startApp;
+  if(typeof baseStart==='function'){
+    window.startApp=function(){const r=baseStart.apply(this,arguments);setTimeout(()=>{patchKvMenu();patchCalendarMenu();versionInfo();renderKvPage();},900);return r;};
+    try{startApp=window.startApp}catch(_){}
+  }
+
+  // Anonyme Firebase-Anmeldung startet bereits beim Laden; Historie danach holen.
+  try{firebase.auth().onAuthStateChanged(u=>{if(u&&!kvHistoryLoaded)loadKvHistory()})}catch(_){}
+  patchKvMenu();patchCalendarMenu();
+})();
+</script>
 </body>
 </html>
