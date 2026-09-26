@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.20 · Emsdetten</title>
+<title>NASCH v28.21 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.20</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.21</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1020,6 +1020,15 @@ const FirestoreStore = (() => {
               });
             }
 
+            // v28.21: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
+            try {
+              const aDoc = await docRef('config','adminSettings').get();
+              if(typeof NaschAdminSettings !== 'undefined' && NaschAdminSettings.hydrateCloud){
+                NaschAdminSettings.hydrateCloud(aDoc.exists ? aDoc.data() : null);
+              }
+            } catch(e){ console.warn('Admin-Einstellungen Cloud laden:', e); }
+
             // Plan (aktuelle KW)
             const wk = _weekKey();
             const pSnap = await docRef('plan', wk).get();
@@ -1079,6 +1088,18 @@ const FirestoreStore = (() => {
     whenReady(()=>{ docRef('config','users').set(d,{merge:true})
       .catch(e=>console.warn('saveEmployee:',e)); });
   }
+  function saveAdminSettings(settings){
+    let payload='';
+    try{ payload=JSON.stringify(settings||{}); }catch(e){ console.warn('saveAdminSettings JSON:',e); return; }
+    whenReady(()=>{ docRef('config','adminSettings').set({
+      payload,
+      schemaVersion:Number(settings?.schemaVersion||0),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy:window.AppState?.currentUser?.name||'Admin'
+    },{merge:true})
+      .then(()=>console.log('✅ Mitarbeiter-Einstellungen in Firebase gespeichert'))
+      .catch(e=>console.warn('saveAdminSettings:',e)); });
+  }
   function savePlan(){
     const wk=_weekKey();
     const data={ plan:JSON.parse(JSON.stringify(PLAN)),
@@ -1130,7 +1151,7 @@ const FirestoreStore = (() => {
   }
   function reset(){ if(confirm('Firestore-Daten zurücksetzen?')) location.reload(); }
 
-  return { load, savePins, saveEmployee, savePlan, addRequest, getRequests,
+  return { load, savePins, saveEmployee, saveAdminSettings, savePlan, addRequest, getRequests,
            saveAvailability, getAvailability, saveSignature, getSignature, saveDecision, updateRequest, deleteRequest, reset };
 })();
 
@@ -1493,14 +1514,11 @@ const NaschAdminSettings = (() => {
   }
 
   let state = blank();
+  let cloudHydrated = false;
 
-  function numOrNull(value) {
-    if(value === '' || value === null || value === undefined) return null;
-    const n = Number(String(value).replace(',','.'));
-    return Number.isFinite(n) && n >= 0 ? n : null;
-  }
-
-
+  // Unveränderte Ausgangswerte merken. So bedeutet ein explizites null wirklich
+  // „nicht hinterlegt“ und fällt nicht wieder auf einen zuvor angezeigten Wert zurück.
+  const baseProfiles = {};
   function normalizeActivityList(value) {
     const raw = Array.isArray(value) ? value : (value ? [value] : []);
     const out = [];
@@ -1510,56 +1528,132 @@ const NaschAdminSettings = (() => {
     });
     return out;
   }
+  function ensureBase(uid) {
+    const u=USERS[uid]||{};
+    if(!baseProfiles[uid]){
+      baseProfiles[uid]={
+        monthlyHours:u.sollStundenMonat ?? null,
+        hourlyRate:u.stundenlohn ?? null,
+        weeklyWorkDays:u.arbeitstageWoche ?? null,
+        activities:Array.isArray(u.taetigkeiten)?normalizeActivityList(u.taetigkeiten):normalizeActivityList(u.taetigkeit)
+      };
+    }
+    return baseProfiles[uid];
+  }
+  Object.keys(USERS).forEach(ensureBase);
+  const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
+
+  function numOrNull(value) {
+    if(value === '' || value === null || value === undefined) return null;
+    const n = Number(String(value).replace(',','.'));
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
 
   function profileActivities(uid) {
     const p = state.profiles[uid] || {};
     if(Array.isArray(p.defaultActivities)) return normalizeActivityList(p.defaultActivities);
-    if(p.defaultActivity) return normalizeActivityList(p.defaultActivity); // V3-Migration
-    const u=USERS[uid]||{};
-    if(Array.isArray(u.taetigkeiten)) return normalizeActivityList(u.taetigkeiten);
-    return normalizeActivityList(u.taetigkeit);
+    if(hasOwn(p,'defaultActivity')) return normalizeActivityList(p.defaultActivity); // V3-Migration
+    return [...ensureBase(uid).activities];
+  }
+
+  function applySavedState(saved) {
+    saved = saved && typeof saved==='object' ? saved : {};
+    const oldSchema = Number(saved.schemaVersion||0);
+    state = {...blank(), ...saved};
+    const knownIds=Object.keys(USERS);
+    state.order = Array.isArray(saved.order) ? saved.order.filter(id=>USERS[id]) : [...knownIds];
+    knownIds.forEach(id=>{ if(!state.order.includes(id)) state.order.push(id); });
+    state.profiles = saved.profiles && typeof saved.profiles==='object' ? {...saved.profiles} : {};
+    state.activities = Array.isArray(saved.activities) && saved.activities.length ? [...saved.activities] : [...DEFAULT_ACTIVITIES];
+    // V7-Migration: RK als steuerndes Kürzel für Reinigung einmalig ergänzen.
+    if(oldSchema < SCHEMA_VERSION && !state.activities.includes('RK')) state.activities.push('RK');
+    state.activityLegend = {...DEFAULT_ACTIVITY_LEGEND, ...(saved.activityLegend||{})};
+    state.activities.forEach(code=>{ if(!(code in state.activityLegend)) state.activityLegend[code]=''; });
+    Object.keys(state.activityLegend).forEach(code=>{ if(!state.activities.includes(code) && code!=='RK') delete state.activityLegend[code]; });
+    state.schemaVersion = SCHEMA_VERSION;
+    state.times = {...DEFAULT_TIMES, ...(saved.times||{})};
+    // V5-Migration: bisherige einzelne Teilschicht-Zeiten auf beide Zeitblöcke übernehmen.
+    if(saved.times?.TS && !saved.times?.TS1) state.times.TS1=[...saved.times.TS];
+    if(saved.times?.TS && !saved.times?.TS2) state.times.TS2=[...saved.times.TS];
+    delete state.times.TS;
   }
 
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if(raw) {
-        const saved = JSON.parse(raw);
-        const oldSchema = Number(saved.schemaVersion||0);
-        state = {...blank(), ...saved};
-        state.order = Array.isArray(saved.order) ? saved.order.filter(id=>USERS[id]) : [...DEFAULT_ORDER];
-        DEFAULT_ORDER.forEach(id=>{ if(!state.order.includes(id)) state.order.push(id); });
-        state.activities = Array.isArray(saved.activities) && saved.activities.length ? [...saved.activities] : [...DEFAULT_ACTIVITIES];
-        // V7-Migration: RK als steuerndes Kürzel für Reinigung einmalig ergänzen.
-        if(oldSchema < SCHEMA_VERSION && !state.activities.includes('RK')) state.activities.push('RK');
-        state.activityLegend = {...DEFAULT_ACTIVITY_LEGEND, ...(saved.activityLegend||{})};
-        state.activities.forEach(code=>{ if(!(code in state.activityLegend)) state.activityLegend[code]=''; });
-        Object.keys(state.activityLegend).forEach(code=>{ if(!state.activities.includes(code) && code!=='RK') delete state.activityLegend[code]; });
-        state.schemaVersion = SCHEMA_VERSION;
-        state.times = {...DEFAULT_TIMES, ...(saved.times||{})};
-        // V5-Migration: bisherige einzelne Teilschicht-Zeiten auf beide Zeitblöcke übernehmen.
-        if(saved.times?.TS && !saved.times?.TS1) state.times.TS1=[...saved.times.TS];
-        if(saved.times?.TS && !saved.times?.TS2) state.times.TS2=[...saved.times.TS];
-        delete state.times.TS;
-      }
+      if(raw) applySavedState(JSON.parse(raw));
+      else applySavedState(blank());
     } catch(e) {
       console.warn('Admin-Einstellungen konnten nicht geladen werden:', e);
-      state = blank();
+      applySavedState(blank());
     }
     applyProfiles();
   }
 
-  function persist() {
+  function persistLocal() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e) { console.warn('Admin-Einstellungen konnten nicht gespeichert werden:', e); }
+  }
+
+  function isCustomizedState() {
+    if(Object.keys(state.profiles||{}).length) return true;
+    const knownIds=Object.keys(USERS);
+    if(JSON.stringify(state.order)!==JSON.stringify(knownIds)) return true;
+    if(JSON.stringify(state.activities)!==JSON.stringify(DEFAULT_ACTIVITIES)) return true;
+    if(JSON.stringify(state.activityLegend)!==JSON.stringify(DEFAULT_ACTIVITY_LEGEND)) return true;
+    if(JSON.stringify(state.times)!==JSON.stringify(DEFAULT_TIMES)) return true;
+    return false;
+  }
+
+  function persist() {
+    persistLocal();
+    // Nach dem ersten Cloud-Ladevorgang wird jede Änderung zusätzlich zentral gespeichert.
+    if(cloudHydrated && typeof FirestoreStore!=='undefined' && FirestoreStore.saveAdminSettings){
+      FirestoreStore.saveAdminSettings(state);
+    }
+  }
+
+  function hydrateCloud(docData) {
+    let cloudState=null;
+    try{
+      if(docData && typeof docData.payload==='string' && docData.payload.trim()) cloudState=JSON.parse(docData.payload);
+      else if(docData && docData.state && typeof docData.state==='object') cloudState=docData.state;
+    }catch(e){ console.warn('Admin-Einstellungen Cloud-Daten ungültig:',e); }
+
+    if(cloudState){
+      applySavedState(cloudState);
+      applyProfiles();
+      persistLocal();
+      cloudHydrated=true;
+      console.log('✅ Mitarbeiter-Einstellungen aus Firebase geladen');
+      return true;
+    }
+
+    // Einmalige Migration: Nach dem Firestore-User-Load die lokale Konfiguration
+    // noch einmal gegen die jetzt vollständige Mitarbeiterliste normalisieren und anwenden.
+    // Nur echte lokale Änderungen werden hochgeladen; ein frisches Gerät darf nicht
+    // versehentlich die Standardwerte als autoritativen Cloud-Stand setzen.
+    applySavedState(state);
+    applyProfiles();
+    persistLocal();
+    cloudHydrated=true;
+    if(isCustomizedState() && typeof FirestoreStore!=='undefined' && FirestoreStore.saveAdminSettings){
+      FirestoreStore.saveAdminSettings(state);
+      console.log('✅ Lokale Mitarbeiter-Einstellungen nach Firebase migriert');
+    }
+    return false;
   }
 
   function applyProfiles() {
     Object.entries(USERS).forEach(([uid,u])=>{
       const p = state.profiles[uid] || {};
-      u.sollStundenMonat = p.monthlyHours ?? u.sollStundenMonat ?? null;
-      u.stundenlohn = p.hourlyRate ?? u.stundenlohn ?? null;
-      u.arbeitstageWoche = p.weeklyWorkDays ?? u.arbeitstageWoche ?? null;
+      const base=ensureBase(uid);
+      // Wichtig: null ist ein bewusster Wert („nicht hinterlegt“) und darf nicht
+      // per Nullish-Coalescing wieder auf den alten Standard zurückfallen.
+      u.sollStundenMonat = hasOwn(p,'monthlyHours') ? p.monthlyHours : base.monthlyHours;
+      u.stundenlohn = hasOwn(p,'hourlyRate') ? p.hourlyRate : base.hourlyRate;
+      u.arbeitstageWoche = hasOwn(p,'weeklyWorkDays') ? p.weeklyWorkDays : base.weeklyWorkDays;
       u.zuschlaege = p.surchargeEligible === true;
       const assigned = profileActivities(uid);
       u.taetigkeiten = assigned;
@@ -1736,9 +1830,9 @@ const NaschAdminSettings = (() => {
 
     emp.innerHTML = entries().map(([uid,u],idx)=>{
       const p = state.profiles[uid] || {};
-      const monthly = p.monthlyHours ?? u.sollStundenMonat ?? '';
-      const wage = p.hourlyRate ?? u.stundenlohn ?? '';
-      const weeklyDays = p.weeklyWorkDays ?? u.arbeitstageWoche ?? '';
+      const monthly = hasOwn(p,'monthlyHours') ? (p.monthlyHours ?? '') : (u.sollStundenMonat ?? '');
+      const wage = hasOwn(p,'hourlyRate') ? (p.hourlyRate ?? '') : (u.stundenlohn ?? '');
+      const weeklyDays = hasOwn(p,'weeklyWorkDays') ? (p.weeklyWorkDays ?? '') : (u.arbeitstageWoche ?? '');
       const surcharge = p.surchargeEligible === true;
       const assigned = profileActivities(uid);
       return `<div class="card" style="padding:10px 12px;margin-bottom:8px;overflow:visible;">
@@ -1804,7 +1898,7 @@ const NaschAdminSettings = (() => {
   function reset(){ try{localStorage.removeItem(KEY);}catch(_){} }
 
   load();
-  return {getOrder, entries, activities, surchargeEligible, activityLabel, activityDisplay, times, move, addEmployee, updateProfile, addActivity, updateActivity, removeActivity, toggleEmployeeActivity, profileActivities, addTime, removeTime, availability, cycleAvailability, buildAdminSettings, reset};
+  return {getOrder, entries, activities, surchargeEligible, activityLabel, activityDisplay, times, move, addEmployee, updateProfile, addActivity, updateActivity, removeActivity, toggleEmployeeActivity, profileActivities, addTime, removeTime, availability, cycleAvailability, buildAdminSettings, hydrateCloud, reset};
 })();
 
 function getOrderedUserEntries(){
@@ -2515,7 +2609,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'28.20');
+    const v='v'+(window.NASCH_APP_VERSION||'28.21');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -7312,7 +7406,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='28.20';
+  window.NASCH_APP_VERSION='28.21';
 })();
 </script>
 
@@ -8247,7 +8341,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='28.20';
+  window.NASCH_APP_VERSION='28.21';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8258,7 +8352,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks']
@@ -8397,7 +8491,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8448,7 +8542,7 @@ window.NASCH_APP_VERSION='28.20';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8467,7 +8561,7 @@ window.NASCH_APP_VERSION='28.20';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -8798,7 +8892,7 @@ window.NASCH_APP_VERSION='28.20';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.20')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.21')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -8818,7 +8912,7 @@ window.NASCH_APP_VERSION='28.20';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9285,9 +9379,9 @@ window.NASCH_APP_VERSION='28.20';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (()=>{
-  const VERSION='28.20';
+  const VERSION='28.21';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9480,7 +9574,7 @@ window.NASCH_APP_VERSION='28.20';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='28.20';
+window.NASCH_APP_VERSION='28.21';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||'FIL001';
