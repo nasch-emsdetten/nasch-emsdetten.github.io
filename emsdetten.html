@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.23 · Emsdetten</title>
+<title>NASCH v28.24 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -145,7 +145,7 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
-/* Einstellungs-Module v28.23 */
+/* Einstellungs-Module v28.24 */
 .settings-module{margin-bottom:10px;}
 .settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
 .settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
@@ -245,7 +245,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.23</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.24</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -340,6 +340,7 @@ window.FILIAL_ID = 'FIL001';
   <div class="topbar">
     <div class="tb-title" id="tbTitle">Wochenplan</div>
     <div class="tb-right">
+      <button id="desktopViewToggle" type="button" onclick="window.NaschDesktop?.toggle?.()" title="PC-/Mobilansicht wechseln" style="display:none;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;border-radius:8px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;">🖥 PC-Ansicht</button>
       <span class="tb-icon" onclick="navTo('notif')">🔔</span>
       <div class="av" id="avBtn" onclick="navTo('profil')">LK</div>
     </div>
@@ -1058,7 +1059,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v28.23: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v28.24: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -2124,7 +2125,7 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
-// ── v28.23: Einstellungs-Module ein-/ausblenden ─────────────
+// ── v28.24: Einstellungs-Module ein-/ausblenden ─────────────
 const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
 function adminSettingsReadState(){
   try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
@@ -2200,6 +2201,7 @@ function adminCreateEmployee(){
   PINS[uid]=pin;
   PLAN[uid]=Array.from({length:7},()=>({t:'-',z:'',r:''}));
   if(typeof SandboxStore!=='undefined'){ SandboxStore.saveEmployee(uid); SandboxStore.savePins(); SandboxStore.savePlan(); }
+  if(window.NaschPinSecurity) NaschPinSecurity.markTemporary(uid);
   NaschAdminSettings.addEmployee(uid);
   if(['VZ','TZ'].includes(typ)) NaschAdminSettings.updateProfile(uid,{weeklyWorkDays:workDays});
   NaschAdminSettings.buildAdminSettings();
@@ -2221,6 +2223,7 @@ function adminResetPin(uid){
   if((typeof BLOCKED_PINS!=='undefined'&&BLOCKED_PINS.includes(clean)) || (typeof BLOCKED!=='undefined'&&BLOCKED.includes(clean))){ alert('Diese PIN ist nicht erlaubt. Bitte eine andere PIN wählen.'); return; }
   PINS[uid]=clean;
   if(typeof SandboxStore!=='undefined') SandboxStore.savePins();
+  if(window.NaschPinSecurity) NaschPinSecurity.markTemporary(uid);
   if(typeof markLocalPinRequestsDone==='function') markLocalPinRequestsDone(uid);
   if(typeof renderAdminPinOverview==='function') renderAdminPinOverview();
   if(typeof renderPinAntraege==='function') renderPinAntraege();
@@ -2701,7 +2704,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'28.23');
+    const v='v'+(window.NASCH_APP_VERSION||'28.24');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -2991,7 +2994,7 @@ function procPIN(){
     else{cNew=cPin;cStep=2;updPSD();cPin='';updCP();document.getElementById('pinTitle').textContent='Neue PIN bestätigen';}
   } else {
     if(cPin!==cNew){updCP('err');document.getElementById('pinErr').textContent='PINs stimmen nicht überein.';setTimeout(()=>{cPin='';cNew='';cStep=1;updPSD();updCP();document.getElementById('pinTitle').textContent='Neue PIN wählen';},900);}
-    else{PINS[uid]=cPin;SandboxStore.savePins();updCP('ok');document.getElementById('pinOk').style.display='block';cPin='';cNew='';cStep=0;setTimeout(()=>{document.getElementById('pinOk').style.display='none';updCP();updPSD();document.getElementById('pinTitle').textContent='Aktuelle PIN eingeben';navTo('profil');},2000);}
+    else{PINS[uid]=cPin;SandboxStore.savePins();if(window.NaschPinSecurity)NaschPinSecurity.markPersonal(uid);updCP('ok');document.getElementById('pinOk').style.display='block';cPin='';cNew='';cStep=0;setTimeout(()=>{document.getElementById('pinOk').style.display='none';updCP();updPSD();document.getElementById('pinTitle').textContent='Aktuelle PIN eingeben';navTo('profil');},2000);}
   }
 }
 
@@ -3883,7 +3886,8 @@ function adminPinResetDirekt(uid, idx){
   if(typeof markLocalPinRequestsDone==='function') markLocalPinRequestsDone(uid);
   if(typeof renderAdminPinOverview==='function') renderAdminPinOverview();
   renderPinAntraege();
-  if(typeof showToast === 'function') showToast(`✓ PIN für ${USERS[uid].name} auf ${clean} gesetzt`);
+  if(window.NaschPinSecurity) NaschPinSecurity.markTemporary(uid);
+  if(typeof showToast === 'function') showToast(`✓ Temporäre PIN für ${USERS[uid].name} gespeichert`);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4205,7 +4209,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v28.23: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v28.24: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -7493,7 +7497,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='28.23';
+  window.NASCH_APP_VERSION='28.24';
 })();
 </script>
 
@@ -8428,7 +8432,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='28.23';
+  window.NASCH_APP_VERSION='28.24';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8439,7 +8443,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks']
@@ -8578,7 +8582,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8620,7 +8624,7 @@ window.NASCH_APP_VERSION='28.23';
   };try{renderPinAntraege=window.renderPinAntraege}catch(_){}
   window.adminPinResetDirekt=async function(uid,requestId){
     if(AppState.currentUser?.role!=='admin')return;const pin=prompt(`Neue temporäre PIN für ${USERS?.[uid]?.name||uid}:\n(4 Ziffern)`,'');if(pin===null)return;const clean=String(pin).trim();if(!/^\d{4}$/.test(clean)){alert('Bitte genau 4 Ziffern eingeben.');return}if((window.BLOCKED_PINS||[]).includes(clean)){alert('Diese PIN ist nicht erlaubt.');return}
-    try{PINS[uid]=clean;await Promise.resolve(window.SandboxStore?.savePins?.());if(requestId)await pinReqCol().doc(String(requestId)).set({status:'erledigt',resolvedAt:firebase.firestore.FieldValue.serverTimestamp(),resolvedBy:String(AppState.currentUser?.name||'Admin')},{merge:true});await window.renderPinAntraege();showToast?.(`✓ Neue PIN für ${USERS?.[uid]?.name||uid} gespeichert`);}catch(e){alert('PIN konnte nicht gespeichert werden. Bitte Cloud-Verbindung prüfen.');console.warn(e)}
+    try{PINS[uid]=clean;await Promise.resolve(window.SandboxStore?.savePins?.());if(window.NaschPinSecurity)await NaschPinSecurity.markTemporary(uid);if(requestId)await pinReqCol().doc(String(requestId)).set({status:'erledigt',resolvedAt:firebase.firestore.FieldValue.serverTimestamp(),resolvedBy:String(AppState.currentUser?.name||'Admin')},{merge:true});await window.renderPinAntraege();if(typeof renderAdminPinOverview==='function')renderAdminPinOverview();showToast?.(`✓ Temporäre PIN für ${USERS?.[uid]?.name||uid} gespeichert`);}catch(e){alert('PIN konnte nicht gespeichert werden. Bitte Cloud-Verbindung prüfen.');console.warn(e)}
   };try{adminPinResetDirekt=window.adminPinResetDirekt}catch(_){}
 
   patchAdminMenus();setTimeout(()=>{refreshNotifications();window.buildStzList?.()},0);
@@ -8629,7 +8633,7 @@ window.NASCH_APP_VERSION='28.23';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8648,7 +8652,7 @@ window.NASCH_APP_VERSION='28.23';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -8979,7 +8983,7 @@ window.NASCH_APP_VERSION='28.23';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.23')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.24')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -8999,7 +9003,7 @@ window.NASCH_APP_VERSION='28.23';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9466,9 +9470,9 @@ window.NASCH_APP_VERSION='28.23';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (()=>{
-  const VERSION='28.23';
+  const VERSION='28.24';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9661,7 +9665,7 @@ window.NASCH_APP_VERSION='28.23';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='28.23';
+window.NASCH_APP_VERSION='28.24';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -9780,9 +9784,9 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v28.23 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v28.24 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='28.23';
+  const CURRENT='28.24';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
@@ -9866,6 +9870,240 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
   window.addEventListener('pageshow',()=>checkForUpdate(true));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkForUpdate(true);});
   setInterval(()=>checkForUpdate(false),CHECK_EVERY_MS);
+})();
+</script>
+
+
+<!-- NASCH v28.24: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
+<style id="nasch-v2824-security-desktop-css">
+#firstPinOverlay{display:none;position:fixed;inset:0;z-index:15000;background:rgba(15,23,42,.78);align-items:center;justify-content:center;padding:18px;}
+#firstPinOverlay.open{display:flex;}
+.first-pin-card{width:100%;max-width:360px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.3);}
+.first-pin-card h2{font-size:18px;color:var(--navy);margin-bottom:5px;}
+.first-pin-card p{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+.first-pin-card input{font-size:20px;letter-spacing:6px;text-align:center;font-weight:800;}
+.first-pin-error{min-height:18px;color:#dc2626;font-size:12px;margin-top:8px;}
+.pin-status-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800;white-space:nowrap;}
+.pin-status-ok{background:#E1F5EE;color:#085041;}
+.pin-status-pending{background:#FAEEDA;color:#633806;}
+.pin-overview-row{grid-template-columns:minmax(130px,1fr) minmax(112px,auto) auto!important;}
+.pin-overview-pin{font-family:inherit!important;letter-spacing:0!important;}
+@media(max-width:520px){.pin-overview-row{grid-template-columns:minmax(0,1fr) auto!important}.pin-overview-row .pin-overview-action{grid-column:1/-1;width:100%;}}
+
+@media(min-width:1024px){
+  body.nasch-desktop-admin #appScreen{padding-left:210px;min-height:100vh;}
+  body.nasch-desktop-admin .bot-nav{position:fixed;left:0;top:0;bottom:0;width:210px;z-index:1200;display:flex;flex-direction:column;align-items:stretch;padding:18px 10px;border-top:0;border-right:1px solid rgba(255,255,255,.12);background:var(--navy);box-shadow:4px 0 18px rgba(15,23,42,.10);}
+  body.nasch-desktop-admin .bot-nav:before{content:'NASCH';display:block;color:#fff;font-size:19px;font-weight:800;padding:6px 12px 18px;letter-spacing:.5px;}
+  body.nasch-desktop-admin .bot-nav .ni{flex:0 0 auto;display:flex!important;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;padding:11px 12px;margin:2px 0;border-radius:9px;color:#cbd5e1;font-size:12px;font-weight:700;}
+  body.nasch-desktop-admin .bot-nav .ni.hidden{display:none!important;}
+  body.nasch-desktop-admin .bot-nav .ni.active{color:#fff;background:rgba(255,255,255,.14);}
+  body.nasch-desktop-admin .bot-nav .ni-icon{font-size:19px;width:24px;text-align:center;}
+  body.nasch-desktop-admin .topbar{padding:11px 24px;min-height:56px;}
+  body.nasch-desktop-admin #v20BranchBar{padding-left:24px;padding-right:24px;}
+  body.nasch-desktop-admin .page-wrap{overflow:auto;}
+  body.nasch-desktop-admin .page{padding:22px 26px 32px;max-width:1540px;margin:0 auto;}
+  body.nasch-desktop-admin #pgAdmin .menu-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;}
+  body.nasch-desktop-admin #pgAdmin .mi{min-height:62px;border-right:1px solid var(--border);}
+  body.nasch-desktop-admin #pgAdminSettings .settings-overview-actions{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0;margin-top:0;}
+  body.nasch-desktop-admin #pgAdminSettings .settings-module-head{padding:10px 8px;}
+  body.nasch-desktop-admin #pgAdminSettings .settings-module-body{padding:0 2px 6px;}
+  body.nasch-desktop-admin .plan-wrap{max-height:74vh;}
+  body.nasch-desktop-admin .admin-avail-wrap{max-height:68vh;}
+  body.nasch-desktop-admin #adminTbl,body.nasch-desktop-admin #planTbl{min-width:900px;}
+  body.nasch-desktop-admin #pgOffice #v20OfficeContent{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
+  body.nasch-desktop-admin #pgOffice #v20OfficeContent>.card,body.nasch-desktop-admin #pgOffice #v20OfficeContent>div{min-width:0;}
+  body.nasch-desktop-admin #pgProfil{max-width:980px;}
+}
+</style>
+
+<div id="firstPinOverlay" role="dialog" aria-modal="true" aria-labelledby="firstPinTitle">
+  <div class="first-pin-card">
+    <div style="font-size:28px;margin-bottom:8px;">🔐</div>
+    <h2 id="firstPinTitle">Persönliche PIN festlegen</h2>
+    <p id="firstPinText">Du hast dich mit einer Start-PIN angemeldet. Lege jetzt deine eigene 4-stellige PIN fest. Die Filialleitung sieht deine persönliche PIN anschließend nicht in der Übersicht.</p>
+    <label for="firstPinNew">Neue PIN</label>
+    <input id="firstPinNew" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" placeholder="••••">
+    <label for="firstPinConfirm">Neue PIN bestätigen</label>
+    <input id="firstPinConfirm" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" placeholder="••••">
+    <div id="firstPinError" class="first-pin-error"></div>
+    <button class="btn btn-primary" type="button" onclick="window.NaschPinSecurity?.submitPersonalPin?.()">PIN speichern und weiter</button>
+  </div>
+</div>
+
+<script id="nasch-v2824-pin-security-desktop">
+window.NASCH_APP_VERSION='28.24';
+(()=>{
+  const FID=()=>window.FILIAL_ID||'FIL001';
+  const stateKey=()=>`nasch-pin-state-${FID()}`;
+  const cloudMarkerKey=()=>`nasch-pins-cloud-loaded-${FID()}`;
+  let pinState={};
+  let ready=false;
+  let pendingUid='';
+  let loadPromise=null;
+
+  function eligible(uid){
+    const u=USERS?.[uid];
+    return !!u && u.role!=='admin' && u.role!=='office' && u.role!=='system' && !['BU','SYS'].includes(String(u.typ||''));
+  }
+  function localRead(){try{const x=JSON.parse(localStorage.getItem(stateKey())||'{}');if(x&&typeof x==='object')pinState=x}catch(_){}}
+  function localWrite(){try{localStorage.setItem(stateKey(),JSON.stringify(pinState))}catch(_){}}
+  function info(uid){
+    const x=pinState[String(uid)];
+    if(x&&typeof x.mustChange==='boolean')return x;
+    return {mustChange:eligible(uid),personalSet:!eligible(uid)};
+  }
+  function setLoginReady(ok,msg){
+    ready=!!ok;
+    const kp=document.getElementById('loginKP'),sel=document.getElementById('loginEmployee'),err=document.getElementById('loginErr');
+    if(kp){kp.style.pointerEvents=ok?'':'none';kp.style.opacity=ok?'1':'.42';}
+    if(sel)sel.disabled=!ok;
+    if(err && msg)err.textContent=msg;
+    if(err && ok && /geladen|Verbindung|Anmeldedaten/i.test(err.textContent||''))err.textContent='';
+  }
+  async function waitAuth(){
+    if(firebase?.auth?.().currentUser)return firebase.auth().currentUser;
+    return await new Promise(resolve=>{
+      let done=false;
+      const off=firebase.auth().onAuthStateChanged(u=>{if(!done&&u){done=true;try{off()}catch(_){}resolve(u)}});
+      setTimeout(()=>{if(!done){done=true;try{off()}catch(_){}resolve(firebase.auth().currentUser)}},7000);
+    });
+  }
+  async function load(){
+    if(loadPromise)return loadPromise;
+    loadPromise=(async()=>{
+      localRead();setLoginReady(false,'Anmeldedaten werden sicher geladen …');
+      try{
+        const au=await waitAuth();if(!au)throw new Error('Firebase-Anmeldung nicht verfügbar');
+        const db=firebase.firestore(),base=db.collection('nasch').doc(FID()).collection('config');
+        const [pinsDoc,stateDoc]=await Promise.all([base.doc('pins').get(),base.doc('pinState').get()]);
+        if(pinsDoc.exists){
+          Object.assign(PINS,pinsDoc.data()||{});
+        }else{
+          // Einmaliger sauberer Bootstrap für Bestände, die noch kein PIN-Dokument in Firebase haben.
+          await base.doc('pins').set({...PINS});
+        }
+        try{localStorage.setItem(`nasch-pins-${FID()}`,JSON.stringify(PINS));localStorage.setItem(cloudMarkerKey(),'1')}catch(_){}
+        if(stateDoc.exists)pinState={...(stateDoc.data()||{})};
+        localWrite();setLoginReady(true,'');
+        preselectRemembered();
+      }catch(e){
+        console.warn('PIN-Sicherheitsdaten:',e);
+        let cached=false;try{cached=localStorage.getItem(cloudMarkerKey())==='1'}catch(_){}
+        if(cached){setLoginReady(true,'');preselectRemembered();}
+        else setLoginReady(false,'Keine Verbindung: Anmeldung ist erst möglich, sobald die PIN-Daten geladen wurden.');
+      }
+      return ready;
+    })();
+    return loadPromise;
+  }
+  async function saveState(uid,patch){
+    uid=String(uid||'');if(!uid)return;
+    pinState[uid]={...info(uid),...patch,updatedAt:new Date().toISOString()};localWrite();
+    try{
+      const au=await waitAuth();if(!au)throw new Error('offline');
+      await firebase.firestore().collection('nasch').doc(FID()).collection('config').doc('pinState').set({[uid]:pinState[uid]},{merge:true});
+    }catch(e){console.warn('PIN-Status Cloud speichern:',e)}
+    try{renderAdminPinOverview?.()}catch(_){}
+  }
+  async function markTemporary(uid){return saveState(uid,{mustChange:true,personalSet:false});}
+  async function markPersonal(uid){return saveState(uid,{mustChange:false,personalSet:true});}
+  function needsChange(uid){return eligible(uid)&&info(uid).mustChange!==false;}
+  function status(uid){return needsChange(uid)?'pending':'ok';}
+
+  function remember(uid){
+    try{if(typeof isPwaInstalled==='function'&&isPwaInstalled())localStorage.setItem(`nasch-last-employee-${FID()}`,String(uid))}catch(_){}
+  }
+  function preselectRemembered(){
+    try{
+      if(!(typeof isPwaInstalled==='function'&&isPwaInstalled()))return;
+      const uid=localStorage.getItem(`nasch-last-employee-${FID()}`),sel=document.getElementById('loginEmployee');
+      if(uid&&sel&&USERS?.[uid]&&[...sel.options].some(o=>o.value===uid))sel.value=uid;
+    }catch(_){}
+  }
+  function openPersonal(uid){
+    pendingUid=String(uid);const ov=document.getElementById('firstPinOverlay'),a=document.getElementById('firstPinNew'),b=document.getElementById('firstPinConfirm'),er=document.getElementById('firstPinError');
+    if(er)er.textContent='';if(a)a.value='';if(b)b.value='';if(ov)ov.classList.add('open');setTimeout(()=>a?.focus(),100);
+  }
+  async function submitPersonalPin(){
+    const uid=pendingUid,a=String(document.getElementById('firstPinNew')?.value||'').trim(),b=String(document.getElementById('firstPinConfirm')?.value||'').trim(),er=document.getElementById('firstPinError');
+    if(!uid)return;
+    if(!/^\d{4}$/.test(a)){if(er)er.textContent='Bitte genau 4 Ziffern eingeben.';return}
+    const blocked=(typeof BLOCKED_PINS!=='undefined'?BLOCKED_PINS:typeof BLOCKED!=='undefined'?BLOCKED:[]);
+    if(blocked.includes(a)){if(er)er.textContent='Diese PIN ist zu einfach. Bitte eine andere PIN wählen.';return}
+    if(a===String(PINS[uid]||'')){if(er)er.textContent='Die persönliche PIN muss sich von der Start-PIN unterscheiden.';return}
+    if(a!==b){if(er)er.textContent='Die beiden PINs stimmen nicht überein.';return}
+    PINS[uid]=a;
+    try{await Promise.resolve(SandboxStore?.savePins?.());await markPersonal(uid);}catch(_){ }
+    const ov=document.getElementById('firstPinOverlay');if(ov)ov.classList.remove('open');pendingUid='';remember(uid);lAttempts=0;lPin='';try{updLD()}catch(_){}
+    startApp(uid);
+  }
+
+  // Login überschreiben: Bedienung erst nach autoritativem Cloud-PIN-Laden.
+  window.checkLogin=function(){
+    const uid=document.getElementById('loginEmployee')?.value||'',err=document.getElementById('loginErr');
+    if(!ready){if(err)err.textContent='Anmeldedaten werden noch geladen …';lPin='';try{updLD()}catch(_){};return}
+    if(!uid||!USERS[uid]){if(err)err.textContent='Bitte zuerst den Mitarbeiternamen auswählen.';lPin='';try{updLD()}catch(_){};return}
+    if(String(PINS[uid])===String(lPin)){
+      lAttempts=0;
+      if(needsChange(uid)){openPersonal(uid);lPin='';try{updLD()}catch(_){};return}
+      remember(uid);startApp(uid);
+    }else{
+      lAttempts++;try{updLD('err')}catch(_){};
+      if(err)err.textContent=lAttempts>=3?'Zu viele Versuche. Bitte die Filialleitung kontaktieren.':`PIN für ${USERS[uid].name} ist falsch. Noch ${3-lAttempts} Versuch${lAttempts===2?'':'e'}.`;
+      setTimeout(()=>{lPin='';try{updLD()}catch(_){}},800);
+    }
+  };
+  try{checkLogin=window.checkLogin}catch(_){}
+
+  // Adminübersicht zeigt bewusst niemals Klartext-PINs.
+  window.renderAdminPinOverview=function(){
+    const box=document.getElementById('adminPinOverview');if(!box||AppState.currentUser?.role!=='admin')return;
+    const rows=(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{})).filter(([uid,u])=>eligible(uid)&&u?.name);
+    if(!rows.length){box.innerHTML='<div class="card" style="padding:12px;color:var(--muted);font-size:12px;">Keine Mitarbeiter vorhanden.</div>';return}
+    const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    box.innerHTML=`<div class="card" style="overflow:hidden"><div style="padding:9px 11px;background:#f8fafc;border-bottom:1px solid #eef2f7;font-size:10px;color:var(--muted);">Persönliche PINs werden hier nicht angezeigt. Nach einem Reset erhält der Mitarbeiter eine temporäre PIN und muss beim nächsten Login eine eigene PIN festlegen.</div>${rows.map(([uid,u])=>{const pending=needsChange(uid);return `<div class="pin-overview-row"><div><div style="font-size:12px;font-weight:700">${esc(u.name)}</div><div style="font-size:10px;color:var(--muted)">${esc(u.typ||'')}${u.role==='vertretung'?' · Vertretung':''}</div></div><div class="pin-overview-pin"><span class="pin-status-chip ${pending?'pin-status-pending':'pin-status-ok'}">${pending?'Neue PIN erforderlich':'PIN eingerichtet'}</span></div><button class="pin-overview-action" onclick="adminResetPin('${esc(uid)}')" style="padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:10px;font-weight:700;white-space:nowrap">🔄 PIN zurücksetzen</button></div>`}).join('')}</div>`;
+  };
+  try{renderAdminPinOverview=window.renderAdminPinOverview}catch(_){}
+
+  // Nach jedem Reset immer Status "Neue PIN erforderlich" setzen – unabhängig davon, welcher Reset-Weg genutzt wird.
+  const oldReset=window.adminResetPin;
+  if(typeof oldReset==='function'){
+    window.adminResetPin=function(uid){
+      const before=String(PINS?.[uid]??'');oldReset.apply(this,arguments);const after=String(PINS?.[uid]??'');
+      if(after&&after!==before)markTemporary(uid);
+      setTimeout(()=>renderAdminPinOverview(),50);
+    };try{adminResetPin=window.adminResetPin}catch(_){}
+  }
+
+  window.NaschPinSecurity={load,ready:()=>ready,needsChange,status,markTemporary,markPersonal,submitPersonalPin,preselectRemembered};
+  setLoginReady(false,'Anmeldedaten werden sicher geladen …');
+  setTimeout(load,0);
+  window.addEventListener('online',()=>{if(!ready){loadPromise=null;load();}});
+
+  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v28.24 sperrt NICHT nach Inaktivität.
+})();
+
+(()=>{
+  const KEY='nasch-desktop-view-v2824';
+  function privileged(){
+    const uid=String(AppState?.currentUserId||''),u=USERS?.[uid];
+    return !!u&&(u.role==='admin'||u.role==='vertretung'||window.BranchSandbox?.isOffice?.(uid)||window.BranchSandbox?.isCentral?.(uid));
+  }
+  function pref(){try{return localStorage.getItem(KEY)||'auto'}catch(_){return'auto'}}
+  function apply(){
+    const wide=window.innerWidth>=1024,p=pref(),on=privileged()&&(p==='desktop'||(p==='auto'&&wide));
+    document.body.classList.toggle('nasch-desktop-admin',!!on);
+    const b=document.getElementById('desktopViewToggle');
+    if(b){b.style.display=privileged()&&window.innerWidth>=760?'inline-flex':'none';b.textContent=on?'📱 Mobilansicht':'🖥 PC-Ansicht';}
+  }
+  function toggle(){
+    const on=document.body.classList.contains('nasch-desktop-admin');try{localStorage.setItem(KEY,on?'mobile':'desktop')}catch(_){}apply();
+  }
+  window.NaschDesktop={apply,toggle,setAuto:()=>{try{localStorage.setItem(KEY,'auto')}catch(_){}apply()}};
+  window.addEventListener('resize',()=>setTimeout(apply,50));
+  const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(apply,80);return r};try{startApp=window.startApp}catch(_){}}
+  const oldLogout=window.doLogout;if(typeof oldLogout==='function'){window.doLogout=function(){const r=oldLogout.apply(this,arguments);document.body.classList.remove('nasch-desktop-admin');setTimeout(()=>window.NaschPinSecurity?.preselectRemembered?.(),30);return r};try{doLogout=window.doLogout}catch(_){}}
+  setTimeout(apply,0);
 })();
 </script>
 
