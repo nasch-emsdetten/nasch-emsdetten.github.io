@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v28.21 · Emsdetten</title>
+<title>NASCH v28.22 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -231,7 +231,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.21</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v28.22</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1020,7 +1020,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v28.21: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v28.22: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -2609,7 +2609,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'28.21');
+    const v='v'+(window.NASCH_APP_VERSION||'28.22');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -4116,9 +4116,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=28.10').catch(e=>console.warn('Service Worker:',e)));
-}
+// v28.22: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -7406,7 +7404,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='28.21';
+  window.NASCH_APP_VERSION='28.22';
 })();
 </script>
 
@@ -8341,7 +8339,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='28.21';
+  window.NASCH_APP_VERSION='28.22';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8352,7 +8350,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks']
@@ -8491,7 +8489,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8542,7 +8540,7 @@ window.NASCH_APP_VERSION='28.21';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8561,7 +8559,7 @@ window.NASCH_APP_VERSION='28.21';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -8892,7 +8890,7 @@ window.NASCH_APP_VERSION='28.21';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.21')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'28.22')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -8912,7 +8910,7 @@ window.NASCH_APP_VERSION='28.21';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9379,9 +9377,9 @@ window.NASCH_APP_VERSION='28.21';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (()=>{
-  const VERSION='28.21';
+  const VERSION='28.22';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9574,7 +9572,7 @@ window.NASCH_APP_VERSION='28.21';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='28.21';
+window.NASCH_APP_VERSION='28.22';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||'FIL001';
@@ -9691,5 +9689,96 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
   window.NaschCopyNext2820={copyEmployeeToNext:copyEmployeeToNextCloud};
 })();
 </script>
+
+<script id="nasch-v2822-auto-update">
+/* NASCH v28.22 · automatische App-Aktualisierung ohne Versions-Link */
+(()=>{
+  const CURRENT='28.22';
+  const VERSION_FILE='./version.json';
+  const CHECK_EVERY_MS=5*60*1000;
+  let checking=false, updating=false, lastCheck=0;
+
+  const cleanInternalParams=()=>{
+    try{
+      const u=new URL(location.href);let changed=false;
+      for(const k of ['_naschv','_naschts']){if(u.searchParams.has(k)){u.searchParams.delete(k);changed=true;}}
+      if(changed)history.replaceState(null,'',u.pathname+(u.search?u.search:'')+u.hash);
+    }catch(_){}
+  };
+
+  async function registerWorker(version){
+    if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return null;
+    try{
+      const reg=await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(version)}`,{updateViaCache:'none'});
+      try{await reg.update();}catch(_){}
+      if(reg.waiting){try{reg.waiting.postMessage({type:'SKIP_WAITING'});}catch(_){}}
+      return reg;
+    }catch(e){console.warn('Service Worker:',e);return null;}
+  }
+
+  async function fetchLatestVersion(){
+    const r=await fetch(`${VERSION_FILE}?_=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+    if(!r.ok)throw new Error(`Version HTTP ${r.status}`);
+    const d=await r.json();return String(d.version||'').trim();
+  }
+
+  function showUpdateNotice(version){
+    try{
+      let el=document.getElementById('naschAutoUpdateNotice');
+      if(!el){
+        el=document.createElement('div');el.id='naschAutoUpdateNotice';
+        el.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,.78);display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,-apple-system,Segoe UI,sans-serif';
+        el.innerHTML='<div style="max-width:360px;width:100%;background:#fff;border-radius:16px;padding:22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.28)"><div style="font-size:30px;margin-bottom:8px">↻</div><strong style="font-size:17px">Neue NASCH-Version wird geladen</strong><div id="naschAutoUpdateVersion" style="margin-top:7px;font-size:13px;color:#475569"></div></div>';
+        document.body.appendChild(el);
+      }
+      const t=document.getElementById('naschAutoUpdateVersion');if(t)t.textContent=`v${version}`;
+    }catch(_){}
+  }
+
+  async function preserveOpenWork(){
+    try{
+      if(typeof editMode!=='undefined'&&editMode&&window.NaschAutoDraft2819?.saveNow){
+        await Promise.race([window.NaschAutoDraft2819.saveNow({force:true}),new Promise(r=>setTimeout(r,2500))]);
+      }
+    }catch(_){}
+  }
+
+  async function installAndReload(target){
+    if(updating)return;updating=true;showUpdateNotice(target);await preserveOpenWork();
+    try{
+      const reg=await registerWorker(target);
+      if(reg){
+        await Promise.race([
+          new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true})),
+          new Promise(resolve=>setTimeout(resolve,900))
+        ]);
+      }
+    }catch(e){console.warn('NASCH Auto-Update SW:',e);}
+    try{
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>k.startsWith('nasch-app-')&&k!==`nasch-app-v${target}`).map(k=>caches.delete(k)));
+    }catch(_){}
+    const u=new URL(location.href);u.searchParams.set('_naschv',target);u.searchParams.set('_naschts',String(Date.now()));location.replace(u.toString());
+  }
+
+  async function checkForUpdate(force=false){
+    if(checking||updating||!/^https?:$/.test(location.protocol))return;
+    const now=Date.now();if(!force&&now-lastCheck<15000)return;
+    checking=true;lastCheck=now;
+    try{const latest=await fetchLatestVersion();if(latest&&latest!==CURRENT)await installAndReload(latest);}
+    catch(e){console.debug?.('NASCH Versionsprüfung nicht möglich:',e?.message||e);}
+    finally{checking=false;}
+  }
+
+  cleanInternalParams();
+  window.NaschAutoUpdate={current:CURRENT,check:()=>checkForUpdate(true)};
+  window.addEventListener('load',async()=>{await registerWorker(CURRENT);await checkForUpdate(true);});
+  window.addEventListener('focus',()=>checkForUpdate(true));
+  window.addEventListener('pageshow',()=>checkForUpdate(true));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkForUpdate(true);});
+  setInterval(()=>checkForUpdate(false),CHECK_EVERY_MS);
+})();
+</script>
+
 </body>
 </html>
