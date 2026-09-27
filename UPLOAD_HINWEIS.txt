@@ -1,0 +1,8 @@
+NASCH v29.9 – Upload
+
+Für GitHub Pages/Webserver nur den Inhalt von NASCH_v29.9_FINAL_UPLOAD.zip hochladen/ersetzen.
+FULL_BACKUP enthält interne Dokumentation, Vorlagen und optionalen Firebase-Functions-Quellcode und gehört nicht auf den öffentlichen Webserver.
+
+Nach dem Upload einmal Version/Cache aktualisieren lassen und mit Mitarbeiter + Filialleitung testen.
+
+HINWEIS PUSH: In-App-/Browsermeldungen funktionieren mit der Web-App. Echte Pushmeldungen bei vollständig geschlossener App benötigen zusätzlich die einmalige FCM/VAPID-/Cloud-Function-Einrichtung aus dem FULL_BACKUP. Der sichtbare Pushtext bleibt immer neutral: „Neue Meldung verfügbar“.

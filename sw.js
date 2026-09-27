@@ -1,10 +1,11 @@
-const VERSION='29.8';
+const VERSION='29.9';
 const CACHE=`nasch-app-v${VERSION}`;
 const CORE=[
   './index.html','./emsdetten.html','./lohne.html','./werlte.html','./loeningen.html','./leitung.html',
   './manifest-emsdetten.webmanifest','./manifest-lohne.webmanifest','./manifest-werlte.webmanifest','./manifest-loeningen.webmanifest','./manifest-leitung.webmanifest',
-  './version.json','./icon-180.png','./icon-192.png','./icon-512.png'
+  './version.json','./icon-180.png','./icon-192.png','./icon-512.png','./nasch-v299.js','./nasch-v299.css'
 ];
+
 self.addEventListener('install',event=>event.waitUntil((async()=>{
   const cache=await caches.open(CACHE);
   await Promise.all(CORE.map(async url=>{try{const r=await fetch(url,{cache:'no-store'});if(r.ok)await cache.put(url,r.clone())}catch(_){}}));
@@ -31,4 +32,46 @@ self.addEventListener('fetch',event=>{
   if(u.origin===self.location.origin){
     event.respondWith((async()=>{const cached=await caches.match(event.request);if(cached)return cached;const r=await fetch(event.request);if(r?.ok){const c=await caches.open(CACHE);await c.put(event.request,r.clone())}return r})());
   }
+});
+
+// Firebase Cloud Messaging: nur neutrale Hintergrundmeldung ohne Dienst-/Krank-/KV-Details.
+try{
+  importScripts(
+    'https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js',
+    'https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js'
+  );
+  firebase.initializeApp({
+    apiKey:'AIzaSyDKDxx3xolYU93URftlU_xQF2TIrW147-4',
+    authDomain:'nasch-emsdetten-10eb3.firebaseapp.com',
+    projectId:'nasch-emsdetten-10eb3',
+    messagingSenderId:'791791893008',
+    appId:'1:791791893008:web:0147b30cd99e4003d3a895'
+  });
+  const messaging=firebase.messaging();
+  messaging.onBackgroundMessage(payload=>{
+    const data=payload?.data||{};
+    return self.registration.showNotification('NASCH',{
+      body:'Neue Meldung verfügbar',
+      icon:'./icon-192.png',
+      badge:'./icon-192.png',
+      tag:data.noticeId?`nasch-${data.noticeId}`:'nasch-new-message',
+      renotify:true,
+      vibrate:[100],
+      data:{url:data.url||'./'}
+    });
+  });
+}catch(e){
+  // PWA/Offline-Funktion bleibt auch ohne FCM erreichbar.
+}
+
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const target=event.notification?.data?.url||'./';
+  event.waitUntil((async()=>{
+    const list=await clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const c of list){
+      try{if('focus'in c){await c.focus();if('navigate'in c)await c.navigate(target);return}}catch(_){ }
+    }
+    if(clients.openWindow)return clients.openWindow(target);
+  })());
 });

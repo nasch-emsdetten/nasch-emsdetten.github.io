@@ -1,5 +1,5 @@
 {
-  "version": "29.8",
+  "version": "29.9",
   "updated": "2026-09-27",
-  "notes": "v29.8: Google-Sheets-Planimport samt sichtbarem Sync-Button vollständig entfernt. Uhrzeit und Tätigkeit im Wochenplan können pro Gerät getrennt in drei Schriftstufen eingestellt werden. Neuer Ansichtsknopf „Heute“ springt zur aktuellen KW und zum heutigen Tag; während der Planbearbeitung ist er ausgeblendet. Horizontales Rollen im Ansichtsmodus erlaubt, den letzten sichtbaren Tag (bis Sonntag) direkt neben der feststehenden Namensspalte zu positionieren."
+  "notes": "v29.9: KV-Bereitschaft ohne eigene Uhrzeit/Tätigkeit; bei Krankmeldung verbindliche Übernahme der Originalschicht. Aushilfe-Krankstunden nur nach Filialleitungsfreigabe. Mitarbeiter-Monatsliste ohne PDF/Excel, große Querformat-Unterschrift, Teamstatus/Lesestatus und neutrale NASCH-Benachrichtigungen. FCM-Hintergrund-Push ist clientseitig vorbereitet und benötigt für geschlossene Apps einmalig Backend/VAPID."
 }
