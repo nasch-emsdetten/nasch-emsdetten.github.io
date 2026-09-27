@@ -1,5 +1,5 @@
 {
-  "version": "29.9",
+  "version": "29.10",
   "updated": "2026-09-27",
-  "notes": "v29.9: KV-Bereitschaft ohne eigene Uhrzeit/Tätigkeit; bei Krankmeldung verbindliche Übernahme der Originalschicht. Aushilfe-Krankstunden nur nach Filialleitungsfreigabe. Mitarbeiter-Monatsliste ohne PDF/Excel, große Querformat-Unterschrift, Teamstatus/Lesestatus und neutrale NASCH-Benachrichtigungen. FCM-Hintergrund-Push ist clientseitig vorbereitet und benötigt für geschlossene Apps einmalig Backend/VAPID."
+  "notes": "v29.10: Monats-Stundennachweis PDF-only. Mitarbeiter sehen nur eine einfache Monatsliste. Filialleitung/Admin erhält eine Übersicht aller Mitarbeiter mit offiziellem PDF nach freigegebener Vorlage; Büro kann diese PDFs abrufen. Excel ist aus dem Stundennachweis entfernt. Vollständig unterschriebene PDFs können durch die Filialleitung an alswede@nasch.com gesendet werden; die eigene BCC-Adresse wird filialbezogen hinterlegt."
 }
