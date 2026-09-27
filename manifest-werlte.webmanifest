@@ -1,13 +1,13 @@
 {
-  "name": "NASCH Emsdetten Mitarbeiter-App",
-  "short_name": "NASCH Emsdetten",
-  "description": "NASCH Mitarbeiter-App · Emsdetten",
+  "name": "NASCH Werlte Mitarbeiter-App",
+  "short_name": "NASCH Werlte",
+  "description": "NASCH Mitarbeiter-App · Werlte",
   "lang": "de",
-  "start_url": "./emsdetten.html",
+  "start_url": "./werlte.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#98C01F",
-  "theme_color": "#98C01F",
+  "background_color": "#B91C1C",
+  "theme_color": "#B91C1C",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -23,5 +23,5 @@
       "purpose": "any maskable"
     }
   ],
-  "id": "./emsdetten.html"
+  "id": "./werlte.html"
 }

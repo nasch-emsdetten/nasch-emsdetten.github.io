@@ -1,14 +1,14 @@
 {
-  "name": "NASCH Emsdetten Mitarbeiter-App",
-  "short_name": "NASCH Emsdetten",
-  "description": "NASCH Mitarbeiter-App · Emsdetten",
+  "name": "NASCH Leitung & Personalbüro",
+  "short_name": "NASCH Leitung",
+  "description": "NASCH Verwaltungszugang für Filialleitung und Personalbüro",
   "lang": "de",
-  "start_url": "./emsdetten.html",
+  "start_url": "./leitung.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#98C01F",
-  "theme_color": "#98C01F",
-  "orientation": "portrait-primary",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "orientation": "any",
   "icons": [
     {
       "src": "icon-192.png",
@@ -23,5 +23,5 @@
       "purpose": "any maskable"
     }
   ],
-  "id": "./emsdetten.html"
+  "id": "./leitung.html"
 }

@@ -1,4 +1,5 @@
 {
-  "version": "28.24",
-  "updated": "2026-09-27"
+  "version": "29.3",
+  "updated": "2026-09-27",
+  "notes": "Unified multi-branch release: monthly timesheets, Excel/PDF, dual signatures, branch holidays, optional deputy, cloud modules and role-specific manuals."
 }
