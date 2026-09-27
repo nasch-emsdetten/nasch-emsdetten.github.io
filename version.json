@@ -1,5 +1,5 @@
 {
-  "version": "29.3",
+  "version": "29.5",
   "updated": "2026-09-27",
-  "notes": "Unified multi-branch release: monthly timesheets, Excel/PDF, dual signatures, branch holidays, optional deputy, cloud modules and role-specific manuals."
+  "notes": "v29.5: Wochenplan auf Mobilgeräten kompakter. Die Namensspalte passt sich automatisch an den längsten aktuell angezeigten Mitarbeiternamen an. Gilt filialübergreifend für Mitarbeiter-, Filialleitungs-, Vertretungs- und Büroansicht."
 }
