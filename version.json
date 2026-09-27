@@ -1,5 +1,5 @@
 {
-  "version": "29.6",
+  "version": "29.7",
   "updated": "2026-09-27",
-  "notes": "v29.6: Tages-Spalten im Wochenplan maximal so breit wie eine Beginn–Ende-Uhrzeit. Filialleitung und Vertretung sehen vollständige Wochen inkl. vergangener Tage/KWs; nur Mitarbeiter blenden vergangene Tage/KWs aus, können aber zukünftige veröffentlichte KWs öffnen. Heutiger Wochentag wird in allen Planansichten markiert."
+  "notes": "v29.7: Rollenlogik im Wochenplan korrigiert. Nur echte Mitarbeiterzugänge blenden vergangene Tage und vergangene KWs aus. Filialleitung, aktivierte Vertretung, System-Admin sowie berechtigte Büro-/Leitungszugänge sehen immer die vollständige Woche; Mitarbeiter können weiterhin aktuelle und zukünftige veröffentlichte KWs öffnen. Heutiger Tag bleibt markiert."
 }
