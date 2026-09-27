@@ -1,5 +1,5 @@
 {
-  "version": "29.5",
+  "version": "29.6",
   "updated": "2026-09-27",
-  "notes": "v29.5: Wochenplan auf Mobilgeräten kompakter. Die Namensspalte passt sich automatisch an den längsten aktuell angezeigten Mitarbeiternamen an. Gilt filialübergreifend für Mitarbeiter-, Filialleitungs-, Vertretungs- und Büroansicht."
+  "notes": "v29.6: Tages-Spalten im Wochenplan maximal so breit wie eine Beginn–Ende-Uhrzeit. Filialleitung und Vertretung sehen vollständige Wochen inkl. vergangener Tage/KWs; nur Mitarbeiter blenden vergangene Tage/KWs aus, können aber zukünftige veröffentlichte KWs öffnen. Heutiger Wochentag wird in allen Planansichten markiert."
 }
