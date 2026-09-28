@@ -1,7 +1,7 @@
-/* NASCH v29.19 · PWA + Stundennachweis/Organisation + Verfügbarkeit-Fix */
+/* NASCH v29.20 · PWA + Stundennachweis/Organisation + Verfügbarkeit-Fix */
 (()=>{
 'use strict';
-const BUNDLE_VERSION='29.19';
+const BUNDLE_VERSION='29.20';
 const VERSION=String(window.NASCH_APP_VERSION||BUNDLE_VERSION);
 if(!window.NASCH_APP_VERSION) window.NASCH_APP_VERSION=BUNDLE_VERSION;
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#B91C1C">
-<title>NASCH v29.19 · Lohne</title>
+<title>NASCH v29.20 · Lohne</title>
 <link rel="manifest" href="manifest-lohne-v2916.webmanifest">
 <link rel="apple-touch-icon" href="icon-any-180-v2916.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2916.png">
@@ -147,7 +147,7 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
-/* Einstellungs-Module v29.19 */
+/* Einstellungs-Module v29.20 */
 .settings-module{margin-bottom:10px;}
 .settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
 .settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
@@ -249,7 +249,7 @@ window.FILIAL_ID = 'FIL002';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.19</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.20</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1107,7 +1107,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v29.19: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v29.20: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -1885,19 +1885,35 @@ const NaschAdminSettings = (() => {
     const typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):(USERS?.[uid]?.typ||'');
     DAYS.forEach(day=>{
       if(typ==='VZ' && vals[day]==='n') vals[day]='d';
-      if(typ!=='VZ' && vals[day]==='d') vals[day]='n';
+      // Teilzeit darf sowohl einen festen freien Tag (d) als auch feste Nichtverfügbarkeit (n) haben.
+      // Nur Aushilfen besitzen keinen vertraglichen festen freien Tag.
+      if(typ==='AH' && vals[day]==='d') vals[day]='n';
       if(!['g','f','s','d','n'].includes(vals[day])) vals[day]='g';
     });
     return vals;
   }
 
+  function fixedFreeLimit(uid){
+    const typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):(USERS?.[uid]?.typ||'');
+    if(typ==='VZ') return 1;
+    if(typ!=='TZ') return 0;
+    const u=USERS?.[String(uid)]||USERS?.[uid]||{};
+    const n=Number(u.arbeitstageWoche);
+    return Number.isInteger(n)&&n>=1&&n<=7?Math.max(0,7-n):1;
+  }
+
   function cycleAvailability(uid, day) {
     const vals = availability(uid);
     const typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):(USERS?.[uid]?.typ||'');
-    const keys = typ==='VZ' ? ['g','f','s','d'] : ['g','f','s','n'];
+    const keys = typ==='VZ' ? ['g','f','s','d'] : (typ==='TZ' ? ['g','f','s','d','n'] : ['g','f','s','n']);
     const idx = keys.indexOf(vals[day]);
-    const next=keys[(idx+1)%keys.length];
-    if(typ==='VZ' && next==='d') DAYS.forEach(d=>{if(d!==day && vals[d]==='d') vals[d]='g';});
+    let next=keys[(idx+1)%keys.length];
+    if(next==='d'){
+      const limit=fixedFreeLimit(uid);
+      const used=DAYS.filter(d=>d!==day&&vals[d]==='d').length;
+      if(limit<=0 || used>=limit) next=typ==='TZ'?'n':'g';
+      if(typ==='VZ') DAYS.forEach(d=>{if(d!==day && vals[d]==='d') vals[d]='g';});
+    }
     vals[day] = next;
     SandboxStore.saveAvailability(uid, vals);
     return vals[day];
@@ -1971,7 +1987,7 @@ const NaschAdminSettings = (() => {
       });
       ah += '</tr>';
     });
-    ah += '</tbody></table></div><div style="font-size:10px;color:var(--muted);margin-top:6px;">G = Ganztag · F = nur Früh · S = nur Spät · FR = fester freier Tag (Vollzeit) · NV = fester nicht verfügbarer Tag (Teilzeit/Aushilfe). Zelle antippen zum Ändern.</div>';
+    ah += '</tbody></table></div><div style="font-size:10px;color:var(--muted);margin-top:6px;">G = Ganztag · F = nur Früh · S = nur Spät · FR = fester freier Tag (Vollzeit/Teilzeit) · NV = fester nicht verfügbarer Tag (Teilzeit/Aushilfe). Zelle antippen zum Ändern.</div>';
     avail.innerHTML=ah;
 
     acts.innerHTML = `<div style="font-size:10px;color:var(--muted);margin-bottom:9px;">Kürzel werden im Schichtplan angezeigt. Die Bezeichnung dient als bearbeitbare Legende. Wenn <strong>RK</strong> gelöscht wird, erscheinen Reinigungsvorschläge nur noch, wenn du ein neues Reinigungskürzel anlegst und zuweist.</div>
@@ -2185,7 +2201,7 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
-// ── v29.19: Einstellungs-Module ein-/ausblenden ─────────────
+// ── v29.20: Einstellungs-Module ein-/ausblenden ─────────────
 const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
 function adminSettingsReadState(){
   try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
@@ -2500,14 +2516,17 @@ function contractFreeDayIndices(uid,shifts){
   if(!required) return new Set();
   const list=Array.from({length:7},(_,i)=>(shifts||[])[i]||{t:'-',z:'',r:[]});
   let fixedBlocked=0;
+  const fixedFree=[];
   const candidates=[];
   list.forEach((sh,i)=>{
     if(!isPlainUnplannedShift(sh)) return;
     const code=sh?.availabilityCode||'g';
     if(code==='n'){ fixedBlocked++; return; }
+    if(code==='d'){ fixedFree.push(i); return; }
     candidates.push(i);
   });
-  const needed=Math.max(0,required-Math.min(required,fixedBlocked));
+  const used=Math.min(required,fixedBlocked+fixedFree.length);
+  const needed=Math.max(0,required-used);
   candidates.sort((a,b)=>{
     const am=list[a]?.manual===true?0:1, bm=list[b]?.manual===true?0:1;
     if(am!==bm) return am-bm;
@@ -2516,13 +2535,14 @@ function contractFreeDayIndices(uid,shifts){
     if(aw===0 && bw===0) return b-a; // So vor Sa
     return a-b;
   });
-  return new Set(candidates.slice(0,needed));
+  return new Set([...fixedFree,...candidates.slice(0,needed)]);
 }
 function publishedUnplannedText(uid,dayIdx,shifts){
   const sh=(shifts||[])[dayIdx]||{t:'-'};
   if(!isPlainUnplannedShift(sh)) return '';
   const code=sh?.availabilityCode||'g';
   if(code==='n') return 'XX';
+  if(code==='d') return 'Frei';
   const u=USERS?.[String(uid)]||USERS?.[uid]||null;
   if(u?.typ==='AH') return '';
   if(u?.typ==='TZ') return contractFreeDayIndices(uid,shifts).has(Number(dayIdx))?'Frei':'';
@@ -2637,7 +2657,7 @@ function getWeekTotalHours() {
   return Object.keys(USERS).reduce((sum,uid)=>sum+getEmployeeWeekStats(uid).hours,0);
 }
 
-// v29.19: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
+// v29.20: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
 // Filialleitung, aktive Vertretung, Personalbüro und System-Admin sehen immer die komplette Woche.
 function isEmployeePlanViewer(){
   const uid=String(AppState.currentUserId||'');
@@ -2870,7 +2890,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'29.19');
+    const v='v'+(window.NASCH_APP_VERSION||'29.20');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -3059,9 +3079,17 @@ function availabilityEmploymentType(uid){
 }
 function verfOptionsFor(uid){
   const typ=availabilityEmploymentType(uid);
-  return typ==='VZ'
-    ? [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'d',l:'Fester freier Tag'}]
-    : [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'n',l:'Fester nicht verfügbarer Tag'}];
+  if(typ==='VZ') return [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'d',l:'Fester freier Tag'}];
+  if(typ==='TZ') return [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'d',l:'Fester freier Tag'},{k:'n',l:'Fester nicht verfügbarer Tag'}];
+  return [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'n',l:'Fester nicht verfügbarer Tag'}];
+}
+function verfFixedFreeLimit(uid){
+  const typ=availabilityEmploymentType(uid);
+  if(typ==='VZ') return 1;
+  if(typ!=='TZ') return 0;
+  const u=USERS?.[String(uid||'')]||{};
+  const n=Number(u.arbeitstageWoche);
+  return Number.isInteger(n)&&n>=1&&n<=7?Math.max(0,7-n):1;
 }
 const VFARBE={g:['#E1F5EE','#085041'],f:['#FFF2CC','#7D6608'],s:['#FAE5D3','#784212'],d:['#EEF7E0','#466A12'],n:['#FCEBEB','#791F1F']};
 const vSel={Mo:'g',Di:'g',Mi:'g',Do:'g',Fr:'g',Sa:'g',So:'g'};
@@ -3071,7 +3099,7 @@ function buildVerfDays(){
   if(!c) return;
   VOPTS=verfOptionsFor(AppState.currentUserId);
   const typ=availabilityEmploymentType(AppState.currentUserId);
-  TAGE.forEach(tag=>{if(typ==='VZ'){if(vSel[tag]==='n')vSel[tag]='d';if(vOrig[tag]==='n')vOrig[tag]='d';}else if(typ){if(vSel[tag]==='d')vSel[tag]='n';if(vOrig[tag]==='d')vOrig[tag]='n';}});
+  TAGE.forEach(tag=>{if(typ==='VZ'){if(vSel[tag]==='n')vSel[tag]='d';if(vOrig[tag]==='n')vOrig[tag]='d';}else if(typ==='AH'){if(vSel[tag]==='d')vSel[tag]='n';if(vOrig[tag]==='d')vOrig[tag]='n';}});
   c.innerHTML=TAGE.map(tag=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:6px;">
       <div style="display:flex;align-items:center;padding:7px 12px;background:#f8fafc;">
@@ -3089,7 +3117,17 @@ function buildVerfDays(){
 }
 function selVerf(tag,key){
   const typ=availabilityEmploymentType(AppState.currentUserId);
-  if(typ==='VZ' && key==='d') TAGE.forEach(t=>{if(t!==tag&&vSel[t]==='d')vSel[t]='g';});
+  if(key==='d'){
+    const limit=verfFixedFreeLimit(AppState.currentUserId);
+    const used=TAGE.filter(t=>t!==tag&&vSel[t]==='d').length;
+    if(limit<=0){showToast?.('Für diese Beschäftigungsart ist kein fester freier Tag vorgesehen.');return;}
+    if(typ==='VZ') TAGE.forEach(t=>{if(t!==tag&&vSel[t]==='d')vSel[t]='g';});
+    else if(typ==='TZ' && used>=limit){
+      const days=Number(USERS?.[String(AppState.currentUserId)]?.arbeitstageWoche)||0;
+      showToast?.(`Bei ${days||'den hinterlegten'} Arbeitstagen sind maximal ${limit} feste freie Tage möglich.`);
+      return;
+    }
+  }
   vSel[tag]=key;
   TAGE.forEach(t=>{VOPTS.forEach(o=>{const el=document.getElementById('vo_'+t+'_'+o.k);if(el){const act=vSel[t]===o.k;el.style.background=act?VFARBE[o.k][0]:'var(--card)';el.style.borderColor=act?VFARBE[o.k][1]:'var(--border)';el.style.color=act?VFARBE[o.k][1]:'var(--muted)';}});});
   document.getElementById('vst_'+tag).textContent=VOPTS.find(o=>o.k===key)?.l;
@@ -3596,7 +3634,7 @@ function openShiftEditor(uid,dayIdx){
     // Reinigung nur anbieten, wenn dem Mitarbeiter RK zugeordnet ist.
     const assignedActivities=(typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):activityList(user.taetigkeit));
     if(o.t==='R' && !assignedActivities.includes('RK')) return false;
-    // v29.19: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
+    // v29.20: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
     // Früh, Spät und Teilschicht bleiben immer auswählbar.
     return true;
   });
@@ -3614,7 +3652,16 @@ function openShiftEditor(uid,dayIdx){
 }
 
 function selST(t){
-  mS.t=t;
+  const availabilityCode=mS?.availabilityCode||getDayAvailability(curUID,curDay)||'g';
+  if(['-','U','WF','K'].includes(t)){
+    const wishScope=t==='WF'?(mS?.wishfreeScope||'full'):undefined;
+    const wishType=t==='WF'?(mS?.wishfreeType||'Ganzer Tag'):undefined;
+    mS={t,z:t==='U'?'Urlaub':t==='WF'?'Wunschfrei':t==='K'?'Krank':'',r:[],extras:[],manual:true,availabilityCode};
+    if(t==='WF'){mS.wishfreeScope=wishScope;mS.wishfreeType=wishType;}
+  }else{
+    mS.t=t;mS.manual=true;mS.availabilityCode=availabilityCode;
+    delete mS.autoSource;delete mS.wishfreeScope;delete mS.wishfreeType;
+  }
   const defaults=(typeof getEmployeeActivities==='function'?getEmployeeActivities(curUID):activityList(USERS[curUID]?.taetigkeit));
   if(t==='TS') {
     if(!activityList(mS.r1).length) mS.r1=activityList(mS.r).length?[...activityList(mS.r)]:[...defaults];
@@ -3730,6 +3777,17 @@ function setCustomActivitiesTS(slot,value){
 }
 
 function applyShift(){
+  // Eine bewusste Änderung im Editor ersetzt den alten Tagesdatensatz vollständig.
+  // Volltägige Abwesenheiten dürfen keine alten Zeiten, Tätigkeiten oder Extras behalten.
+  const availabilityCode=mS?.availabilityCode||getDayAvailability(curUID,curDay)||'g';
+  if(['-','U','WF','K'].includes(mS.t)){
+    const t=mS.t,scope=mS.wishfreeScope||'full',wishType=mS.wishfreeType||'Ganzer Tag';
+    mS={t,z:t==='U'?'Urlaub':t==='WF'?'Wunschfrei':t==='K'?'Krank':'',r:[],extras:[],manual:true,availabilityCode};
+    if(t==='WF'){mS.wishfreeScope=scope;mS.wishfreeType=wishType;}
+  }else{
+    mS.manual=true;mS.availabilityCode=availabilityCode;
+    delete mS.autoSource;delete mS.wishfreeScope;delete mS.wishfreeType;
+  }
   if(mS.t==='TS') {
     if(!String(mS.z1||'').trim() || !String(mS.z2||'').trim()) { alert('Bitte für beide Teilschichten eine Uhrzeit eintragen.'); return; }
     mS.z=[mS.z1,mS.z2].filter(Boolean).join(' + ');
@@ -3738,6 +3796,10 @@ function applyShift(){
   if(!PLAN[curUID]) PLAN[curUID]=Array.from({length:7},()=>({t:'-',z:'',r:''}));
   if(mS.t!=='WF'){delete mS.wishfreeScope;delete mS.wishfreeType;}
   if(!['U','WF','K'].includes(mS.t)){delete mS.autoSource;}
+  if(mS.t!=='TS'){
+    delete mS.z1;delete mS.z2;delete mS.r1;delete mS.r2;
+    delete mS.start1;delete mS.end1;delete mS.start2;delete mS.end2;
+  }
   PLAN[curUID][curDay]={...mS};
   if(!planChanges[curUID]) planChanges[curUID]={};
   planChanges[curUID][curDay]={...mS};
@@ -4298,7 +4360,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v29.19: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v29.20: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -7587,7 +7649,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.19';
+  window.NASCH_APP_VERSION='29.20';
 })();
 </script>
 
@@ -7868,7 +7930,7 @@ module.exports = QRCode;
   const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false;}};
   function db(){try{return firebase.firestore();}catch(_){return null;}}
   function branchRef(col){const x=db();return x?x.collection('nasch').doc(FID()).collection(col):null;}
-  function cleanValues(v,uid){const out={};const typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):(USERS?.[String(uid||'')]?.typ||'');DAYS.forEach(d=>{let x=['g','f','s','d','n'].includes(v?.[d])?v[d]:'g';if(typ==='VZ'&&x==='n')x='d';if(typ&&typ!=='VZ'&&x==='d')x='n';out[d]=x;});return out;}
+  function cleanValues(v,uid){const out={};const typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):(USERS?.[String(uid||'')]?.typ||'');DAYS.forEach(d=>{let x=['g','f','s','d','n'].includes(v?.[d])?v[d]:'g';if(typ==='VZ'&&x==='n')x='d';if(typ==='AH'&&x==='d')x='n';out[d]=x;});return out;}
   function tsMillis(v){if(!v)return 0;if(typeof v.toMillis==='function')return v.toMillis();const n=Date.parse(v);return Number.isFinite(n)?n:0;}
 
   async function fetchActive(uid){
@@ -7906,7 +7968,7 @@ module.exports = QRCode;
     else box.innerHTML='';
     if(editMode) bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.cancelEdit()">↩ Abbrechen</button>';
     else bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.startEdit()">✏️ Verfügbarkeit bearbeiten</button>';
-    // v29.19: Tagesoptionen sind direkt antippbar. Der erste Tipp startet automatisch den Bearbeitungsmodus.
+    // v29.20: Tagesoptionen sind direkt antippbar. Der erste Tipp startet automatisch den Bearbeitungsmodus.
     setDayControlsEnabled(!pendingReq);
   }
   function renderDays(){
@@ -8532,7 +8594,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.19';
+  window.NASCH_APP_VERSION='29.20';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8543,7 +8605,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8682,7 +8744,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8733,7 +8795,7 @@ window.NASCH_APP_VERSION='29.19';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8752,7 +8814,7 @@ window.NASCH_APP_VERSION='29.19';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9083,7 +9145,7 @@ window.NASCH_APP_VERSION='29.19';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.19')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.20')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -9103,7 +9165,7 @@ window.NASCH_APP_VERSION='29.19';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9616,9 +9678,9 @@ window.NASCH_APP_VERSION='29.19';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
-  const VERSION='29.19';
+  const VERSION='29.20';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9811,7 +9873,7 @@ window.NASCH_APP_VERSION='29.19';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9930,9 +9992,9 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.19 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v29.20 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='29.19';
+  const CURRENT='29.20';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
@@ -10020,7 +10082,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 
-<!-- NASCH v29.19: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
+<!-- NASCH v29.20: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
 <style id="nasch-v2824-security-desktop-css">
 #firstPinOverlay{display:none;position:fixed;inset:0;z-index:15000;background:rgba(15,23,42,.78);align-items:center;justify-content:center;padding:18px;}
 #firstPinOverlay.open{display:flex;}
@@ -10077,7 +10139,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10226,7 +10288,7 @@ window.NASCH_APP_VERSION='29.19';
   setTimeout(load,0);
   window.addEventListener('online',()=>{if(!ready){loadPromise=null;load();}});
 
-  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.19 sperrt NICHT nach Inaktivität.
+  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.20 sperrt NICHT nach Inaktivität.
 })();
 
 (()=>{
@@ -10272,8 +10334,8 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
   <button type="button" onclick="NaschEmployeeDemo.exit()">Zurück zum Admin</button>
 </div>
 <script>
-/* NASCH v29.19 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.19';
+/* NASCH v29.20 · versteckter, schreibgeschützter Demo-Mitarbeiter */
+window.NASCH_APP_VERSION='29.20';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10374,8 +10436,8 @@ window.NaschEmployeeDemo=(()=>{
   </div>
 </div>
 <script id="nasch-v2826-features">
-/* NASCH v29.19 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.19';
+/* NASCH v29.20 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
+window.NASCH_APP_VERSION='29.20';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10605,11 +10667,11 @@ window.NaschDeputyRights=(()=>{
 @media(max-width:560px){.n293-grid{grid-template-columns:1fr}}
 </style>
 <script id="nasch-v293-unified">
-/* NASCH v29.19 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
+/* NASCH v29.20 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.19';
+window.NASCH_APP_VERSION='29.20';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -10925,7 +10987,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.19 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
+<!-- NASCH v29.20 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
 <style id="nasch-v296-plan-layout">
   .plan-t th.nc,.plan-t th.name-col,
   .plan-t td.nc,.plan-t td.name-cell{
@@ -11030,7 +11092,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.19 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
+<!-- NASCH v29.20 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
 <style id="nasch-v298-plan-view">
   :root{--nasch-time-font-size:11px;--nasch-activity-font-size:8px;}
   .nasch-shift-time{font-size:var(--nasch-time-font-size)!important;font-weight:700;line-height:1.15;white-space:nowrap;}
