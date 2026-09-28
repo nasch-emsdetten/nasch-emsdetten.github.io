@@ -1,5 +1,5 @@
 {
-  "version": "29.17",
+  "version": "29.18",
   "updated": "2026-09-28",
-  "notes": "v29.17: Teilzeit zeigt im Wochenplan und in Stundenansichten nur die vertraglich erforderlichen freien Tage als Frei (5 Tage = 2, 6 Tage = 1; feste Nichtverfügbarkeit wird als XX berücksichtigt). Aushilfen bleiben an nicht geplanten Tagen leer. Monatsübersicht und offizieller PDF-Stundenzettel verwenden dieselbe Darstellung."
+  "notes": "v29.18: Audit-Fix für Frei/XX. Wochenplan-Druck/PDF verwendet jetzt dieselbe Beschäftigungsart- und Wunschfrei-Logik wie Bildschirm, Stundenübersicht und Monats-Stundenzettel. Teilzeit 5 Tage = 2 Frei, 6 Tage = 1 Frei; feste Nichtverfügbarkeit = XX und zählt in der Frei-Quote; Aushilfe ungeplant leer."
 }

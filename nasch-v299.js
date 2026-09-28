@@ -1,4 +1,4 @@
-/* NASCH v29.15 · Startbild/PWA-Scroll-Fix + Stundennachweis/Organisation */
+/* NASCH v29.18 · PWA + Stundennachweis/Organisation + Frei/XX-Audit */
 (()=>{
 'use strict';
 const VERSION='29.15';
