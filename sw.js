@@ -1,9 +1,10 @@
-const VERSION='29.14';
+const VERSION='29.15';
 const CACHE=`nasch-app-v${VERSION}`;
 const CORE=[
   './index.html','./emsdetten.html','./lohne.html','./werlte.html','./loeningen.html','./leitung.html',
+  './manifest-emsdetten-v2915.webmanifest','./manifest-lohne-v2915.webmanifest','./manifest-werlte-v2915.webmanifest','./manifest-loeningen-v2915.webmanifest','./manifest-leitung-v2915.webmanifest',
   './manifest-emsdetten.webmanifest','./manifest-lohne.webmanifest','./manifest-werlte.webmanifest','./manifest-loeningen.webmanifest','./manifest-leitung.webmanifest',
-  './version.json','./icon-180-v2914.png','./icon-192-v2914.png','./icon-512-v2914.png','./nasch-v299.js','./nasch-v299.css','./assets/timesheet-master.png'
+  './version.json','./icon-any-180-v2915.png','./icon-any-192-v2915.png','./icon-any-512-v2915.png','./icon-maskable-192-v2915.png','./icon-maskable-512-v2915.png','./nasch-v299.js','./nasch-v299.css','./assets/timesheet-master.png'
 ];
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{
@@ -52,8 +53,8 @@ try{
     const data=payload?.data||{};
     return self.registration.showNotification('NASCH',{
       body:'Neue Meldung verfügbar',
-      icon:'./icon-192-v2914.png',
-      badge:'./icon-192-v2914.png',
+      icon:'./icon-any-192-v2915.png',
+      badge:'./icon-any-192-v2915.png',
       tag:data.noticeId?`nasch-${data.noticeId}`:'nasch-new-message',
       renotify:true,
       vibrate:[100],

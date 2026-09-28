@@ -1,10 +1,10 @@
-/* NASCH v29.14 · Startbild/PWA-Scroll-Fix + Stundennachweis/Organisation */
+/* NASCH v29.15 · Startbild/PWA-Scroll-Fix + Stundennachweis/Organisation */
 (()=>{
 'use strict';
-const VERSION='29.14';
+const VERSION='29.15';
 window.NASCH_APP_VERSION=VERSION;
 
-// v29.14: Android/Chrome-PWA Pull-to-Refresh verhindern, ohne normales Scrollen zu blockieren.
+// v29.15: Android/Chrome-PWA Pull-to-Refresh verhindern, ohne normales Scrollen zu blockieren.
 // CSS overscroll-behavior ist der primäre Schutz; dieser Touch-Guard ist der Fallback
 // für WebView-/Chrome-Konstellationen, in denen am oberen Rand trotzdem neu geladen wird.
 (function installNoPullToRefresh(){
@@ -135,7 +135,7 @@ function signalSettings(){try{return{tone:true,vibrate:true,...JSON.parse(localS
 function saveSignalSettings(x){try{localStorage.setItem('nasch-notify-settings-v1',JSON.stringify(x))}catch(_){}renderNotifySettings()}
 function beep(){const s=signalSettings();if(!s.tone)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=740;g.gain.setValueAtTime(.05,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.18);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.18);setTimeout(()=>c.close?.(),350)}catch(_){}if(s.vibrate)try{navigator.vibrate?.([90])}catch(_){}}
 const neutralNoticeSeen=new Map();
-function notifyNeutral(r){const key=String(r?.id||'');const now=Date.now(),last=neutralNoticeSeen.get(key)||0;if(key&&now-last<10000)return;if(key)neutralNoticeSeen.set(key,now);beep();try{showToast?.('🔔 Neue Meldung verfügbar')}catch(_){}let fcmBackend=false;try{fcmBackend=localStorage.getItem(`nasch-fcm-backend-${bid()}`)==='1'}catch(_){}if(document.hidden&&!fcmBackend&&'Notification'in window&&Notification.permission==='granted'){try{const n=new Notification('NASCH',{body:'Neue Meldung verfügbar',icon:'./icon-192.png',tag:`nasch-${key||now}`,renotify:true});n.onclick=()=>{window.focus();if(key)Notices.open(key)}}catch(_){}}}
+function notifyNeutral(r){const key=String(r?.id||'');const now=Date.now(),last=neutralNoticeSeen.get(key)||0;if(key&&now-last<10000)return;if(key)neutralNoticeSeen.set(key,now);beep();try{showToast?.('🔔 Neue Meldung verfügbar')}catch(_){}let fcmBackend=false;try{fcmBackend=localStorage.getItem(`nasch-fcm-backend-${bid()}`)==='1'}catch(_){}if(document.hidden&&!fcmBackend&&'Notification'in window&&Notification.permission==='granted'){try{const n=new Notification('NASCH',{body:'Neue Meldung verfügbar',icon:'./icon-any-192-v2915.png',tag:`nasch-${key||now}`,renotify:true});n.onclick=()=>{window.focus();if(key)Notices.open(key)}}catch(_){}}}
 
 async function pushTokenId(token){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,48)}catch(_){return btoa(token).replace(/[^a-z0-9]/gi,'').slice(0,48)}}
 async function setupFcm(){if(!fireReady()||!('serviceWorker'in navigator)||!window.firebase?.messaging)return{active:false,reason:'FCM nicht unterstützt'};let cfg={};try{const s=await db().collection('nasch').doc(bid()).collection('config').doc('push').get();cfg=s.exists?s.data()||{}:{}}catch(_){}if(!cfg.vapidKey)return{active:false,reason:'Hintergrund-Push serverseitig noch nicht aktiviert'};try{const reg=await navigator.serviceWorker.ready,m=firebase.messaging();m.useServiceWorker?.(reg);const token=await m.getToken({vapidKey:String(cfg.vapidKey),serviceWorkerRegistration:reg});if(!token)return{active:false,reason:'Kein Push-Token erhalten'};const id=await pushTokenId(token);await db().collection('nasch').doc(bid()).collection('pushTokens').doc(id).set({uid:uidNow(),token,branchId:bid(),updatedAt:ts(),userAgent:navigator.userAgent.slice(0,180)},{merge:true});const backend=cfg.backendEnabled===true;try{localStorage.setItem(`nasch-fcm-backend-${bid()}`,backend?'1':'0')}catch(_){}try{m.onMessage(payload=>notifyNeutral({id:String(payload?.data?.noticeId||('fcm-'+Date.now()))}))}catch(_){}return{active:backend,reason:backend?'Hintergrund-Push aktiv':'Push-Token bereit · Backend noch nicht aktiviert'}}catch(e){return{active:false,reason:e?.message||String(e)}}}

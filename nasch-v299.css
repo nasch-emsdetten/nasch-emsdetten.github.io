@@ -1,11 +1,11 @@
 
-/* v29.14 · PWA-Stabilität auf Mobilgeräten
+/* v29.15 · PWA-Stabilität auf Mobilgeräten
    Normales Scrollen bleibt erlaubt; Overscroll darf keinen Browser-Reload / Pull-to-Refresh auslösen. */
 html,body{overscroll-behavior-y:none!important;}
 body{overscroll-behavior:none!important;}
 .screen,.page-wrap{overscroll-behavior-y:contain;}
 
-/* NASCH v29.14 · Startbild ohne weiße Ecken + Pull-to-Refresh gesperrt */
+/* NASCH v29.15 · Startbild ohne weiße Ecken + Pull-to-Refresh gesperrt */
 .n299-shift-actionbar{position:sticky!important;bottom:0!important;z-index:30;background:#fff!important;border-top:1px solid var(--border)!important;box-shadow:0 -8px 20px rgba(15,23,42,.08);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important}
 .n299-team-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin-right:5px;vertical-align:1px}.n299-team-dot.online{background:#16a34a;box-shadow:0 0 0 2px #dcfce7}
 .n299-presence{font-size:10px;color:#64748b;white-space:nowrap}.n299-read{font-size:10px;color:#64748b;margin-top:3px}.n299-read.ok{color:#047857;font-weight:700}

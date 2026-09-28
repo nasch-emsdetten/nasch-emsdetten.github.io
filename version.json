@@ -1,6 +1,5 @@
 {
-  "version": "29.14",
+  "version": "29.15",
   "updated": "2026-09-28",
-  "notes": "v29.14: PWA-Startbild korrigiert. Weiße Icon-Ecken entfernt und Splash-Hintergrund auf NASCH-Grün vereinheitlicht. Pull-to-Refresh/Herunterziehen am oberen Rand löst keinen App-Neustart mehr aus; normales Scrollen bleibt erhalten. Funktionen aus v29.13 unverändert.",
-  "date": "2026-09-28"
+  "notes": "v29.15: PWA-Iconstruktur korrigiert. Normale und maskierbare Icons sind getrennt, beide vollständig deckend ohne weiße Eckflächen. Neue versionierte Manifest- und Icon-Dateinamen verhindern die weitere Verwendung alter Splash-Assets. Pull-to-Refresh-Schutz aus v29.14 bleibt erhalten."
 }
