@@ -1,5 +1,5 @@
 {
-  "version": "29.18",
+  "version": "29.19",
   "updated": "2026-09-28",
-  "notes": "v29.18: Audit-Fix für Frei/XX. Wochenplan-Druck/PDF verwendet jetzt dieselbe Beschäftigungsart- und Wunschfrei-Logik wie Bildschirm, Stundenübersicht und Monats-Stundenzettel. Teilzeit 5 Tage = 2 Frei, 6 Tage = 1 Frei; feste Nichtverfügbarkeit = XX und zählt in der Frei-Quote; Aushilfe ungeplant leer."
+  "notes": "v29.19: Versionsanzeige korrigiert; gemeinsame JS-Datei überschreibt die Seitenversion nicht mehr. Verfügbarkeit: Fester freier Tag ist bei Vollzeit direkt anwählbar, der erste Tipp startet automatisch die Bearbeitung; Beschäftigungsart wird robust aus Typ/Bezeichnung erkannt."
 }

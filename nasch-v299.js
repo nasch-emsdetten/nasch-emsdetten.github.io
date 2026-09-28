@@ -1,8 +1,9 @@
-/* NASCH v29.18 · PWA + Stundennachweis/Organisation + Frei/XX-Audit */
+/* NASCH v29.19 · PWA + Stundennachweis/Organisation + Verfügbarkeit-Fix */
 (()=>{
 'use strict';
-const VERSION='29.15';
-window.NASCH_APP_VERSION=VERSION;
+const BUNDLE_VERSION='29.19';
+const VERSION=String(window.NASCH_APP_VERSION||BUNDLE_VERSION);
+if(!window.NASCH_APP_VERSION) window.NASCH_APP_VERSION=BUNDLE_VERSION;
 
 // v29.15: Android/Chrome-PWA Pull-to-Refresh verhindern, ohne normales Scrollen zu blockieren.
 // CSS overscroll-behavior ist der primäre Schutz; dieser Touch-Guard ist der Fallback
