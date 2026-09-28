@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#B91C1C">
-<title>NASCH v29.10 · Werlte</title>
+<title>NASCH v29.13 · Werlte</title>
 <link rel="manifest" href="manifest-werlte.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -145,7 +145,7 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
-/* Einstellungs-Module v29.10 */
+/* Einstellungs-Module v29.13 */
 .settings-module{margin-bottom:10px;}
 .settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
 .settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
@@ -247,7 +247,7 @@ window.FILIAL_ID = 'FIL003';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.10</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.13</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1105,7 +1105,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v29.10: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v29.13: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -2171,7 +2171,7 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
-// ── v29.10: Einstellungs-Module ein-/ausblenden ─────────────
+// ── v29.13: Einstellungs-Module ein-/ausblenden ─────────────
 const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
 function adminSettingsReadState(){
   try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
@@ -2528,7 +2528,7 @@ function getWeekTotalHours() {
   return Object.keys(USERS).reduce((sum,uid)=>sum+getEmployeeWeekStats(uid).hours,0);
 }
 
-// v29.10: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
+// v29.13: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
 // Filialleitung, aktive Vertretung, Personalbüro und System-Admin sehen immer die komplette Woche.
 function isEmployeePlanViewer(){
   const uid=String(AppState.currentUserId||'');
@@ -2761,7 +2761,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'29.10');
+    const v='v'+(window.NASCH_APP_VERSION||'29.13');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -3468,7 +3468,7 @@ function openShiftEditor(uid,dayIdx){
     // Reinigung nur anbieten, wenn dem Mitarbeiter RK zugeordnet ist.
     const assignedActivities=(typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):activityList(user.taetigkeit));
     if(o.t==='R' && !assignedActivities.includes('RK')) return false;
-    // v29.10: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
+    // v29.13: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
     // Früh, Spät und Teilschicht bleiben immer auswählbar.
     return true;
   });
@@ -4168,7 +4168,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v29.10: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v29.13: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -7114,7 +7114,7 @@ module.exports = QRCode;
 (() => {
   const esc254=v=>typeof escapeHtml==='function'?escapeHtml(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const minOf=t=>{const m=String(t||'').match(/^(\d{1,2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):null;};
-  function requiredPauseMinutesFromMinutes(grossMin){grossMin=Math.max(0,Number(grossMin)||0);return grossMin>=540?60:grossMin>=300?30:0;}
+  function requiredPauseMinutesFromMinutes(grossMin){grossMin=Math.max(0,Number(grossMin)||0);return grossMin>=540?45:grossMin>=300?30:0;}
   function requiredPauseMinutesFromHours(grossHours){return requiredPauseMinutesFromMinutes((Number(grossHours)||0)*60);}
   function intervalGrossMinutes(start,end){let a=minOf(start),b=minOf(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return Math.max(0,b-a);}
   function shiftGrossHours(sh){try{return typeof getShiftHours==='function'?Math.max(0,Number(getShiftHours(sh))||0):0;}catch(_){return 0;}}
@@ -7140,7 +7140,7 @@ module.exports = QRCode;
     const minimum=requiredPauseMinutesFromMinutes(intervalGrossMinutes(s.value,e.value));
     p.min=String(minimum);if((Number(p.value)||0)<minimum)p.value=String(minimum);
     let note=document.getElementById('tcPauseRule');if(!note){note=document.createElement('div');note.id='tcPauseRule';note.style.cssText='font-size:10px;color:#64748b;margin-top:4px;';p.insertAdjacentElement('afterend',note);}
-    note.textContent=minimum?`Automatischer Mindestabzug: ${minimum} Min. (${minimum===60?'ab 9 Std.':'ab 5 Std.'})`:'Automatischer Mindestabzug: 0 Min. unter 5 Std.';
+    note.textContent=minimum?`Automatischer Mindestabzug: ${minimum} Min. (${minimum===45?'ab 9 Std.':'ab 5 Std.'})`:'Automatischer Mindestabzug: 0 Min. unter 5 Std.';
   }
   const oldOpenCorrection=window.openTimeCorrection;
   if(typeof oldOpenCorrection==='function'){
@@ -7165,7 +7165,7 @@ module.exports = QRCode;
     const box=document.getElementById('personalDailyHours');if(!box||!AppState.currentUserId)return;const uid=AppState.currentUserId,mon=getMonday(AppState.weekOffset),shifts=PLAN[uid]||[],eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;
     if(window.TimeCorrectionStore&&!TimeCorrectionStore.isLoaded())TimeCorrectionStore.ensureLoaded().then(()=>renderPersonalDailyHours()).catch(()=>{});
     let total=0,totalPause=0,total25=0,total50=0;
-    let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Pausen werden automatisch abgezogen: <strong>ab 5 Std. 30 Min.</strong> · <strong>ab 9 Std. 60 Min.</strong> Angezeigt werden Netto-Arbeitsstunden.</span></div>';
+    let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Pausen werden automatisch abgezogen: <strong>ab 5 Std. 30 Min.</strong> · <strong>ab 9 Std. 45 Min.</strong> Angezeigt werden Netto-Arbeitsstunden.</span></div>';
     if(eligible) html+='<div class="banner binfo" style="margin-bottom:8px;"><span>💶</span><span>Zuschläge aktiv. Bei unbekannter Pausenlage werden Zuschlagsstunden auf die Netto-Arbeitszeit begrenzt.</span></div>';
     html+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:'+(eligible?'760':'610')+'px;"><thead><tr style="background:#f8fafc;"><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th>'+(eligible?'<th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th>':'')+'<th style="padding:7px 9px;text-align:right;">Korrektur</th></tr></thead><tbody>';
     for(let i=0;i<7;i++){
@@ -7183,7 +7183,7 @@ module.exports = QRCode;
   window.renderAdminDailyHours=function(){
     const box=document.getElementById('adminDailyHours');if(!box)return;const allowed=(typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId))||window.BranchSandbox?.isOffice?.(AppState.currentUserId);if(!allowed){box.innerHTML='';return;}
     if(window.TimeCorrectionStore&&!TimeCorrectionStore.isLoaded())TimeCorrectionStore.ensureLoaded().then(()=>renderAdminDailyHours()).catch(()=>{});
-    const mon=getMonday(AppState.weekOffset),entries=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS);let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Automatische Pause: ab 5 Std. 30 Min. · ab 9 Std. 60 Min. Die Spalte Netto enthält bereits den Abzug.</span></div>';
+    const mon=getMonday(AppState.weekOffset),entries=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS);let html='<div class="banner binfo" style="margin-bottom:8px;"><span>☕</span><span>Automatische Pause: ab 5 Std. 30 Min. · ab 9 Std. 45 Min. Die Spalte Netto enthält bereits den Abzug.</span></div>';
     entries.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,currentBid254()))).forEach(([uid,u])=>{
       const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;let total=0,totalPause=0,total25=0,total50=0,rows='';
       for(let day=0;day<7;day++){
@@ -7287,7 +7287,7 @@ module.exports = QRCode;
     <div class="card-h"><div class="card-t">🕐 Stundenzettel</div></div>
     <div class="card-b" style="font-size:13px;line-height:1.7;">
       <p>Unter <strong>Mein Bereich → Stundenzettel</strong> siehst du deine Arbeitszeiten für die aktuelle Woche.</p>
-      <p>Pausen werden automatisch abgezogen: <strong>ab 5 Std. → 30 Min.</strong>, <strong>ab 9 Std. → 60 Min.</strong></p>
+      <p>Pausen werden automatisch abgezogen: <strong>ab 5 Std. → 30 Min.</strong>, <strong>ab 9 Std. → 45 Min.</strong></p>
     </div>
   </div>
 
@@ -7452,7 +7452,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.10';
+  window.NASCH_APP_VERSION='29.13';
 })();
 </script>
 
@@ -7954,7 +7954,7 @@ module.exports = QRCode;
       <div class="meta"><div><span>Mitarbeiter</span><strong>${esc(u.name||uid)}</strong></div><div><span>Mitarbeiter-Nr.</span><strong>${esc(uid)}</strong></div><div><span>Zeitraum</span><strong>${esc(meta.label)}</strong></div><div><span>Beschäftigung</span><strong>${esc(u.label||u.typ||'–')}</strong></div></div>
       <table><thead><tr><th>Datum</th><th>Arbeitszeit</th><th class="r">Pause</th><th class="r">Netto</th>${eligible?'<th class="r">25 %</th><th class="r">50 %</th>':''}<th>Status</th></tr></thead><tbody>${rows}<tr class="sum"><td colspan="2"><strong>Gesamt</strong></td><td class="r"><strong>${totalPause} Min.</strong></td><td class="r"><strong>${esc(totalTxt)}</strong></td>${eligible?`<td class="r"><strong>${esc(typeof formatHours==='function'?formatHours(total25):total25.toFixed(2)+' h')}</strong></td><td class="r"><strong>${esc(typeof formatHours==='function'?formatHours(total50):total50.toFixed(2)+' h')}</strong></td>`:''}<td></td></tr></tbody></table>
       <div class="footgrid"><div><span>Monats-Soll</span><strong>${u.sollStundenMonat!=null?esc(u.sollStundenMonat)+' h':'–'}</strong></div><div><span>Unterschrift</span><strong>${esc(signatureText(uid))}</strong></div></div>
-      <div class="note">Pausenregel: ab 5:00 Std. 30 Min., ab 9:00 Std. 60 Min. Korrigierte Zeiten haben Vorrang vor Planzeiten.${eligible?' Zuschläge: 25 % und 50 % werden ausgewiesen.':''}</div>
+      <div class="note">Pausenregel: ab 5:00 Std. 30 Min., ab 9:00 Std. 45 Min. Korrigierte Zeiten haben Vorrang vor Planzeiten.${eligible?' Zuschläge: 25 % und 50 % werden ausgewiesen.':''}</div>
       <div class="created">Erstellt am ${esc(new Date().toLocaleString('de-DE'))}</div>
     ${standalone?'':'</section>'}`;
   }
@@ -8387,7 +8387,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.10';
+  window.NASCH_APP_VERSION='29.13';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8398,7 +8398,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8537,7 +8537,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8588,7 +8588,7 @@ window.NASCH_APP_VERSION='29.10';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8607,7 +8607,7 @@ window.NASCH_APP_VERSION='29.10';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -8938,7 +8938,7 @@ window.NASCH_APP_VERSION='29.10';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.10')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.13')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -8958,7 +8958,7 @@ window.NASCH_APP_VERSION='29.10';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9163,7 +9163,7 @@ window.NASCH_APP_VERSION='29.10';
     for(const desc of blockDescriptors(d)){
       if(!isWorkingBlock(desc.block))continue;const rs=rangesForBlock(desc.block);rs.forEach((r,p)=>{const rec=CorrectionV2.latest(uid,dk,desc.key,p),use=rec?.status==='genehmigt'?rec:null,a=use?.start||r[0],b=use?.end||r[1];gross+=intervalMinutes(a,b);if(rec&&rec.status!=='genehmigt')pending=true;if(use)changed=true;lines.push({desc,part:p,planned:r,actual:[a,b],rec,use});});
     }
-    const pause=window.NaschPauseRules?.requiredPauseMinutesFromMinutes?.(gross)??(gross>=540?60:gross>=300?30:0),net=Math.max(0,gross-pause);
+    const pause=window.NaschPauseRules?.requiredPauseMinutesFromMinutes?.(gross)??(gross>=540?45:gross>=300?30:0),net=Math.max(0,gross-pause);
     let p25=0,p50=0;const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;if(eligible&&typeof surchargeHoursForTimeText==='function'){for(const l of lines){const z=surchargeHoursForTimeText(`${l.actual[0]}–${l.actual[1]}`,dayDate(dayIdx))||{};p25+=Number(z.pct25)||0;p50+=Number(z.pct50)||0;}const raw=(p25+p50)*60;if(raw>net&&raw>0){const f=net/raw;p25*=f;p50*=f;}}
     return{grossMin:gross,pauseMin:pause,netHours:net/60,lines,pending,changed,pct25:p25,pct50:p50};
   }
@@ -9176,24 +9176,70 @@ window.NASCH_APP_VERSION='29.10';
   try{renderPersonalDailyHours=window.renderPersonalDailyHours}catch(_){ }
   window.renderAdminDailyHours=function(){const box=document.getElementById('adminDailyHours');if(!box)return;if(!isPrivileged()){box.innerHTML='';return;}CorrectionV2.start();const mon=getMonday(AppState.weekOffset||0);let html='';for(const [uid,u] of activeEmployeeEntries()){let total=0,rows='';for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const a=actualDay(uid,i);total+=a.netHours;const l=a.lines.map(x=>`${labelShort(x.desc.block)} ${x.actual.join('–')}${x.rec?` (${correctionStatus(x.rec)})`:''}`).join(' · ')||'–';rows+=`<tr><td>${esc(formatFullDate(d))}</td><td>${esc(l)}</td><td style="text-align:right;">${a.pauseMin} Min.</td><td style="text-align:right;font-weight:700;">${formatHours(a.netHours)}</td></tr>`;}html+=`<div class="card" style="margin-bottom:10px;"><div class="card-h"><div class="card-t">${esc(u.name)} · ${formatHours(total)}</div></div><div class="card-b" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px;"><thead><tr><th>Datum</th><th>Arbeitszeit</th><th style="text-align:right;">Pause</th><th style="text-align:right;">Netto</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;}box.innerHTML=html;};try{renderAdminDailyHours=window.renderAdminDailyHours}catch(_){ }
 
-  // ---------- Schichttausch / Ersatz / Krank→KV ----------
+  // ---------- Schichttausch / Ersatz / Organisation / Krank→KV ----------
+  function rangesOverlap(a,b){let a1=minutes(a?.[0]),a2=minutes(a?.[1]),b1=minutes(b?.[0]),b2=minutes(b?.[1]);if([a1,a2,b1,b2].some(x=>x==null))return false;if(a2<a1)a2+=1440;if(b2<b1)b2+=1440;return a1<b2&&b1<a2;}
+  function rangesOverlapAny(A,B){if(!A.length||!B.length)return false;return A.some(a=>B.some(b=>rangesOverlap(a,b)));}
+  function activityCodes(uid,b){let a=[];if(Array.isArray(b?.r))a.push(...b.r);if(Array.isArray(b?.r1))a.push(...b.r1);if(Array.isArray(b?.r2))a.push(...b.r2);if(!a.length){try{a=typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):[]}catch(_){}}return Array.from(new Set(a.map(x=>String(x).trim()).filter(Boolean)));}
+  function samePosition(srcUid,srcBlock,cuid){const need=activityCodes(srcUid,srcBlock),have=activityCodes(cuid,null);if(!need.length)return true;return need.some(x=>have.includes(x));}
+  function hasAbsenceDate(uid,dt){const dk=dateKey(dt);try{return (SandboxStore?.getRequests?.()||[]).some(r=>String(r.uid)===String(uid)&&['urlaub','krank'].includes(r.type)&&r.status!=='abgelehnt'&&String(r.data?.von||'')<=dk&&String(r.data?.bis||r.data?.von||'')>=dk);}catch(_){return false;}}
+  function hasAbsence(uid,dt){return hasAbsenceDate(uid,dt);}
+  function weekDate(wk,dayIdx){const m=String(wk||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return dayDate(dayIdx);const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);d.setDate(d.getDate()+Number(dayIdx||0));return d;}
+  function smallHash(s){let h=2166136261;for(let i=0;i<String(s).length;i++){h^=String(s).charCodeAt(i);h=Math.imul(h,16777619);}return(h>>>0).toString(36);}
+  function blockFingerprint(b){return [b?.t,b?.z,b?.start,b?.end,b?.z1,b?.z2,JSON.stringify(b?.r||[]),JSON.stringify(b?.r1||[]),JSON.stringify(b?.r2||[])].join('|');}
+  function ensurePlanBlockIds(plan){for(const [uid,days] of Object.entries(plan||{})){if(!Array.isArray(days))continue;for(let i=0;i<7;i++){let d=days[i];if(!d||typeof d!=='object')d={t:'-',z:'',r:[],extras:[]};if(d.t&&d.t!=='-'&&!d.blockId)d.blockId=`org_${String(uid).replace(/[^a-z0-9]/gi,'_')}_${i}_m_${smallHash(blockFingerprint(d))}`;if(!Array.isArray(d.extras))d.extras=[];d.extras.forEach((b,j)=>{if(b&&!b.blockId)b.blockId=`org_${String(uid).replace(/[^a-z0-9]/gi,'_')}_${i}_x${j}_${smallHash(blockFingerprint(b))}`;});days[i]=normalizeDay(d);}}return plan;}
+  function findBlockById(day,id){day=normalizeDay(day);if(String(day.blockId||'')===String(id||'')&&day.t&&day.t!=='-')return{slot:'main',index:-1,key:'main',block:day};const i=day.extras.findIndex(b=>String(b?.blockId||'')===String(id||''));return i>=0?{slot:'extra',index:i,key:`xid:${day.extras[i].blockId}`,block:day.extras[i]}:null;}
+  function ensurePlanDay(plan,uid,dayIdx){uid=String(uid);if(!plan[uid])plan[uid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));while(plan[uid].length<7)plan[uid].push({t:'-',z:'',r:[],extras:[]});plan[uid][dayIdx]=normalizeDay(plan[uid][dayIdx]||{t:'-',z:'',r:[],extras:[]});return plan[uid][dayIdx];}
+  function applyTimeOverride(block,start,end){const b=clone(block);if(!start&&!end)return b;if(!start||!end)throw new Error('Für eine Zeitänderung müssen Start und Ende angegeben sein.');if(b.t==='TS')throw new Error('Geteilte Schichten bitte im normalen Wochenplan-Editor zeitlich anpassen.');if(intervalMinutes(start,end)<=0)throw new Error('Die angepasste Arbeitszeit ist ungültig.');b.start=String(start);b.end=String(end);b.z=`${start}–${end}`;return b;}
+  function removeOverlappingKv(day,block){const rs=rangesForBlock(block);if(!rs.length)return;let again=true;while(again){again=false;for(const x of blockDescriptors(day)){if(x.block.t==='KV'&&!x.block.kvWorked&&rangesOverlapAny(rangesForBlock(x.block),rs)){removeBlock(day,x.key);again=true;break;}}}}
+  function validateOrganizationPlan(plan,wk){for(const [uid,days] of Object.entries(plan||{})){if(!Array.isArray(days))continue;for(let di=0;di<7;di++){const work=blockDescriptors(normalizeDay(days[di]||{})).filter(x=>isWorkingBlock(x.block));for(let a=0;a<work.length;a++)for(let b=a+1;b<work.length;b++)if(rangesOverlapAny(rangesForBlock(work[a].block),rangesForBlock(work[b].block))){const name=USERS?.[uid]?.name||uid;throw new Error(`${name} hat am ${DAYS?.[di]||'Tag'} überlappende Schichten. Bitte Organisation oder Zeiten anpassen.`);}}}return true;}
+  function normalizeOrganizationOperations(ops){return (Array.isArray(ops)?ops:[]).map(o=>({sourceUid:String(o.sourceUid||''),sourceDayIdx:Number(o.sourceDayIdx),sourceBlockId:String(o.sourceBlockId||''),targetUid:String(o.targetUid||''),targetDayIdx:Number(o.targetDayIdx),start:String(o.start||''),end:String(o.end||'')})).filter(o=>o.sourceUid&&o.targetUid&&o.sourceBlockId&&Number.isInteger(o.sourceDayIdx)&&o.sourceDayIdx>=0&&o.sourceDayIdx<7&&Number.isInteger(o.targetDayIdx)&&o.targetDayIdx>=0&&o.targetDayIdx<7);}
+  function applyOrganizationOperations(basePlan,request,ops){const plan=ensurePlanBlockIds(clone(basePlan||{})),clean=normalizeOrganizationOperations(ops);if(!clean.length)throw new Error('Bitte mindestens eine Planänderung festlegen.');for(const op of clean){const sday=ensurePlanDay(plan,op.sourceUid,op.sourceDayIdx),src=findBlockById(sday,op.sourceBlockId);if(!src)throw new Error(`Eine ausgewählte Ausgangsschicht von ${USERS?.[op.sourceUid]?.name||op.sourceUid} wurde inzwischen geändert. Bitte Organisation neu öffnen.`);let moved=applyTimeOverride(src.block,op.start,op.end);const same=op.sourceUid===op.targetUid&&op.sourceDayIdx===op.targetDayIdx;if(same){replaceBlock(sday,src.key,{...moved,organizationId:request.id,organizedBy:uidNow()});continue;}const targetDate=weekDate(request.weekKey,op.targetDayIdx);if(hasAbsenceDate(op.targetUid,targetDate))throw new Error(`${USERS?.[op.targetUid]?.name||op.targetUid} ist am Zieltag als krank/Urlaub eingetragen.`);removeBlock(sday,src.key);const tday=ensurePlanDay(plan,op.targetUid,op.targetDayIdx);removeOverlappingKv(tday,moved);moved={...moved,blockId:moved.blockId||makeId('org'),organizationId:request.id,organizedFrom:op.sourceUid,organizedBy:uidNow()};addBlock(tday,moved);}validateOrganizationPlan(plan,request.weekKey);return{plan,operations:clean};}
+
+  function candidatesFor(srcUid,dayIdx,srcBlock,plan=PLAN,opt={}){const rs=rangesForBlock(srcBlock),dt=dayDate(dayIdx),good=[],other=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;if(hasAbsence(uid,dt))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});const busy=blockDescriptors(day).some(x=>isWorkingBlock(x.block)&&rangesOverlapAny(rangesForBlock(x.block),rs));if(busy)continue;const o={uid:String(uid),u,same:samePosition(srcUid,srcBlock,uid),day};(o.same?good:other).push(o);}return opt.includeOther?[...good,...other]:good.length?good:other;}
+  function organizationCandidates(srcUid,dayIdx,srcBlock,plan=PLAN){const dt=dayDate(dayIdx),good=[],other=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid)||hasAbsence(uid,dt))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{}),same=samePosition(srcUid,srcBlock,uid);const scheduled=blockDescriptors(day).filter(x=>isWorkingBlock(x.block)||x.block.t==='KV').map(x=>`${labelShort(x.block)} ${timeText(x.block)}`).join(' · ')||'frei';const o={uid:String(uid),u,same,scheduled};(same?good:other).push(o);}return[...good,...other];}
+  function swapOptions(srcUid,dayIdx,srcKey,srcBlock,plan=PLAN){
+    const dt=dayDate(dayIdx),srcDay=normalizeDay(plan?.[srcUid]?.[dayIdx]||{}),srcRanges=rangesForBlock(srcBlock),out=[];
+    const requesterOther=blockDescriptors(srcDay).filter(x=>x.key!==srcKey&&isWorkingBlock(x.block));
+    for(const [uid,u] of activeEmployeeEntries()){
+      if(String(uid)===String(srcUid)||hasAbsence(uid,dt))continue;
+      const targetDay=normalizeDay(plan?.[uid]?.[dayIdx]||{});
+      for(const x of blockDescriptors(targetDay)){
+        if(!isWorkingBlock(x.block)&&x.block.t!=='KV')continue;
+        const targetRanges=rangesForBlock(x.block);
+        const targetOther=blockDescriptors(targetDay).filter(y=>y.key!==x.key&&isWorkingBlock(y.block));
+        if(targetOther.some(y=>rangesOverlapAny(rangesForBlock(y.block),srcRanges)))continue;
+        if(requesterOther.some(y=>rangesOverlapAny(rangesForBlock(y.block),targetRanges)))continue;
+        const targetCanSource=samePosition(srcUid,srcBlock,uid),requesterCanTarget=samePosition(uid,x.block,srcUid);
+        if(!targetCanSource||!requesterCanTarget)continue;
+        out.push({uid:String(uid),name:u.name,key:x.key,b:x.block,same:true});
+      }
+    }
+    return out;
+  }
+  function kvCandidatesRaw(srcUid,dayIdx,srcBlock,plan){const rs=rangesForBlock(srcBlock),out=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});for(const x of blockDescriptors(day)){if(x.block.t!=='KV')continue;const kr=rangesForBlock(x.block);if(kr.length&&rs.length&&!rangesOverlapAny(kr,rs))continue;out.push({uid:String(uid),priority:Number(x.block.kvPriority||x.block.naschKvPriority||99),key:x.key,block:x.block});break;}}out.sort((a,b)=>a.priority-b.priority);return out;}
+
   const ShiftActions=(()=>{
     let rows=[],unsub=null,started=false;
     const coll=()=>firebase.firestore().collection('nasch').doc(FID()).collection('shiftActions');
     const conv=d=>({...d,createdAt:d.createdAt?.toDate?d.createdAt.toDate().toISOString():d.createdAt,updatedAt:d.updatedAt?.toDate?d.updatedAt.toDate().toISOString():d.updatedAt});
     function start(){if(started||typeof firebase==='undefined'||!firebase.firestore)return;started=true;unsub=coll().onSnapshot(s=>{rows=s.docs.map(d=>conv({id:d.id,...d.data()})).sort((a,b)=>Date.parse(b.updatedAt||b.createdAt||0)-Date.parse(a.updatedAt||a.createdAt||0));renderShiftActionsPage();renderManagerWorkflow();refreshNotificationsSafe();},e=>console.warn('ShiftActions:',e));}
     async function create(data){const id=makeId('sa');await coll().doc(id).set({id,branch:FID(),...data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});return id;}
-    function incoming(uid){return rows.filter(r=>Array.isArray(r.candidateUids)&&r.candidateUids.includes(String(uid))&&['offen','kv_offen'].includes(r.status)&&!(r.responses||{})[uid]);}
+    function incoming(uid){return rows.filter(r=>Array.isArray(r.candidateUids)&&r.candidateUids.includes(String(uid))&&['offen','kv_offen','orga_offen','orga_leitung'].includes(r.status)&&!(r.responses||{})[uid]);}
     function mine(uid){return rows.filter(r=>String(r.requesterUid)===String(uid));}
-    function pendingManager(){return rows.filter(r=>['wartet_leitung','kein_kv'].includes(r.status));}
+    function pendingManager(){return rows.filter(r=>['wartet_leitung','kein_kv','orga_offen','orga_leitung'].includes(r.status));}
     async function respond(id,accept){const r=rows.find(x=>x.id===id);if(!r)throw new Error('Anfrage nicht gefunden.');const u=uidNow();if(!Array.isArray(r.candidateUids)||!r.candidateUids.includes(u))throw new Error('Diese Anfrage ist nicht für dich.');
+      if(r.type==='organization'){
+        const responses={...(r.responses||{}),[u]:accept?'zugesagt':'abgelehnt'},all=(r.candidateUids||[]).every(x=>!!responses[x]),any=(r.candidateUids||[]).some(x=>responses[x]==='zugesagt');
+        const status=any?'orga_leitung':(all?'abgelehnt':'orga_offen');
+        await coll().doc(id).set({responses,status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});return;
+      }
       if(r.type==='kv_cover'){
         const idx=Number(r.activeCandidateIndex||0),active=String(r.candidateUids[idx]||'');if(active!==u)throw new Error('Zuerst ist eine andere KV-Person an der Reihe.');if(accept){await coll().doc(id).set({acceptedUid:u,status:'wartet_leitung',responses:{...(r.responses||{}),[u]:'angenommen'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}else{const ni=idx+1,status=ni<r.candidateUids.length?'kv_offen':'kein_kv';await coll().doc(id).set({activeCandidateIndex:ni,status,responses:{...(r.responses||{}),[u]:'abgelehnt'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}return;
       }
       if(accept){await firebase.firestore().runTransaction(async tx=>{const ref=coll().doc(id),snap=await tx.get(ref),cur=snap.data()||{};if(cur.acceptedUid&&cur.acceptedUid!==u)throw new Error('Die Schicht wurde bereits von jemand anderem angenommen.');tx.set(ref,{acceptedUid:u,status:'wartet_leitung',responses:{...(cur.responses||{}),[u]:'angenommen'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});}
       else{const responses={...(r.responses||{}),[u]:'abgelehnt'},all=(r.candidateUids||[]).every(x=>responses[x]==='abgelehnt');await coll().doc(id).set({responses,status:all?'abgelehnt':'offen',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
     }
-    async function rejectByManager(id){if(!isManager())throw new Error('Keine Berechtigung.');await coll().doc(id).set({status:'abgelehnt',decidedBy:uidNow(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
+    async function rejectByManager(id){if(!isManager())throw new Error('Keine Berechtigung.');await coll().doc(id).set({status:'abgelehnt',decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
     async function applyAction(r){
       const ref=firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(r.weekKey),snap=await ref.get(),data=snap.exists?(snap.data()||{}):{},plan=clone(data.publishedPlan||data.draftPlan||data.plan||{}),day=Number(r.dayIdx),srcDay=normalizeDay(plan?.[r.requesterUid]?.[day]||{t:'-',z:'',r:[],extras:[]});if(!plan[r.requesterUid])plan[r.requesterUid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));plan[r.requesterUid][day]=srcDay;const src=resolveBlock(srcDay,r.sourceKey);if(!src)throw new Error('Die ursprüngliche Schicht wurde inzwischen geändert.');const sourceBlock=clone(src.block);
       if(r.type==='swap'){
@@ -9207,68 +9253,68 @@ window.NASCH_APP_VERSION='29.10';
       if(r.weekKey===weekKeyForOffset()){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(plan));normalizePlan();rebalanceAllKv();try{WeekPlanStore?.persistCurrent?.()}catch(_){}try{renderPlan?.();buildAdminPlan?.();renderPersonalDailyHours?.();renderAdminDailyHours?.()}catch(_){}}
     }
     async function approve(id){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r)throw new Error('Anfrage nicht gefunden.');if(r.status!=='wartet_leitung')throw new Error('Diese Anfrage wartet nicht auf Freigabe.');await applyAction(r);await coll().doc(id).set({status:'genehmigt',decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
+    async function saveOrganizationDraft(id,operations,managerNote=''){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r||r.type!=='organization')throw new Error('Organisationsanfrage nicht gefunden.');const clean=normalizeOrganizationOperations(operations);await coll().doc(id).set({organizationOperations:clean,managerNote:String(managerNote||'').trim(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
+    async function approveOrganization(id,operations,managerNote=''){
+      if(!isManager())throw new Error('Keine Berechtigung.');const known=rows.find(x=>x.id===id);if(!known||known.type!=='organization')throw new Error('Organisationsanfrage nicht gefunden.');let finalPlan=null,finalOps=null;
+      const planRef=firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(known.weekKey),actionRef=coll().doc(id);
+      await firebase.firestore().runTransaction(async tx=>{const planSnap=await tx.get(planRef),actionSnap=await tx.get(actionRef),cur=actionSnap.data()||{};if(!['orga_offen','orga_leitung'].includes(cur.status))throw new Error('Diese Organisationsanfrage ist nicht mehr offen.');const data=planSnap.exists?(planSnap.data()||{}):{},base=clone(data.publishedPlan||data.draftPlan||data.plan||{}),applied=applyOrganizationOperations(base,{...known,...cur,id},operations);finalPlan=applied.plan;finalOps=applied.operations;tx.set(planRef,{publishedPlan:finalPlan,draftPlan:finalPlan,published:true,version:Number(data.version||1)+1,publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Filialleitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});tx.set(actionRef,{status:'genehmigt',organizationOperations:finalOps,managerNote:String(managerNote||'').trim(),decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});
+      if(known.weekKey===weekKeyForOffset()&&finalPlan){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(finalPlan));normalizePlan();rebalanceAllKv();try{WeekPlanStore?.persistCurrent?.()}catch(_){}try{renderPlan?.();buildAdminPlan?.();renderPersonalDailyHours?.();renderAdminDailyHours?.()}catch(_){}}
+    }
     async function convertNoKvToReplacement(id){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r)throw new Error('Nicht gefunden.');const plan=await loadPublishedPlan(r.weekKey),src=resolveBlock(normalizeDay(plan?.[r.requesterUid]?.[r.dayIdx]||{}),r.sourceKey);if(!src)throw new Error('Schicht nicht gefunden.');const c=candidatesFor(r.requesterUid,r.dayIdx,src.block,plan,{includeOther:true});if(!c.length)throw new Error('Keine geeigneten Mitarbeiter verfügbar.');await coll().doc(id).set({type:'replacement',candidateUids:c.map(x=>x.uid),status:'offen',activeCandidateIndex:null,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
     async function createSickCover(uid,von,bis,requestId){const start=new Date(von+'T12:00:00'),end=new Date((bis||von)+'T12:00:00'),messages=[];const weeks=new Map();for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const monday=new Date(d);const dow=monday.getDay();monday.setDate(monday.getDate()+(dow===0?-6:1-dow));const wk=dateKey(monday);if(!weeks.has(wk))weeks.set(wk,[]);weeks.get(wk).push(new Date(d));}
       for(const [wk,dates] of weeks){const plan=await loadPublishedPlan(wk);for(const d of dates){const di=(d.getDay()+6)%7,day=normalizeDay(plan?.[uid]?.[di]||{});for(const src of blockDescriptors(day).filter(x=>isWorkingBlock(x.block))){const kv=kvCandidatesRaw(uid,di,src.block,plan);const exists=rows.some(x=>x.type==='kv_cover'&&x.weekKey===wk&&x.requesterUid===uid&&x.dayIdx===di&&x.sourceKey===src.key&&['kv_offen','wartet_leitung','genehmigt'].includes(x.status));if(exists)continue;const id=await create({type:'kv_cover',requesterUid:uid,weekKey:wk,dayIdx:di,date:dateKey(d),sourceKey:src.key,sourceLabel:`${labelShort(src.block)} ${timeText(src.block)}`,candidateUids:kv.map(x=>x.uid),activeCandidateIndex:0,responses:{},status:kv.length?'kv_offen':'kein_kv',requestId});messages.push(kv.length?`KV-Anfrage: ${USERS?.[kv[0].uid]?.name||kv[0].uid}`:'Keine KV verfügbar');}}
       }return messages;}
-    async function loadPublishedPlan(wk){const s=await firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(wk).get();const d=s.exists?(s.data()||{}):{};return clone(d.publishedPlan||(d.published===true?d.plan:null)||d.draftPlan||{});}
-    return{start,rows:()=>rows.slice(),incoming,mine,pendingManager,create,respond,approve,rejectByManager,createSickCover,convertNoKvToReplacement,loadPublishedPlan};
+    async function loadPublishedPlan(wk){const s=await firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(wk).get();const d=s.exists?(s.data()||{}):{};return ensurePlanBlockIds(clone(d.publishedPlan||(d.published===true?d.plan:null)||d.draftPlan||{}));}
+    return{start,rows:()=>rows.slice(),incoming,mine,pendingManager,create,respond,approve,rejectByManager,saveOrganizationDraft,approveOrganization,createSickCover,convertNoKvToReplacement,loadPublishedPlan};
   })();
   window.NaschShiftActions=ShiftActions;
-
-  function rangesOverlap(a,b){let a1=minutes(a?.[0]),a2=minutes(a?.[1]),b1=minutes(b?.[0]),b2=minutes(b?.[1]);if([a1,a2,b1,b2].some(x=>x==null))return false;if(a2<a1)a2+=1440;if(b2<b1)b2+=1440;return a1<b2&&b1<a2;}
-  function rangesOverlapAny(A,B){if(!A.length||!B.length)return false;return A.some(a=>B.some(b=>rangesOverlap(a,b)));}
-  function activityCodes(uid,b){let a=[];if(Array.isArray(b?.r))a.push(...b.r);if(Array.isArray(b?.r1))a.push(...b.r1);if(Array.isArray(b?.r2))a.push(...b.r2);if(!a.length){try{a=typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):[]}catch(_){}}return Array.from(new Set(a.map(x=>String(x).trim()).filter(Boolean)));}
-  function samePosition(srcUid,srcBlock,cuid){const need=activityCodes(srcUid,srcBlock),have=activityCodes(cuid,null);if(!need.length)return true;return need.some(x=>have.includes(x));}
-  function hasAbsence(uid,dt){const dk=dateKey(dt);try{return (SandboxStore?.getRequests?.()||[]).some(r=>String(r.uid)===String(uid)&&['urlaub','krank'].includes(r.type)&&r.status!=='abgelehnt'&&String(r.data?.von||'')<=dk&&String(r.data?.bis||r.data?.von||'')>=dk);}catch(_){return false;}}
-  function candidatesFor(srcUid,dayIdx,srcBlock,plan=PLAN,opt={}){const rs=rangesForBlock(srcBlock),dt=dayDate(dayIdx),good=[],other=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;if(hasAbsence(uid,dt))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});const busy=blockDescriptors(day).some(x=>isWorkingBlock(x.block)&&rangesOverlapAny(rangesForBlock(x.block),rs));if(busy)continue;const o={uid:String(uid),u,same:samePosition(srcUid,srcBlock,uid),day};(o.same?good:other).push(o);}return opt.includeOther?[...good,...other]:good.length?good:other;}
-  function swapOptions(srcUid,dayIdx,srcKey,srcBlock,plan=PLAN){
-    const dt=dayDate(dayIdx),srcDay=normalizeDay(plan?.[srcUid]?.[dayIdx]||{}),srcRanges=rangesForBlock(srcBlock),out=[];
-    const requesterOther=blockDescriptors(srcDay).filter(x=>x.key!==srcKey&&isWorkingBlock(x.block));
-    for(const [uid,u] of activeEmployeeEntries()){
-      if(String(uid)===String(srcUid)||hasAbsence(uid,dt))continue;
-      const targetDay=normalizeDay(plan?.[uid]?.[dayIdx]||{});
-      for(const x of blockDescriptors(targetDay)){
-        if(!isWorkingBlock(x.block)&&x.block.t!=='KV')continue;
-        const targetRanges=rangesForBlock(x.block);
-        const targetOther=blockDescriptors(targetDay).filter(y=>y.key!==x.key&&isWorkingBlock(y.block));
-        if(targetOther.some(y=>rangesOverlapAny(rangesForBlock(y.block),srcRanges)))continue;
-        if(requesterOther.some(y=>rangesOverlapAny(rangesForBlock(y.block),targetRanges)))continue;
-        const targetCanSource=samePosition(srcUid,srcBlock,uid);
-        const requesterCanTarget=samePosition(uid,x.block,srcUid);
-        if(!targetCanSource||!requesterCanTarget)continue;
-        out.push({uid:String(uid),name:u.name,key:x.key,b:x.block,same:true});
-      }
-    }
-    return out;
-  }
-  function kvCandidatesRaw(srcUid,dayIdx,srcBlock,plan){const rs=rangesForBlock(srcBlock),out=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});for(const x of blockDescriptors(day)){if(x.block.t!=='KV')continue;const kr=rangesForBlock(x.block);if(kr.length&&rs.length&&!rangesOverlapAny(kr,rs))continue;out.push({uid:String(uid),priority:Number(x.block.kvPriority||x.block.naschKvPriority||99),key:x.key,block:x.block});break;}}out.sort((a,b)=>a.priority-b.priority);return out;}
 
   function ensureActionPage(){
     const wrap=document.querySelector('#appScreen .page-wrap');if(!wrap)return;if(!document.getElementById('pgShiftActions')){const p=document.createElement('div');p.className='page';p.id='pgShiftActions';p.innerHTML='<div class="back" onclick="goTo(\'pgProfil\',\'Mein Bereich\')">‹ Zurück</div><div id="shiftActionsContent"></div>';wrap.appendChild(p);}if(!document.getElementById('pgAdminWorkflow')){const p=document.createElement('div');p.className='page';p.id='pgAdminWorkflow';p.innerHTML='<div class="back" onclick="goTo(\'pgAdmin\',\'Admin\')">‹ Zurück</div><div id="managerWorkflowContent"></div>';wrap.appendChild(p);}patchMenus();}
   function patchMenus(){
-    const prof=document.querySelector('#pgProfil .menu-list');if(prof&&!document.getElementById('miShiftActions')){const d=document.createElement('div');d.className='mi';d.id='miShiftActions';d.onclick=()=>{goTo('pgShiftActions','Schichttausch & Ersatz');setTimeout(renderShiftActionsPage,0)};d.innerHTML='<div class="mi-icon" style="background:#eef6ff;">🔁</div><span class="mi-lbl">Schichttausch & Ersatz</span><span class="mi-arr">›</span>';prof.appendChild(d);}
-    const admin=document.querySelector('#pgAdmin .menu-list');if(admin&&!document.getElementById('miAdminWorkflow')){const d=document.createElement('div');d.className='mi';d.id='miAdminWorkflow';d.onclick=()=>{goTo('pgAdminWorkflow','Tausch, Ersatz & Korrekturen');setTimeout(renderManagerWorkflow,0)};d.innerHTML='<div class="mi-icon" style="background:#eef6ff;">🔄</div><span class="mi-lbl">Tausch, Ersatz & Korrekturen</span><span class="mi-arr">›</span>';admin.appendChild(d);}
+    const prof=document.querySelector('#pgProfil .menu-list');if(prof&&!document.getElementById('miShiftActions')){const d=document.createElement('div');d.className='mi';d.id='miShiftActions';d.onclick=()=>{goTo('pgShiftActions','Schichttausch, Ersatz & Organisation');setTimeout(renderShiftActionsPage,0)};d.innerHTML='<div class="mi-icon" style="background:#eef6ff;">🔁</div><span class="mi-lbl">Tausch, Ersatz & Organisation</span><span class="mi-arr">›</span>';prof.appendChild(d);}
+    const admin=document.querySelector('#pgAdmin .menu-list');if(admin&&!document.getElementById('miAdminWorkflow')){const d=document.createElement('div');d.className='mi';d.id='miAdminWorkflow';d.onclick=()=>{goTo('pgAdminWorkflow','Tausch, Ersatz & Organisation');setTimeout(renderManagerWorkflow,0)};d.innerHTML='<div class="mi-icon" style="background:#eef6ff;">🔄</div><span class="mi-lbl">Tausch, Ersatz & Organisation</span><span class="mi-arr">›</span>';admin.appendChild(d);}
   }
-  function ownBlocksHtml(){const uid=uidNow(),mon=getMonday(AppState.weekOffset||0);let out='';for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i),day=normalizeDay(PLAN?.[uid]?.[i]||{});for(const x of blockDescriptors(day)){const b=x.block;if(!isWorkingBlock(b)&&b.t!=='KV')continue;out+=`<div class="v2817-action-row"><div style="flex:1;"><strong>${esc(d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}))} · ${esc(labelShort(b))}</strong><div>${esc(timeText(b))}${b.t==='KV'?' · Bereitschaft':''}</div></div><button onclick="NaschShiftFlow.openSwap(${i},'${x.key}')">Tauschen</button>${isWorkingBlock(b)?`<button onclick="NaschShiftFlow.openReplacement(${i},'${x.key}')">Ersatz</button>`:''}</div>`;}}return out||'<div style="font-size:11px;color:var(--muted);">In dieser Woche sind keine eigenen Arbeits-/KV-Blöcke vorhanden.</div>';}
-  function actionSummary(r){const who=USERS?.[r.requesterUid]?.name||r.requesterUid,acc=r.acceptedUid?(USERS?.[r.acceptedUid]?.name||r.acceptedUid):'';const typ=r.type==='swap'?'Tausch':r.type==='replacement'?'Ersatz':'KV-Einsatz';return `${typ} · ${r.date||r.weekKey} · ${who}${acc?' → '+acc:''} · ${r.sourceLabel||''}`;}
-  function renderShiftActionsPage(){ensureActionPage();const box=document.getElementById('shiftActionsContent');if(!box||!uidNow())return;const incoming=ShiftActions.incoming(uidNow()),mine=ShiftActions.mine(uidNow()).slice(0,20);box.innerHTML=`<div class="sec">Meine Schichten · KW ${getKW(getMonday(AppState.weekOffset||0))}</div><div class="card"><div class="card-b">${ownBlocksHtml()}</div></div><div class="sec">Eingehende Anfragen</div><div class="card"><div class="card-b">${incoming.length?incoming.map(r=>{const isKv=r.type==='kv_cover',active=!isKv||String(r.candidateUids?.[Number(r.activeCandidateIndex||0)]||'')===uidNow();return `<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="margin-top:6px;display:flex;gap:6px;">${active?`<button class="btn btn-success" onclick="NaschShiftFlow.respond('${r.id}',true)">Übernehmen</button><button class="btn btn-outline" onclick="NaschShiftFlow.respond('${r.id}',false)">Ablehnen</button>`:'<span style="font-size:10px;color:var(--muted);">Eine andere KV-Person ist zuerst an der Reihe.</span>'}</div></div>`}).join(''):'<div style="font-size:11px;color:var(--muted);">Keine offenen Anfragen.</div>'}</div></div><div class="sec">Von mir angefragt</div><div class="card"><div class="card-b">${mine.length?mine.map(r=>`<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin-top:3px;">Status: ${esc(statusText(r.status))}</div></div>`).join(''):'<div style="font-size:11px;color:var(--muted);">Noch keine Anfragen.</div>'}</div></div>`;}
-  function statusText(s){return({offen:'wartet auf Mitarbeiter',kv_offen:'KV-Anfrage läuft',wartet_leitung:'wartet auf Filialleitung',kein_kv:'keine KV verfügbar',genehmigt:'genehmigt',abgelehnt:'abgelehnt'})[s]||s||'–';}
+  function ownBlocksHtml(){const uid=uidNow(),mon=getMonday(AppState.weekOffset||0);let out='';for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i),day=normalizeDay(PLAN?.[uid]?.[i]||{});for(const x of blockDescriptors(day)){const b=x.block;if(!isWorkingBlock(b)&&b.t!=='KV')continue;out+=`<div class="v2817-action-row"><div style="flex:1;"><strong>${esc(d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}))} · ${esc(labelShort(b))}</strong><div>${esc(timeText(b))}${b.t==='KV'?' · Bereitschaft':''}</div></div><button onclick="NaschShiftFlow.openSwap(${i},'${x.key}')">Tauschen</button>${isWorkingBlock(b)?`<button onclick="NaschShiftFlow.openReplacement(${i},'${x.key}')">Ersatz</button><button class="v2911-org-btn" onclick="NaschShiftFlow.openOrganization(${i},'${x.key}')">Organisation</button>`:''}</div>`;}}return out||'<div style="font-size:11px;color:var(--muted);">In dieser Woche sind keine eigenen Arbeits-/KV-Blöcke vorhanden.</div>';}
+  function actionSummary(r){const who=USERS?.[r.requesterUid]?.name||r.requesterUid,acc=r.acceptedUid?(USERS?.[r.acceptedUid]?.name||r.acceptedUid):'';const typ=r.type==='swap'?'Tausch':r.type==='replacement'?'Ersatz':r.type==='organization'?'Organisation':'KV-Einsatz';return `${typ} · ${r.date||r.weekKey} · ${who}${acc?' → '+acc:''} · ${r.sourceLabel||''}`;}
+  function statusText(s){return({offen:'wartet auf Mitarbeiter',kv_offen:'KV-Anfrage läuft',wartet_leitung:'wartet auf Filialleitung',kein_kv:'keine KV verfügbar',orga_offen:'Mehrfachanfrage läuft',orga_leitung:'Rückmeldungen vorhanden · wartet auf Filialleitung',genehmigt:'genehmigt',abgelehnt:'abgelehnt'})[s]||s||'–';}
+  function responseText(v){return v==='zugesagt'?'✓ kann helfen':v==='angenommen'?'✓ angenommen':v==='abgelehnt'?'✕ kann nicht':'… offen';}
+  function responseSummaryHtml(r){return (r.candidateUids||[]).map(x=>`<span class="v2911-response ${r.responses?.[x]==='zugesagt'||r.responses?.[x]==='angenommen'?'yes':r.responses?.[x]==='abgelehnt'?'no':'open'}">${esc(USERS?.[x]?.name||x)} · ${esc(responseText(r.responses?.[x]))}</span>`).join('');}
+  function renderShiftActionsPage(){ensureActionPage();const box=document.getElementById('shiftActionsContent');if(!box||!uidNow())return;const incoming=ShiftActions.incoming(uidNow()),mine=ShiftActions.mine(uidNow()).slice(0,20);box.innerHTML=`<div class="sec">Meine Schichten · KW ${getKW(getMonday(AppState.weekOffset||0))}</div><div class="card"><div class="card-b">${ownBlocksHtml()}</div></div><div class="sec">Eingehende Anfragen</div><div class="card"><div class="card-b">${incoming.length?incoming.map(r=>{if(r.type==='organization')return `<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin-top:3px;">Mehrfachanfrage: Du meldest nur, ob du grundsätzlich helfen kannst. Die Filialleitung ordnet den Plan anschließend passend zu.</div><div style="margin-top:6px;display:flex;gap:6px;"><button class="btn btn-success" onclick="NaschShiftFlow.respond('${r.id}',true)">Kann helfen</button><button class="btn btn-outline" onclick="NaschShiftFlow.respond('${r.id}',false)">Kann nicht</button></div></div>`;const isKv=r.type==='kv_cover',active=!isKv||String(r.candidateUids?.[Number(r.activeCandidateIndex||0)]||'')===uidNow();return `<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="margin-top:6px;display:flex;gap:6px;">${active?`<button class="btn btn-success" onclick="NaschShiftFlow.respond('${r.id}',true)">Übernehmen</button><button class="btn btn-outline" onclick="NaschShiftFlow.respond('${r.id}',false)">Ablehnen</button>`:'<span style="font-size:10px;color:var(--muted);">Eine andere KV-Person ist zuerst an der Reihe.</span>'}</div></div>`;}).join(''):'<div style="font-size:11px;color:var(--muted);">Keine offenen Anfragen.</div>'}</div></div><div class="sec">Von mir angefragt</div><div class="card"><div class="card-b">${mine.length?mine.map(r=>`<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin-top:3px;">Status: ${esc(statusText(r.status))}</div>${r.type==='organization'?`<div class="v2911-response-wrap">${responseSummaryHtml(r)}</div><div style="font-size:10px;color:var(--muted);margin-top:5px;"><strong>Begründung an Filialleitung:</strong> ${esc(r.reason||'–')}</div>`:''}</div>`).join(''):'<div style="font-size:11px;color:var(--muted);">Noch keine Anfragen.</div>'}</div></div>`;}
   function ensureActionOverlay(){if(document.getElementById('shiftActionOverlay'))return;const o=document.createElement('div');o.id='shiftActionOverlay';o.className='v2817-overlay';o.innerHTML='<div class="v2817-sheet"><div class="v2817-head"><strong id="saTitle">Schichtaktion</strong><button onclick="NaschShiftFlow.closeAction()">×</button></div><div id="saBody"></div></div>';document.body.appendChild(o);}
   let actionCtx=null;
-  function openSwap(day,key){const uid=uidNow(),dayObj=ensureDay(uid,day),src=resolveBlock(dayObj,key);if(!src)return;ensureActionOverlay();actionCtx={type:'swap',day,key,src};const candidates=swapOptions(uid,day,key,src.block,PLAN);
-    document.getElementById('saTitle').textContent='Schicht tauschen';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Dein Eintrag: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong></div>${candidates.length?`<label>Tauschpartner / Eintrag</label><select id="saTarget">${candidates.map((c,i)=>`<option value="${i}">${esc(c.name)} · ${esc(labelShort(c.b))} ${esc(timeText(c.b))}${c.same?' · gleiche Position':' · weitere geeignete Person'}</option>`).join('')}</select><button class="btn btn-primary" onclick="NaschShiftFlow.submitSwap()">Tauschanfrage senden</button>`:'<div class="banner binfo"><span>ℹ️</span><span>Für diesen Zeitraum wurde kein geeigneter Tausch-Eintrag gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');actionCtx.candidates=candidates;}
+  function openSwap(day,key){const uid=uidNow(),dayObj=ensureDay(uid,day),src=resolveBlock(dayObj,key);if(!src)return;ensureActionOverlay();actionCtx={type:'swap',day,key,src};const candidates=swapOptions(uid,day,key,src.block,PLAN);document.getElementById('saTitle').textContent='Schicht tauschen';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Dein Eintrag: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong></div>${candidates.length?`<label>Tauschpartner / Eintrag</label><select id="saTarget">${candidates.map((c,i)=>`<option value="${i}">${esc(c.name)} · ${esc(labelShort(c.b))} ${esc(timeText(c.b))}${c.same?' · gleiche Position':' · weitere geeignete Person'}</option>`).join('')}</select><button class="btn btn-primary" onclick="NaschShiftFlow.submitSwap()">Tauschanfrage senden</button>`:'<div class="banner binfo"><span>ℹ️</span><span>Für diesen Zeitraum wurde kein geeigneter Tausch-Eintrag gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');actionCtx.candidates=candidates;}
   async function submitSwap(){try{const c=actionCtx?.candidates?.[Number(document.getElementById('saTarget').value)];if(!c)return;const d=dayDate(actionCtx.day);await ShiftActions.create({type:'swap',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,targetUid:c.uid,targetDayIdx:actionCtx.day,targetKey:c.key,targetLabel:`${labelShort(c.b)} ${timeText(c.b)}`,candidateUids:[c.uid],responses:{},status:'offen'});closeAction();showToast?.('✓ Tauschanfrage gesendet');}catch(e){alert(e.message||e)}}
   function openReplacement(day,key){const uid=uidNow(),src=resolveBlock(ensureDay(uid,day),key);if(!src)return;ensureActionOverlay();actionCtx={type:'replacement',day,key,src,candidates:candidatesFor(uid,day,src.block,PLAN,{includeOther:true})};const good=actionCtx.candidates.filter(x=>x.same),other=actionCtx.candidates.filter(x=>!x.same);const group=(title,a)=>a.length?`<div style="font-size:11px;font-weight:800;margin:10px 0 5px;">${title}</div>${a.map(x=>`<label class="v2817-candidate"><input type="checkbox" class="saCand" value="${esc(x.uid)}" ${x.same?'checked':''}> <strong>${esc(x.u.name)}</strong>${x.same?' · gleiche Position':' · weitere geeignete Person'}</label>`).join('')}`:'';document.getElementById('saTitle').textContent='Ersatz suchen';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Schicht: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong></div>${group('Passende Mitarbeiter',good)}${group('Weitere geeignete Mitarbeiter',other)}${actionCtx.candidates.length?'<button class="btn btn-primary" onclick="NaschShiftFlow.submitReplacement()">Ausgewählte Mitarbeiter fragen</button>':'<div class="banner binfo"><span>ℹ️</span><span>Keine verfügbaren Mitarbeiter gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');}
   async function submitReplacement(){try{const ids=[...document.querySelectorAll('.saCand:checked')].map(x=>x.value);if(!ids.length){alert('Bitte mindestens einen Mitarbeiter auswählen.');return;}const d=dayDate(actionCtx.day);await ShiftActions.create({type:'replacement',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,candidateUids:ids,responses:{},status:'offen'});closeAction();showToast?.('✓ Ersatzanfrage gesendet');}catch(e){alert(e.message||e)}}
+  function openOrganization(day,key){const uid=uidNow(),src=resolveBlock(ensureDay(uid,day),key);if(!src||!isWorkingBlock(src.block))return;ensureActionOverlay();const candidates=organizationCandidates(uid,day,src.block,PLAN);actionCtx={type:'organization',day,key,src,candidates};const same=candidates.filter(x=>x.same),other=candidates.filter(x=>!x.same),group=(title,a)=>a.length?`<div style="font-size:11px;font-weight:800;margin:10px 0 5px;">${title}</div>${a.map(x=>`<label class="v2817-candidate"><input type="checkbox" class="saOrgCand" value="${esc(x.uid)}" ${x.same?'checked':''}> <strong>${esc(x.u.name)}</strong><span style="display:block;margin-left:22px;color:var(--muted);font-size:10px;">${x.same?'passende Tätigkeit · ':''}${esc(x.scheduled)}</span></label>`).join('')}`:'';document.getElementById('saTitle').textContent='Organisation / Mehrfachanfrage';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Du möchtest diese Schicht organisatorisch lösen: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong><br><span style="color:var(--muted);">Mehrere Mitarbeiter können unabhängig zusagen. Die Filialleitung kann danach mehrere Schichten gemeinsam neu zuordnen.</span></div><label>Begründung für die Filialleitung *</label><textarea id="saOrgReason" rows="3" maxlength="500" placeholder="z. B. wichtiger privater Termin; ich benötige diese Schicht frei"></textarea>${group('Passende Mitarbeiter',same)}${group('Weitere Teammitglieder',other)}${candidates.length?'<button class="btn btn-primary" onclick="NaschShiftFlow.submitOrganization()">Mehrfachanfrage senden</button>':'<div class="banner binfo"><span>ℹ️</span><span>Keine verfügbaren Mitarbeiter gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');}
+  async function submitOrganization(){try{const reason=document.getElementById('saOrgReason')?.value.trim()||'',ids=[...document.querySelectorAll('.saOrgCand:checked')].map(x=>x.value);if(!reason){alert('Bitte eine Begründung für die Filialleitung eintragen.');return;}if(!ids.length){alert('Bitte mindestens einen Mitarbeiter für die Mehrfachanfrage auswählen.');return;}const d=dayDate(actionCtx.day);await ShiftActions.create({type:'organization',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,candidateUids:ids,responses:{},reason,status:'orga_offen'});closeAction();showToast?.('✓ Mehrfachanfrage an Team und Filialleitung gesendet');}catch(e){alert(e.message||e)}}
   function closeAction(){document.getElementById('shiftActionOverlay')?.classList.remove('open');actionCtx=null;}
-  async function respondAction(id,ok){try{await ShiftActions.respond(id,ok);showToast?.(ok?'✓ Übernahme bestätigt':'Anfrage abgelehnt');}catch(e){alert(e.message||e)}}
+  async function respondAction(id,ok){try{const r=ShiftActions.rows().find(x=>x.id===id);await ShiftActions.respond(id,ok);showToast?.(r?.type==='organization'?(ok?'✓ Rückmeldung „Kann helfen“ gesendet':'Rückmeldung gesendet'):(ok?'✓ Übernahme bestätigt':'Anfrage abgelehnt'));}catch(e){alert(e.message||e)}}
 
-  function renderManagerWorkflow(){ensureActionPage();const box=document.getElementById('managerWorkflowContent');if(!box||!isPrivileged())return;const pending=ShiftActions.pendingManager();const corr=CorrectionV2.rows().filter(r=>isManager()?r.status==='offen':isOffice()?r.status==='wartet_buero':false);box.innerHTML=`<div class="sec">Tausch / Ersatz / KV</div><div class="card"><div class="card-b">${pending.length?pending.map(r=>`<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin:3px 0;">${esc(statusText(r.status))}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${r.status==='wartet_leitung'?`<button class="btn btn-success" onclick="NaschShiftFlow.managerApprove('${r.id}')">Genehmigen</button><button class="btn btn-outline" onclick="NaschShiftFlow.managerReject('${r.id}')">Ablehnen</button>`:`<button class="btn btn-primary" onclick="NaschShiftFlow.noKvReplacement('${r.id}')">Weitere Mitarbeiter als Ersatz suchen</button>`}</div></div>`).join(''):'<div style="font-size:11px;color:var(--muted);">Keine offenen Schichtanfragen.</div>'}</div></div><div class="sec">Arbeitszeitkorrekturen</div><div class="card"><div class="card-b">${corr.length?corr.map(r=>`<div class="v2817-request"><strong>${esc(USERS?.[r.uid]?.name||r.uid)} · ${esc(r.date)} · ${esc(r.start)}–${esc(r.end)}</strong><div style="font-size:10px;color:var(--muted);">${esc(r.reasonCode+'. '+r.reasonText)} · Abweichung ${r.deltaMin>=0?'+':''}${r.deltaMin} Min.</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn btn-success" onclick="NaschShiftFlow.correctionDecision('${r.id}',true)">Genehmigen</button><button class="btn btn-outline" onclick="NaschShiftFlow.correctionDecision('${r.id}',false)">Ablehnen</button></div></div>`).join(''):'<div style="font-size:11px;color:var(--muted);">Keine offenen Arbeitszeitkorrekturen.</div>'}</div></div>`;}
+  let orgAdminCtx=null;
+  function ensureOrganizationOverlay(){if(document.getElementById('organizationAdminOverlay'))return;const o=document.createElement('div');o.id='organizationAdminOverlay';o.className='v2817-overlay';o.innerHTML='<div class="v2817-sheet v2911-org-sheet"><div class="v2817-head"><strong>Organisation planen</strong><button onclick="NaschShiftFlow.closeOrganizationAdmin()">×</button></div><div id="organizationAdminBody"></div></div>';document.body.appendChild(o);}
+  function employeeOptions(selected){return activeEmployeeEntries().map(([uid,u])=>`<option value="${esc(uid)}" ${String(uid)===String(selected)?'selected':''}>${esc(u.name)}</option>`).join('');}
+  function dayOptions(selected){return Array.from({length:7},(_,i)=>`<option value="${i}" ${Number(selected)===i?'selected':''}>${esc(DAYS?.[i]||String(i+1))}</option>`).join('');}
+  function orgBlockList(op){const day=normalizeDay(orgAdminCtx?.plan?.[op.sourceUid]?.[Number(op.sourceDayIdx)]||{});return blockDescriptors(day).filter(x=>isWorkingBlock(x.block)||x.block.t==='KV').map(x=>({id:String(x.block.blockId||''),block:x.block,key:x.key}));}
+  function orgBlock(op){return orgBlockList(op).find(x=>x.id===String(op.sourceBlockId||''))?.block||null;}
+  function opWithFirstBlock(op){const blocks=orgBlockList(op);if(!blocks.length){op.sourceBlockId='';op.start='';op.end='';return op;}if(!blocks.some(x=>x.id===String(op.sourceBlockId)))op.sourceBlockId=blocks[0].id;const b=orgBlock(op),r=b&&b.t!=='TS'?rangesForBlock(b)[0]:null;if(r){op.start=r[0];op.end=r[1];}else{op.start='';op.end='';}return op;}
+  function makeDefaultOrgOperation(request,plan,secondary=false){ensurePlanBlockIds(plan);const accepted=(request.candidateUids||[]).filter(x=>request.responses?.[x]==='zugesagt'),sourceUid=secondary?(accepted[0]||String(request.requesterUid)):String(request.requesterUid),sourceDayIdx=Number(request.dayIdx||0),op={sourceUid,sourceDayIdx,sourceBlockId:'',targetUid:secondary?(accepted[1]||String(request.requesterUid)):(accepted[0]||request.candidateUids?.[0]||String(request.requesterUid)),targetDayIdx:Number(request.dayIdx||0),start:'',end:''};if(!secondary){const d=normalizeDay(plan?.[sourceUid]?.[sourceDayIdx]||{}),src=resolveBlock(d,request.sourceKey);if(src)op.sourceBlockId=String(src.block.blockId||'');}return opWithFirstBlock(op);}
+  function renderOrganizationAdmin(){const body=document.getElementById('organizationAdminBody');if(!body||!orgAdminCtx)return;const r=orgAdminCtx.request;body.innerHTML=`<div class="v2817-planbox"><strong>${esc(USERS?.[r.requesterUid]?.name||r.requesterUid)}</strong> möchte <strong>${esc(r.sourceLabel||'Schicht')}</strong> organisatorisch lösen.<br><strong>Begründung:</strong> ${esc(r.reason||'–')}<div class="v2911-response-wrap">${responseSummaryHtml(r)}</div></div><div class="banner binfo"><span>ℹ️</span><span>Mehrere Änderungen werden erst beim letzten Schritt gemeinsam in den veröffentlichten Wochenplan übernommen. Zielzeiten dürfen angepasst werden. Nicht zugesagte Mitarbeiter sind in der Auswahl sichtbar, damit die Filialleitung den Plan vollständig umgestalten kann.</span></div><div id="orgOps">${orgAdminCtx.operations.map((op,i)=>{const blocks=orgBlockList(op),b=orgBlock(op),split=b?.t==='TS';return `<div class="v2911-org-op"><div class="v2911-org-op-title">Änderung ${i+1}<button onclick="NaschShiftFlow.orgRemove(${i})" ${orgAdminCtx.operations.length===1?'disabled':''}>×</button></div><div class="v2911-org-grid"><label>Von Mitarbeiter<select onchange="NaschShiftFlow.orgSet(${i},'sourceUid',this.value)">${employeeOptions(op.sourceUid)}</select></label><label>Tag<select onchange="NaschShiftFlow.orgSet(${i},'sourceDayIdx',this.value)">${dayOptions(op.sourceDayIdx)}</select></label><label class="full">Ausgangsschicht<select onchange="NaschShiftFlow.orgSet(${i},'sourceBlockId',this.value)">${blocks.length?blocks.map(x=>`<option value="${esc(x.id)}" ${x.id===op.sourceBlockId?'selected':''}>${esc(labelShort(x.block))} · ${esc(timeText(x.block))}</option>`).join(''):'<option value="">Keine Schicht</option>'}</select></label><div class="v2911-arrow full">↓ wird zugeordnet an</div><label>Ziel-Mitarbeiter<select onchange="NaschShiftFlow.orgSet(${i},'targetUid',this.value)">${employeeOptions(op.targetUid)}</select></label><label>Ziel-Tag<select onchange="NaschShiftFlow.orgSet(${i},'targetDayIdx',this.value)">${dayOptions(op.targetDayIdx)}</select></label><label>Start<input type="time" value="${esc(op.start||'')}" ${split?'disabled':''} onchange="NaschShiftFlow.orgSet(${i},'start',this.value)"></label><label>Ende<input type="time" value="${esc(op.end||'')}" ${split?'disabled':''} onchange="NaschShiftFlow.orgSet(${i},'end',this.value)"></label>${split?'<div class="full" style="font-size:10px;color:var(--muted);">Geteilte Schicht: Zeiten danach bei Bedarf im normalen Wochenplan-Editor anpassen.</div>':''}</div></div>`;}).join('')}</div><button class="btn btn-outline" onclick="NaschShiftFlow.orgAdd()">＋ Weitere Planänderung hinzufügen</button><label style="margin-top:10px;">Interne Notiz der Filialleitung</label><textarea id="orgManagerNote" rows="2" maxlength="500" placeholder="optional">${esc(orgAdminCtx.managerNote||'')}</textarea><div class="v2911-org-foot"><button class="btn btn-outline" onclick="NaschShiftFlow.orgSaveDraft()">Zwischenstand speichern</button><button class="btn btn-success" onclick="NaschShiftFlow.orgApprove()">✓ Mehrfach genehmigen & Plan übernehmen</button></div>`;}
+  async function openOrganizationAdmin(id){if(!isManager()){alert('Nur Filialleitung oder berechtigte Vertretung kann Organisationsvorgänge planen.');return;}const r=ShiftActions.rows().find(x=>x.id===id);if(!r||r.type!=='organization')return;ensureOrganizationOverlay();try{const plan=await ShiftActions.loadPublishedPlan(r.weekKey);ensurePlanBlockIds(plan);orgAdminCtx={request:r,plan,operations:[],managerNote:r.managerNote||''};const ops=Array.isArray(r.organizationOperations)&&r.organizationOperations.length?clone(r.organizationOperations):[makeDefaultOrgOperation(r,plan,false)];orgAdminCtx.operations=ops.map(x=>opWithFirstBlock({...x,sourceDayIdx:Number(x.sourceDayIdx),targetDayIdx:Number(x.targetDayIdx)}));document.getElementById('organizationAdminOverlay').classList.add('open');renderOrganizationAdmin();}catch(e){orgAdminCtx=null;alert(e.message||e)}}
+  function closeOrganizationAdmin(){document.getElementById('organizationAdminOverlay')?.classList.remove('open');orgAdminCtx=null;}
+  function orgSet(i,field,value){if(!orgAdminCtx?.operations?.[i])return;const op=orgAdminCtx.operations[i];op[field]=['sourceDayIdx','targetDayIdx'].includes(field)?Number(value):value;if(field==='sourceUid'||field==='sourceDayIdx'){op.sourceBlockId='';opWithFirstBlock(op);}else if(field==='sourceBlockId'){const b=orgBlock(op),r=b&&b.t!=='TS'?rangesForBlock(b)[0]:null;op.start=r?.[0]||'';op.end=r?.[1]||'';}renderOrganizationAdmin();}
+  function orgAdd(){if(!orgAdminCtx)return;orgAdminCtx.operations.push(makeDefaultOrgOperation(orgAdminCtx.request,orgAdminCtx.plan,true));renderOrganizationAdmin();}
+  function orgRemove(i){if(!orgAdminCtx||orgAdminCtx.operations.length<=1)return;orgAdminCtx.operations.splice(i,1);renderOrganizationAdmin();}
+  async function orgSaveDraft(){if(!orgAdminCtx)return;try{orgAdminCtx.managerNote=document.getElementById('orgManagerNote')?.value||'';await ShiftActions.saveOrganizationDraft(orgAdminCtx.request.id,orgAdminCtx.operations,orgAdminCtx.managerNote);showToast?.('✓ Organisations-Zwischenstand gespeichert');}catch(e){alert(e.message||e)}}
+  async function orgApprove(){if(!orgAdminCtx)return;try{orgAdminCtx.managerNote=document.getElementById('orgManagerNote')?.value||'';if(!confirm(`Alle ${orgAdminCtx.operations.length} Planänderung(en) gemeinsam genehmigen und in den veröffentlichten Wochenplan übernehmen?`))return;await ShiftActions.approveOrganization(orgAdminCtx.request.id,orgAdminCtx.operations,orgAdminCtx.managerNote);closeOrganizationAdmin();await persistKvHistory();renderManagerWorkflow();showToast?.('✓ Organisation vollständig genehmigt und Plan aktualisiert');}catch(e){alert(e.message||e)}}
+
+  function renderManagerWorkflow(){ensureActionPage();const box=document.getElementById('managerWorkflowContent');if(!box||!isPrivileged())return;const pending=ShiftActions.pendingManager(),manager=isManager();const corr=CorrectionV2.rows().filter(r=>isManager()?r.status==='offen':isOffice()?r.status==='wartet_buero':false);box.innerHTML=`<div class="sec">Tausch / Ersatz / Organisation / KV</div><div class="card"><div class="card-b">${pending.length?pending.map(r=>{if(r.type==='organization')return `<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin:3px 0;">${esc(statusText(r.status))}</div><div class="v2911-reason"><strong>Begründung:</strong> ${esc(r.reason||'–')}</div><div class="v2911-response-wrap">${responseSummaryHtml(r)}</div>${r.organizationOperations?.length?`<div style="font-size:10px;color:var(--muted);margin-top:5px;">Gespeicherter Organisationsplan: ${r.organizationOperations.length} Änderung(en)</div>`:''}${manager?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"><button class="btn btn-primary" onclick="NaschShiftFlow.openOrganizationAdmin('${r.id}')">Organisation planen</button><button class="btn btn-outline" onclick="NaschShiftFlow.managerReject('${r.id}')">Ablehnen</button></div>`:'<div style="font-size:10px;color:var(--muted);margin-top:7px;">Nur Ansicht – Freigabe durch Filialleitung/Vertretung.</div>'}</div>`;if(r.status==='wartet_leitung')return `<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin:3px 0;">${esc(statusText(r.status))}</div>${manager?`<div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn btn-success" onclick="NaschShiftFlow.managerApprove('${r.id}')">Genehmigen</button><button class="btn btn-outline" onclick="NaschShiftFlow.managerReject('${r.id}')">Ablehnen</button></div>`:''}</div>`;return `<div class="v2817-request"><strong>${esc(actionSummary(r))}</strong><div style="font-size:10px;color:var(--muted);margin:3px 0;">${esc(statusText(r.status))}</div>${manager?`<button class="btn btn-primary" onclick="NaschShiftFlow.noKvReplacement('${r.id}')">Weitere Mitarbeiter als Ersatz suchen</button>`:''}</div>`;}).join(''):'<div style="font-size:11px;color:var(--muted);">Keine offenen Schichtanfragen.</div>'}</div></div><div class="sec">Arbeitszeitkorrekturen</div><div class="card"><div class="card-b">${corr.length?corr.map(r=>`<div class="v2817-request"><strong>${esc(USERS?.[r.uid]?.name||r.uid)} · ${esc(r.date)} · ${esc(r.start)}–${esc(r.end)}</strong><div style="font-size:10px;color:var(--muted);">${esc(r.reasonCode+'. '+r.reasonText)} · Abweichung ${r.deltaMin>=0?'+':''}${r.deltaMin} Min.</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn btn-success" onclick="NaschShiftFlow.correctionDecision('${r.id}',true)">Genehmigen</button><button class="btn btn-outline" onclick="NaschShiftFlow.correctionDecision('${r.id}',false)">Ablehnen</button></div></div>`).join(''):'<div style="font-size:11px;color:var(--muted);">Keine offenen Arbeitszeitkorrekturen.</div>'}</div></div>`;}
   async function managerApprove(id){try{await ShiftActions.approve(id);await persistKvHistory();showToast?.('✓ Planänderung genehmigt');}catch(e){alert(e.message||e)}}
-  async function managerReject(id){try{await ShiftActions.rejectByManager(id);showToast?.('Anfrage abgelehnt');}catch(e){alert(e.message||e)}}
+  async function managerReject(id){try{if(!confirm('Anfrage wirklich ablehnen?'))return;await ShiftActions.rejectByManager(id);showToast?.('Anfrage abgelehnt');}catch(e){alert(e.message||e)}}
   async function noKvReplacement(id){try{await ShiftActions.convertNoKvToReplacement(id);showToast?.('✓ Ersatzsuche gestartet');}catch(e){alert(e.message||e)}}
   async function correctionDecision(id,ok){try{await CorrectionV2.decide(id,ok);showToast?.(ok?'✓ Korrektur genehmigt':'Korrektur abgelehnt');}catch(e){alert(e.message||e)}}
+
 
   // Krankmeldung: veröffentlichte Schichten prüfen und KV1→KV4 automatisch anfragen.
   window.sendeKrank=async function(){const von=document.getElementById('krankVon')?.value||'',bis=document.getElementById('krankBis')?.value||'',hinweis=document.getElementById('krankHinweis')?.value.trim()||'';if(!von){alert('Bitte „Krank ab“ auswählen.');return;}if(bis&&bis<von){alert('Das Bis-Datum darf nicht vor dem Startdatum liegen.');return;}try{const rid=SandboxStore.addRequest('krank',uidNow(),{von,bis,hinweis});document.getElementById('krankOK')?.classList.remove('hidden');const msg=await ShiftActions.createSickCover(uidNow(),von,bis||von,rid);showToast?.('✓ Krankmeldung gespeichert');if(msg.length){const ok=document.getElementById('krankOK');if(ok)ok.textContent='✓ Krankmeldung gespeichert. '+msg.slice(0,3).join(' · ')+(msg.length>3?' …':'');}}catch(e){console.error(e);alert('Krankmeldung gespeichert, KV-Prüfung konnte aber nicht vollständig gestartet werden: '+(e.message||e));}};
@@ -9292,11 +9338,11 @@ window.NASCH_APP_VERSION='29.10';
   const prevGo=window.goTo;if(typeof prevGo==='function'){window.goTo=function(pg,title){const r=prevGo.apply(this,arguments);ensureActionPage();if(pg==='pgShiftActions')setTimeout(renderShiftActionsPage,0);if(pg==='pgAdminWorkflow')setTimeout(renderManagerWorkflow,0);if(pg==='pgAdminKV')setTimeout(renderKvPage,0);if(pg==='pgStunden')setTimeout(renderPersonalDailyHours,50);if(pg==='pgAdminStz')setTimeout(renderAdminDailyHours,50);return r;};try{goTo=window.goTo}catch(_){ }}
   const prevStart=window.startApp;if(typeof prevStart==='function'){window.startApp=function(){const r=prevStart.apply(this,arguments);setTimeout(async()=>{ensureActionPage();CorrectionV2.start();ShiftActions.start();await loadKvHistory();normalizePlan();rebalanceAllKv();refreshAll();},900);return r;};try{startApp=window.startApp}catch(_){ }}
 
-  window.NaschShiftFlow={editExtra,extraTypeChanged,saveExtra,removeExtra,closeExtra,openCorrection,closeCorrection,stepTime,updateCorrectionDiff,resetCorrection,reasonChanged,saveCorrection,openSwap,submitSwap,openReplacement,submitReplacement,closeAction,respond:respondAction,managerApprove,managerReject,noKvReplacement,correctionDecision,renderShiftActionsPage,renderManagerWorkflow,renderKvPage,dayBlocks:(uid,day)=>blockDescriptors(ensureDay(uid,day)),rebalanceKV:rebalanceAllKv};
+  window.NaschShiftFlow={editExtra,extraTypeChanged,saveExtra,removeExtra,closeExtra,openCorrection,closeCorrection,stepTime,updateCorrectionDiff,resetCorrection,reasonChanged,saveCorrection,openSwap,submitSwap,openReplacement,submitReplacement,openOrganization,submitOrganization,closeAction,respond:respondAction,openOrganizationAdmin,closeOrganizationAdmin,orgSet,orgAdd,orgRemove,orgSaveDraft,orgApprove,managerApprove,managerReject,noKvReplacement,correctionDecision,renderShiftActionsPage,renderManagerWorkflow,renderKvPage,dayBlocks:(uid,day)=>blockDescriptors(ensureDay(uid,day)),rebalanceKV:rebalanceAllKv};
 
   // CSS
   const css=document.createElement('style');css.id='nasch-v2817-css';css.textContent=`
-  .v2817-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:10080;align-items:flex-end;justify-content:center;padding:0}.v2817-overlay.open{display:flex}.v2817-sheet{background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}.v2817-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.v2817-head strong{flex:1;font-size:16px}.v2817-head button,.v2817-extra-row button,.v2817-action-row button{border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 8px;cursor:pointer}.v2817-extra-row,.v2817-action-row,.v2817-kv-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-top:1px solid var(--border);font-size:11px}.v2817-extra-row .danger{color:#b42318}.v2817-planbox{background:#f8fafc;border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:11px;margin-bottom:10px}.v2817-step-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v2817-step{display:grid;grid-template-columns:50px 1fr 50px;gap:4px}.v2817-step button{border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;font-weight:800}.v2817-step input{text-align:center;padding:9px 3px}.v2817-diff{margin:10px 0;padding:8px;border-radius:8px;background:#f8fafc;font-size:12px;font-weight:800}.v2817-diff.plus{background:#e1f5ee;color:#085041}.v2817-diff.minus{background:#fff2cc;color:#7d6608}.v2817-candidate{display:block;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;font-size:11px}.v2817-request{padding:9px 0;border-top:1px solid var(--border);font-size:11px}.v2817-request:first-child{border-top:0}.v2817-kv-row small{color:var(--muted)}@media(max-width:420px){.v2817-step-grid{grid-template-columns:1fr}.v2817-sheet{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}}`;
+  .v2817-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:10080;align-items:flex-end;justify-content:center;padding:0}.v2817-overlay.open{display:flex}.v2817-sheet{background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}.v2817-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.v2817-head strong{flex:1;font-size:16px}.v2817-head button,.v2817-extra-row button,.v2817-action-row button{border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 8px;cursor:pointer}.v2817-extra-row,.v2817-action-row,.v2817-kv-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-top:1px solid var(--border);font-size:11px}.v2817-extra-row .danger{color:#b42318}.v2817-planbox{background:#f8fafc;border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:11px;margin-bottom:10px}.v2817-step-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v2817-step{display:grid;grid-template-columns:50px 1fr 50px;gap:4px}.v2817-step button{border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;font-weight:800}.v2817-step input{text-align:center;padding:9px 3px}.v2817-diff{margin:10px 0;padding:8px;border-radius:8px;background:#f8fafc;font-size:12px;font-weight:800}.v2817-diff.plus{background:#e1f5ee;color:#085041}.v2817-diff.minus{background:#fff2cc;color:#7d6608}.v2817-candidate{display:block;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;font-size:11px}.v2817-request{padding:9px 0;border-top:1px solid var(--border);font-size:11px}.v2817-request:first-child{border-top:0}.v2817-kv-row small{color:var(--muted)}.v2911-org-btn{background:#f5f3ff!important;border-color:#c4b5fd!important;color:#5b21b6!important}.v2911-response-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.v2911-response{font-size:9px;font-weight:800;border-radius:999px;padding:4px 7px;background:#f1f5f9;color:#475569}.v2911-response.yes{background:#e1f5ee;color:#085041}.v2911-response.no{background:#fcebeb;color:#791f1f}.v2911-response.open{background:#fff2cc;color:#7d6608}.v2911-reason{font-size:11px;padding:7px 8px;background:#fffaf0;border:1px solid #f4dfad;border-radius:8px;margin-top:6px}.v2911-org-sheet{max-width:720px}.v2911-org-op{border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0;background:#fafcff}.v2911-org-op-title{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px}.v2911-org-op-title button{border:1px solid #fecaca;background:#fff;color:#b42318;border-radius:7px;padding:3px 8px}.v2911-org-op-title button:disabled{opacity:.35}.v2911-org-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v2911-org-grid .full{grid-column:1/-1}.v2911-arrow{text-align:center;font-size:10px;font-weight:800;color:var(--muted);padding:2px}.v2911-org-foot{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:10px}@media(max-width:520px){.v2911-org-grid{grid-template-columns:1fr}.v2911-org-grid .full{grid-column:1}.v2911-org-foot .btn{width:100%}}@media(max-width:420px){.v2817-step-grid{grid-template-columns:1fr}.v2817-sheet{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}}`;
   document.head.appendChild(css);
 
   ensureActionPage();
@@ -9425,9 +9471,9 @@ window.NASCH_APP_VERSION='29.10';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
-  const VERSION='29.10';
+  const VERSION='29.13';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9620,7 +9666,7 @@ window.NASCH_APP_VERSION='29.10';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9739,9 +9785,9 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.10 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v29.13 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='29.10';
+  const CURRENT='29.13';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
@@ -9829,7 +9875,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 
-<!-- NASCH v29.10: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
+<!-- NASCH v29.13: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
 <style id="nasch-v2824-security-desktop-css">
 #firstPinOverlay{display:none;position:fixed;inset:0;z-index:15000;background:rgba(15,23,42,.78);align-items:center;justify-content:center;padding:18px;}
 #firstPinOverlay.open{display:flex;}
@@ -9886,7 +9932,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10035,7 +10081,7 @@ window.NASCH_APP_VERSION='29.10';
   setTimeout(load,0);
   window.addEventListener('online',()=>{if(!ready){loadPromise=null;load();}});
 
-  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.10 sperrt NICHT nach Inaktivität.
+  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.13 sperrt NICHT nach Inaktivität.
 })();
 
 (()=>{
@@ -10081,8 +10127,8 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
   <button type="button" onclick="NaschEmployeeDemo.exit()">Zurück zum Admin</button>
 </div>
 <script>
-/* NASCH v29.10 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.10';
+/* NASCH v29.13 · versteckter, schreibgeschützter Demo-Mitarbeiter */
+window.NASCH_APP_VERSION='29.13';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10183,8 +10229,8 @@ window.NaschEmployeeDemo=(()=>{
   </div>
 </div>
 <script id="nasch-v2826-features">
-/* NASCH v29.10 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.10';
+/* NASCH v29.13 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
+window.NASCH_APP_VERSION='29.13';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10414,11 +10460,11 @@ window.NaschDeputyRights=(()=>{
 @media(max-width:560px){.n293-grid{grid-template-columns:1fr}}
 </style>
 <script id="nasch-v293-unified">
-/* NASCH v29.10 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
+/* NASCH v29.13 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.10';
+window.NASCH_APP_VERSION='29.13';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -10540,7 +10586,7 @@ function timeRanges(sh){
   const uniq=[];const seen=new Set();for(const x of arr){const k=x.join('-');if(!seen.has(k)){seen.add(k);uniq.push(x)}}return uniq;
 }
 function rangeMinutes(a,b){const [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);let x=ah*60+am,y=bh*60+bm;if(y<x)y+=1440;return Math.max(0,y-x)}
-function autoPause(min){return window.NaschPauseRules?.requiredPauseMinutesFromMinutes?.(min)??(min>=540?60:min>=300?30:0)}
+function autoPause(min){return window.NaschPauseRules?.requiredPauseMinutesFromMinutes?.(min)??(min>=540?45:min>=300?30:0)}
 function quarter(x){return Math.round((Number(x)||0)*4)/4}
 function dailyAbsenceHours(u){if(u?.typ==='AH')return 0;const soll=Number(u?.sollStundenMonat)||0,days=Number(u?.arbeitstageWoche)||5;return days>0?quarter(soll/(days*4.33)):0}
 function surchargeRanges(ranges,date,net,eligible){
@@ -10633,13 +10679,10 @@ async function signMonthly(kind,uid,y,m,canvasId){
 // ---------- PDF ----------
 function fmtHours(x){return (Math.round((Number(x)||0)*100)/100).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})+' h'}
 async function openPdf(uid,y,m){
-  const data=await monthData(uid,y,m),st=await signatureStatus(uid,y,m,data),u=data.employee;
-  const rows=data.rows.map(r=>`<tr class="${r.holiday||r.weekday==='SO'?'holiday':r.weekday==='SA'?'sat':''}"><td>${r.day}</td><td>${r.weekday}</td><td>${esc(r.ranges.map(x=>x.join('–')).join(' / '))}</td><td class="r">${r.pauseMin||''}</td><td>${esc(r.holiday||r.status)}</td><td class="r">${r.net||r.credit||''}</td><td class="r">${r.p25||''}</td><td class="r">${r.p50||''}</td></tr>`).join('');
-  const sig=(x,label)=>x?.image?`<div class="sig"><img src="${x.image}"><div><strong>${esc(label)}</strong><br>${esc(x.name)} · ${esc(x.role)}<br>${new Date(x.signedAt).toLocaleString('de-DE')}</div></div>`:`<div class="sig empty"><div><strong>${esc(label)}</strong><br>Nicht unterschrieben</div></div>`;
-  const state=st.changed?'⚠ Daten wurden nach einer früheren Unterschrift geändert – neue Unterschriften erforderlich.':st.valid?'✅ Vollständig unterschrieben':'⚠ Noch nicht vollständig unterschrieben';
-  const w=window.open('','_blank');if(!w){alert('Bitte Pop-ups erlauben.');return}
-  w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Stundennachweis ${esc(u.name)} ${MONTHS[m-1]} ${y}</title><style>@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Arial;color:#172033;font-size:9px}.toolbar{margin-bottom:10px}.toolbar button{padding:8px 12px}.head{display:flex;justify-content:space-between;border-bottom:3px solid #98c01f;padding-bottom:7px}.brand{font-size:17px;font-weight:900}.sub{font-size:10px;color:#64748b}h1{font-size:18px;margin:11px 0 8px}.meta{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px}.meta div,.sum div{border:1px solid #cbd5e1;padding:6px}.meta span{font-size:7px;color:#64748b;display:block}table{width:100%;border-collapse:collapse}th{background:#1e3a5f;color:#fff;padding:4px}td{border:1px solid #d5dde5;padding:3px}.r{text-align:right}.holiday{background:#fee2e2}.sat{background:#f8fafc}.sum{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:7px}.sigrow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}.sig{border-top:1px solid #1e3a5f;padding-top:5px;min-height:68px;display:flex;gap:8px;align-items:flex-end}.sig img{max-width:150px;max-height:55px}.sig.empty{color:#64748b}.state{padding:6px 8px;background:#f8fafc;border:1px solid #cbd5e1;margin:8px 0;font-weight:700}@media print{.toolbar{display:none}}</style></head><body><div class="toolbar"><button onclick="window.print()">🖨 Als PDF speichern / Drucken</button></div><div class="head"><div><div class="brand">NASCH RESTAURANT</div><div class="sub">${esc(data.branchName)} · ${esc(stateForBranch()==='NRW'?'Nordrhein-Westfalen':'Niedersachsen')}</div></div><div><strong>${MONTHS[m-1]} ${y}</strong></div></div><h1>Stundennachweis</h1><div class="meta"><div><span>Name</span><strong>${esc(u.name)}</strong></div><div><span>Std. Lohn</span><strong>${u.stundenlohn!=null?Number(u.stundenlohn).toFixed(2)+' €':'–'}</strong></div><div><span>Filiale</span><strong>${esc(data.branchName)}</strong></div><div><span>Beschäftigung</span><strong>${esc(u.label||u.typ||'')}</strong></div></div><table><thead><tr><th>Tag</th><th>WT</th><th>Arbeitszeit</th><th>Pause Min.</th><th>Status / Feiertag</th><th>Std.</th><th>25 %</th><th>50 %</th></tr></thead><tbody>${rows}</tbody></table><div class="sum"><div>Arbeitszeit<br><strong>${fmtHours(data.worked)}</strong></div><div>Krank/Urlaub<br><strong>${fmtHours(data.absence)}</strong></div><div>Gesamt<br><strong>${fmtHours(data.total)}</strong></div><div>Soll<br><strong>${fmtHours(data.soll)}</strong></div><div>Differenz<br><strong>${fmtHours(data.diff)}</strong></div><div>Zuschläge<br><strong>25% ${fmtHours(data.p25)} · 50% ${fmtHours(data.p50)}</strong></div></div><div class="state">${esc(state)}</div><div class="sigrow">${sig(st.employeeValid?st.doc.employee:null,'Mitarbeiter')}${sig(st.managerValid?st.doc.manager:null,'Filialleitung / berechtigte Vertretung')}</div><p style="font-size:8px;color:#64748b">Pausenregel: ab 5 Std. 30 Min., ab 9 Std. 60 Min. Genehmigte Arbeitszeitkorrekturen haben Vorrang. Feiertage werden automatisch nach Filiale berechnet.</p></body></html>`);w.document.close();
+  if(window.NaschV299?.openOfficialTimesheetPdf)return window.NaschV299.openOfficialTimesheetPdf(uid,y,m);
+  alert('Die offizielle PDF-Vorlage wird noch geladen. Bitte in einem Moment erneut versuchen.');
 }
+
 
 window.NaschMonthlyTimesheet={monthData,signatureStatus,signMonthly,openPdf};
 
@@ -10689,9 +10732,9 @@ function handbook(){
   if(!u){title='📖 Hilfe zur Anmeldung';body=card('🔐 Anmelden','Filiale/Name auswählen und persönliche PIN eingeben. Beim ersten Login bzw. nach einem PIN-Reset muss eine neue persönliche PIN vergeben werden.')}
   else if(central){title='📖 System-Admin-Handbuch';body=card('🏪 Filialen','Filialen aktivieren und Stammdaten prüfen. Emsdetten nutzt NRW-Feiertage; alle anderen bekannten Filialen Niedersachsen.')+card('🧩 Module','Jedes Modul filialweise auf AUS, FILIALE oder BÜRO setzen. Änderungen gelten geräteübergreifend.')+card('🪪 Vertretung','Emsdetten standardmäßig aktiv; in anderen Filialen standardmäßig aus und bei Bedarf aktivieren.')+card('📅 Wochenplan','System-Admin sieht immer die vollständige 7-Tage-Woche und kann auch vergangene Kalenderwochen öffnen. Nur echte Mitarbeiterzugänge blenden vergangene Tage/KWs aus. Der heutige Tag bleibt markiert.')}
   else if(office){title='📖 Büro-Handbuch';const mods=[['stundennachweis','Monats-Stundennachweis'],['vorschuss','Vorschuss'],['gutschein','Gutschein'],['waesche','Wäsche / Schürzen'],['zeiterfassung','Zeiterfassung']].filter(x=>moduleOffice(x[0])).map(x=>`<li>${x[1]}</li>`).join('');body=card('🏢 Büro-Aufgaben',mods?`Für diese Filiale sind aktuell folgende Module ans Büro übertragen:<ul>${mods}</ul>`:'Aktuell ist kein Modul dieser Filiale ans Büro übertragen.')+(moduleOffice('wochenplan')?card('📅 Wochenplan','Wenn der Wochenplan ans Büro übertragen ist, zeigt die Büroansicht immer alle sieben Wochentage und erlaubt auch vergangene Kalenderwochen. Die Mitarbeiter-Ausblendlogik gilt hier nicht.'):'')+card('👁 Teamstatus & Lesen','Soweit für den Büroprozess freigegeben, können Online/zuletzt online und Lesestatus betrieblicher Anfragen angezeigt werden. Pushtexte bleiben neutral.')+card('📄 Stundennachweise','Büro kann die übertragenen Monats-Stundennachweise in einer Mitarbeiterübersicht prüfen und als PDF abrufen. Die Gegenzeichnung erfolgt durch Filialleitung oder berechtigte Vertretung.')}
-  else if(dep){title='📖 Vertretungs-Handbuch';body=(moduleVisible('wochenplan')?card('📅 Wochenplan','Wochenplan vollständig bearbeiten und veröffentlichen – auch vergangene Kalenderwochen und alle sieben Wochentage bleiben sichtbar. Der heutige Wochentag ist markiert. Veröffentlichung wird mit deinem Namen und der Rolle Vertretung protokolliert. Bei Verfügbarkeitskonflikten wird gewarnt; die Schicht bleibt planbar und der Mitarbeiter kann angefragt werden.'):'')+(moduleBranch('stundennachweis')?card('📄 Monats-Stundennachweis','Nach der Mitarbeiter-Unterschrift darfst du den Monats-Stundenzettel gegenzeichnen. Jede Gegenzeichnung gilt nur für den gewählten Monat und Datenstand.'):'')+card('👥 KV','KV-Bereitschaften werden ohne Uhrzeit/Tätigkeit geplant. Bei Krankmeldung übernimmt der verbindlich zuständige KV die ursprüngliche Schicht. Der KV-Einsatz kann nicht abgelehnt werden; ein Tausch/Ersatz wird erst nach Freigabe wirksam.')+card('👁 Teamstatus & Lesen','Für die operative Planung sind Online/zuletzt online und der Lesestatus relevanter Anfragen sichtbar. Mitarbeiter sehen diese Teamdaten nicht.')+card('🔒 Rechte','Nicht freigegebene Adminfunktionen werden vollständig ausgeblendet.')}
-  else if(admin){title='📖 Filialleitungs-Handbuch';body=card('🧩 Module','Unter Einstellungen Module pro Filiale als AUS, FILIALE oder BÜRO konfigurieren.')+card('🪪 Vertretung',`${bid()==='FIL001'?'In Emsdetten ist die Vertretung standardmäßig aktiv.':'In dieser Filiale ist die Vertretung standardmäßig deaktiviert und kann bei Bedarf aktiviert werden.'}`)+(moduleVisible('wochenplan')?card('📅 Planung','Der vollständige Wochenplan bleibt für Filialleitung sichtbar – inklusive vergangener Kalenderwochen und aller sieben Wochentage; der heutige Wochentag ist markiert. Verfügbarkeitskonflikte warnen, blockieren aber nicht. „Trotzdem einplanen“ oder Mitarbeiter direkt/nachträglich anfragen. Pläne können veröffentlicht werden.'):'')+(moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis',moduleOffice('stundennachweis')?'Das Modul wird durch das Büro bearbeitet/exportiert. Die fachliche Gegenzeichnung bleibt bei Filialleitung bzw. berechtigter Vertretung. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.':'Für jeden Mitarbeiter und Monat steht eine einfache Übersicht mit offiziellem PDF-Stundennachweis bereit. Zuerst unterschreibt der Mitarbeiter, anschließend Filialleitung oder berechtigte Vertretung. Nur die Filialleitung/Admin kann vollständig unterschriebene PDFs per E-Mail an das Büro senden; die eigene Adresse wird im BCC geführt. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.'):'')+card('🤒 Krankstunden Aushilfen','Krankmeldungen von Aushilfen erscheinen ohne Freigabe nicht als Krankzeit im Stundensystem. Erst eine ausdrückliche Freigabe der Filialleitung übernimmt die genehmigten Stunden als Krankzeit in den Monatsnachweis.')+card('👁 Online & Lesestatus','Im Teamstatus sind Online/zuletzt online sowie bei betrieblichen Anfragen der Lesestatus sichtbar. Push-Mitteilungen auf dem Sperrbildschirm bleiben neutral und zeigen keine Schicht-, Krank- oder Personaldetails.')+card('🔑 PIN','Persönliche PINs werden nicht im Klartext angezeigt. Reset erzeugt erneute Pflicht zur persönlichen PIN-Vergabe.')}
-  else{title='📖 Mitarbeiter-Handbuch';body=card('🔐 PIN','Beim ersten Login bzw. nach einem Reset eine eigene 4-stellige PIN festlegen. Es gibt keine automatische Inaktivitäts-Sperre.')+(moduleVisible('wochenplan')?card('📅 Wochenplan & Verfügbarkeit','Veröffentlichten Wochenplan ansehen. In der aktuellen KW werden bereits vergangene Wochentage ausgeblendet; vergangene Kalenderwochen sind nicht aufrufbar. Zukünftige veröffentlichte KWs können aufgerufen werden. Der heutige Wochentag ist markiert. Verfügbarkeit pflegen; bei einer Konfliktschicht kann eine Nachfrage erscheinen, die mit Ja oder Nein beantwortet wird.'):'')+(moduleVisible('stundennachweis')?card('📋 Arbeitszeiten & Monatsbestätigung','Deine Arbeitszeiten werden direkt in der App als Monatsliste mit Pausen und Zuschlägen angezeigt. Mitarbeiter erhalten keine PDF-Ansicht. Nach Prüfung unterschreibst du den Monat; Filialleitung oder berechtigte Vertretung zeichnet anschließend gegen. Nachträgliche Änderungen machen die Unterschriften ungültig.'):'')+card('✍ Unterschrift','Für die Monatsunterschrift kann ein großflächiges Unterschriftsfeld geöffnet werden; auf unterstützten Handys wird Querformat genutzt.')+card('🔔 Meldungen','Benachrichtigungen auf dem Sperrbildschirm enthalten keine Schicht-, Krank- oder KV-Details, sondern nur „Neue Meldung verfügbar“. Details sind erst in NASCH sichtbar.')+card('📲 Installation','Unter „Mein Bereich“ NASCH als App installieren. Es gibt kein automatisches Zeitlimit bzw. keine Inaktivitäts-Sperre.')}
+  else if(dep){title='📖 Vertretungs-Handbuch';body=(moduleVisible('wochenplan')?card('📅 Wochenplan','Wochenplan vollständig bearbeiten und veröffentlichen – auch vergangene Kalenderwochen und alle sieben Wochentage bleiben sichtbar. Der heutige Wochentag ist markiert. Veröffentlichung wird mit deinem Namen und der Rolle Vertretung protokolliert. Bei Verfügbarkeitskonflikten wird gewarnt; die Schicht bleibt planbar und der Mitarbeiter kann angefragt werden.'):'')+(moduleBranch('stundennachweis')?card('📄 Monats-Stundennachweis','Nach der Mitarbeiter-Unterschrift darfst du den Monats-Stundenzettel gegenzeichnen. Jede Gegenzeichnung gilt nur für den gewählten Monat und Datenstand.'):'')+card('🔁 Tausch, Ersatz & Organisation','Normale Tausch-/Ersatzanfragen werden nach Zustimmung freigegeben. Bei einer Mehrfach-Organisation sammelt NASCH mehrere Hilfszusagen; du kannst daraus mehrere Schichtverschiebungen mit passenden Zeiten zusammenstellen und gemeinsam genehmigen. Erst die abschließende Freigabe verändert den veröffentlichten Plan.')+card('👥 KV','KV-Bereitschaften werden ohne Uhrzeit/Tätigkeit geplant. Bei Krankmeldung übernimmt der verbindlich zuständige KV die ursprüngliche Schicht. Der KV-Einsatz kann nicht abgelehnt werden; ein Tausch/Ersatz wird erst nach Freigabe wirksam.')+card('👁 Teamstatus & Lesen','Für die operative Planung sind Online/zuletzt online und der Lesestatus relevanter Anfragen sichtbar. Mitarbeiter sehen diese Teamdaten nicht.')+card('🔒 Rechte','Nicht freigegebene Adminfunktionen werden vollständig ausgeblendet.')}
+  else if(admin){title='📖 Filialleitungs-Handbuch';body=card('🧩 Module','Unter Einstellungen Module pro Filiale als AUS, FILIALE oder BÜRO konfigurieren.')+card('🪪 Vertretung',`${bid()==='FIL001'?'In Emsdetten ist die Vertretung standardmäßig aktiv.':'In dieser Filiale ist die Vertretung standardmäßig deaktiviert und kann bei Bedarf aktiviert werden.'}`)+(moduleVisible('wochenplan')?card('📅 Planung','Der vollständige Wochenplan bleibt für Filialleitung sichtbar – inklusive vergangener Kalenderwochen und aller sieben Wochentage; der heutige Wochentag ist markiert. Verfügbarkeitskonflikte warnen, blockieren aber nicht. „Trotzdem einplanen“ oder Mitarbeiter direkt/nachträglich anfragen. Pläne können veröffentlicht werden.'):'')+(moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis',moduleOffice('stundennachweis')?'Das Modul wird durch das Büro bearbeitet/exportiert. Die fachliche Gegenzeichnung bleibt bei Filialleitung bzw. berechtigter Vertretung. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.':'Für jeden Mitarbeiter und Monat steht eine einfache Übersicht mit offiziellem PDF-Stundennachweis bereit. Zuerst unterschreibt der Mitarbeiter, anschließend Filialleitung oder berechtigte Vertretung. Nur die Filialleitung/Admin kann vollständig unterschriebene PDFs per E-Mail an das Büro senden; die eigene Adresse wird im BCC geführt. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Neben normalem 1:1-Tausch und Ersatz gibt es Organisation/Mehrfachanfrage. Die Begründung wird der Filialleitung angezeigt; mehrere Mitarbeiter können unabhängig ihre Hilfsbereitschaft melden. Filialleitung bzw. berechtigte Vertretung kann daraus mehrere Schichtverschiebungen und passende Zielzeiten in einem zusammenhängenden Vorgang planen und gemeinsam freigeben. Bei Konflikten oder zwischenzeitlich geänderten Ausgangsschichten wird keine Teiländerung gespeichert.')+card('🤒 Krankstunden Aushilfen','Krankmeldungen von Aushilfen erscheinen ohne Freigabe nicht als Krankzeit im Stundensystem. Erst eine ausdrückliche Freigabe der Filialleitung übernimmt die genehmigten Stunden als Krankzeit in den Monatsnachweis.')+card('👁 Online & Lesestatus','Im Teamstatus sind Online/zuletzt online sowie bei betrieblichen Anfragen der Lesestatus sichtbar. Push-Mitteilungen auf dem Sperrbildschirm bleiben neutral und zeigen keine Schicht-, Krank- oder Personaldetails.')+card('🔑 PIN','Persönliche PINs werden nicht im Klartext angezeigt. Reset erzeugt erneute Pflicht zur persönlichen PIN-Vergabe.')}
+  else{title='📖 Mitarbeiter-Handbuch';body=card('🔐 PIN','Beim ersten Login bzw. nach einem Reset eine eigene 4-stellige PIN festlegen. Es gibt keine automatische Inaktivitäts-Sperre.')+(moduleVisible('wochenplan')?card('📅 Wochenplan & Verfügbarkeit','Veröffentlichten Wochenplan ansehen. In der aktuellen KW werden bereits vergangene Wochentage ausgeblendet; vergangene Kalenderwochen sind nicht aufrufbar. Zukünftige veröffentlichte KWs können aufgerufen werden. Der heutige Wochentag ist markiert. Verfügbarkeit pflegen; bei einer Konfliktschicht kann eine Nachfrage erscheinen, die mit Ja oder Nein beantwortet wird.'):'')+(moduleVisible('stundennachweis')?card('📋 Arbeitszeiten & Monatsbestätigung','Deine Arbeitszeiten werden direkt in der App als Monatsliste mit Pausen und Zuschlägen angezeigt. Mitarbeiter erhalten keine PDF-Ansicht. Nach Prüfung unterschreibst du den Monat; Filialleitung oder berechtigte Vertretung zeichnet anschließend gegen. Nachträgliche Änderungen machen die Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Für eine einzelne Schicht kannst du Tauschen, Ersatz oder Organisation wählen. Organisation ist für komplexere Fälle gedacht: Begründung eintragen, mehrere Teammitglieder anfragen und deren Rückmeldungen abwarten. Die Filialleitung entscheidet anschließend über die tatsächliche Umplanung; Mitarbeiter verändern den veröffentlichten Plan nicht selbst.')+card('✍ Unterschrift','Für die Monatsunterschrift kann ein großflächiges Unterschriftsfeld geöffnet werden; auf unterstützten Handys wird Querformat genutzt.')+card('🔔 Meldungen','Benachrichtigungen auf dem Sperrbildschirm enthalten keine Schicht-, Krank- oder KV-Details, sondern nur „Neue Meldung verfügbar“. Details sind erst in NASCH sichtbar.')+card('📲 Installation','Unter „Mein Bereich“ NASCH als App installieren. Es gibt kein automatisches Zeitlimit bzw. keine Inaktivitäts-Sperre.')}
   if(u && moduleVisible('wochenplan')) body+=card('🔎 Wochenplan-Anzeige','Unter „Mein Bereich → Wochenplan-Anzeige“ können Uhrzeit und Tätigkeit unabhängig in drei Stufen eingestellt werden. „📍 Heute“ springt im Ansichtsmodus zur aktuellen KW und positioniert den heutigen Tag direkt neben der Namensspalte. Im Bearbeitungsmodus ist dieser Schnellbutton ausgeblendet.');
   page.innerHTML=`<div class="back" onclick="history.back()">‹ Zurück</div><div style="padding:0 4px"><h2 style="font-size:18px;color:var(--navy);margin:0 0 16px">${title}</h2>${body}</div>`;
 }
@@ -10733,7 +10776,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.10 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
+<!-- NASCH v29.13 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
 <style id="nasch-v296-plan-layout">
   .plan-t th.nc,.plan-t th.name-col,
   .plan-t td.nc,.plan-t td.name-cell{
@@ -10838,7 +10881,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.10 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
+<!-- NASCH v29.13 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
 <style id="nasch-v298-plan-view">
   :root{--nasch-time-font-size:11px;--nasch-activity-font-size:8px;}
   .nasch-shift-time{font-size:var(--nasch-time-font-size)!important;font-weight:700;line-height:1.15;white-space:nowrap;}

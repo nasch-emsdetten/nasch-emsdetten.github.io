@@ -1,9 +1,9 @@
-const VERSION='29.10';
+const VERSION='29.13';
 const CACHE=`nasch-app-v${VERSION}`;
 const CORE=[
   './index.html','./emsdetten.html','./lohne.html','./werlte.html','./loeningen.html','./leitung.html',
   './manifest-emsdetten.webmanifest','./manifest-lohne.webmanifest','./manifest-werlte.webmanifest','./manifest-loeningen.webmanifest','./manifest-leitung.webmanifest',
-  './version.json','./icon-180.png','./icon-192.png','./icon-512.png','./nasch-v299.js','./nasch-v299.css'
+  './version.json','./icon-180.png','./icon-192.png','./icon-512.png','./nasch-v299.js','./nasch-v299.css','./assets/timesheet-master.png'
 ];
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{
