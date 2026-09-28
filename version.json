@@ -1,6 +1,6 @@
 {
-  "version": "29.13",
-  "updated": "2026-09-27",
-  "notes": "v29.13: Sicherer Testversand für die Filialleitung. Der Admin kann den eigenen Stundenzettel des gewählten Monats ausschließlich an die hinterlegte eigene/BCC-Adresse senden; die Büro-Adresse wird im Testmodus nicht angeschrieben. Testversand funktioniert auch ohne vollständige Monatsunterschriften. Der offizielle Versand bleibt unverändert: nur vollständig unterschrieben an alswede@nasch.com mit eigener Adresse im BCC. PDF-Masterlayout bleibt identisch zu v29.12.",
-  "date": "2026-09-27"
+  "version": "29.14",
+  "updated": "2026-09-28",
+  "notes": "v29.14: PWA-Startbild korrigiert. Weiße Icon-Ecken entfernt und Splash-Hintergrund auf NASCH-Grün vereinheitlicht. Pull-to-Refresh/Herunterziehen am oberen Rand löst keinen App-Neustart mehr aus; normales Scrollen bleibt erhalten. Funktionen aus v29.13 unverändert.",
+  "date": "2026-09-28"
 }

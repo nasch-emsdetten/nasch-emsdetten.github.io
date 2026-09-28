@@ -1,8 +1,42 @@
-/* NASCH v29.13 · exakte Stundennachweis-Mastervorlage + Organisation/Mehrfachanfrage */
+/* NASCH v29.14 · Startbild/PWA-Scroll-Fix + Stundennachweis/Organisation */
 (()=>{
 'use strict';
-const VERSION='29.13';
+const VERSION='29.14';
 window.NASCH_APP_VERSION=VERSION;
+
+// v29.14: Android/Chrome-PWA Pull-to-Refresh verhindern, ohne normales Scrollen zu blockieren.
+// CSS overscroll-behavior ist der primäre Schutz; dieser Touch-Guard ist der Fallback
+// für WebView-/Chrome-Konstellationen, in denen am oberen Rand trotzdem neu geladen wird.
+(function installNoPullToRefresh(){
+  let sx=0,sy=0,tracking=false;
+  const scrollTopOf=el=>Math.max(0,Number(el?.scrollTop||0));
+  const hasScrollableAncestorAboveTop=target=>{
+    let el=target instanceof Element?target:null;
+    while(el&&el!==document.documentElement){
+      try{
+        const cs=getComputedStyle(el),oy=cs.overflowY;
+        if((oy==='auto'||oy==='scroll')&&el.scrollHeight>el.clientHeight+1&&scrollTopOf(el)>0)return true;
+      }catch(_){ }
+      el=el.parentElement;
+    }
+    const se=document.scrollingElement||document.documentElement;
+    return scrollTopOf(se)>0;
+  };
+  document.addEventListener('touchstart',e=>{
+    if(e.touches?.length!==1){tracking=false;return;}
+    tracking=true;sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+  },{passive:true,capture:true});
+  document.addEventListener('touchend',()=>{tracking=false},{passive:true,capture:true});
+  document.addEventListener('touchcancel',()=>{tracking=false},{passive:true,capture:true});
+  document.addEventListener('touchmove',e=>{
+    if(!tracking||e.touches?.length!==1)return;
+    const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    // Nur einen klaren vertikalen Zug nach unten am obersten Scrollpunkt abfangen.
+    if(dy<8||dy<=Math.abs(dx)*1.15)return;
+    if(hasScrollableAncestorAboveTop(e.target))return;
+    e.preventDefault();
+  },{passive:false,capture:true});
+})();
 const clone=o=>{try{return JSON.parse(JSON.stringify(o))}catch(_){return o}};
 const bid=()=>String(window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001');
 const uidNow=()=>String(window.AppState?.currentUserId||'');
