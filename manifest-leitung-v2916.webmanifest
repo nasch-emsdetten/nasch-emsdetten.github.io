@@ -1,0 +1,39 @@
+{
+  "name": "NASCH Leitung & Personalbüro",
+  "short_name": "NASCH Leitung",
+  "description": "NASCH Verwaltungszugang für Filialleitung und Personalbüro",
+  "lang": "de",
+  "start_url": "./leitung.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#98C01F",
+  "theme_color": "#111827",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-any-192-v2916.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-any-512-v2916.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192-v2916.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512-v2916.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "./leitung.html"
+}

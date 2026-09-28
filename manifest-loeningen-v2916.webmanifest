@@ -1,0 +1,39 @@
+{
+  "name": "NASCH Löningen Mitarbeiter-App",
+  "short_name": "NASCH Löningen",
+  "description": "NASCH Mitarbeiter-App · Löningen",
+  "lang": "de",
+  "start_url": "./loeningen.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#98C01F",
+  "theme_color": "#B91C1C",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-any-192-v2916.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-any-512-v2916.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192-v2916.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512-v2916.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "./loeningen.html"
+}

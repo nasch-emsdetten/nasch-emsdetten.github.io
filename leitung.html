@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>NASCH v29.15 · Leitung & Personalbüro</title>
-<link rel="manifest" href="manifest-leitung-v2915.webmanifest">
-<link rel="apple-touch-icon" href="icon-any-180-v2915.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2915.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-any-512-v2915.png">
+<title>NASCH v29.17 · Leitung & Personalbüro</title>
+<link rel="manifest" href="manifest-leitung-v2916.webmanifest">
+<link rel="apple-touch-icon" href="icon-any-180-v2916.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2916.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-any-512-v2916.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NASCH Leitung">
@@ -147,7 +147,7 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
-/* Einstellungs-Module v29.15 */
+/* Einstellungs-Module v29.17 */
 .settings-module{margin-bottom:10px;}
 .settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
 .settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
@@ -249,7 +249,7 @@ window.FILIAL_ID = '';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.15</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.17</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1107,7 +1107,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v29.15: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v29.17: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -1580,13 +1580,14 @@ const NaschAdminSettings = (() => {
     KV:['08:00–15:30','15:30–22:00'],
     R:['06:00–10:00'],
   };
-  const DEFAULT_AVAILABILITY = {Mo:'g',Di:'g',Mi:'n',Do:'g',Fr:'f',Sa:'f',So:'n'};
+  const DEFAULT_AVAILABILITY = {Mo:'g',Di:'g',Mi:'g',Do:'g',Fr:'g',Sa:'g',So:'g'};
   const DAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
   const AVAIL = {
     g:{label:'Ganztag', short:'G', bg:'#E1F5EE', fg:'#085041'},
     f:{label:'Nur Früh', short:'F', bg:'#FFF2CC', fg:'#7D6608'},
     s:{label:'Nur Spät', short:'S', bg:'#FAE5D3', fg:'#784212'},
-    n:{label:'Nicht verf.', short:'–', bg:'#FCEBEB', fg:'#791F1F'},
+    d:{label:'Fester freier Tag', short:'FR', bg:'#EEF7E0', fg:'#466A12'},
+    n:{label:'Fester nicht verfügbarer Tag', short:'NV', bg:'#FCEBEB', fg:'#791F1F'},
   };
 
   function blank() {
@@ -1879,14 +1880,25 @@ const NaschAdminSettings = (() => {
   }
 
   function availability(uid) {
-    return SandboxStore.getAvailability(uid) || {...DEFAULT_AVAILABILITY};
+    const raw = SandboxStore.getAvailability(uid) || {...DEFAULT_AVAILABILITY};
+    const vals={...DEFAULT_AVAILABILITY,...raw};
+    const typ=USERS?.[uid]?.typ||'';
+    DAYS.forEach(day=>{
+      if(typ==='VZ' && vals[day]==='n') vals[day]='d';
+      if(typ!=='VZ' && vals[day]==='d') vals[day]='n';
+      if(!['g','f','s','d','n'].includes(vals[day])) vals[day]='g';
+    });
+    return vals;
   }
 
   function cycleAvailability(uid, day) {
     const vals = availability(uid);
-    const keys = ['g','f','s','n'];
+    const typ=USERS?.[uid]?.typ||'';
+    const keys = typ==='VZ' ? ['g','f','s','d'] : ['g','f','s','n'];
     const idx = keys.indexOf(vals[day]);
-    vals[day] = keys[(idx+1)%keys.length];
+    const next=keys[(idx+1)%keys.length];
+    if(typ==='VZ' && next==='d') DAYS.forEach(d=>{if(d!==day && vals[d]==='d') vals[d]='g';});
+    vals[day] = next;
     SandboxStore.saveAvailability(uid, vals);
     return vals[day];
   }
@@ -1959,7 +1971,7 @@ const NaschAdminSettings = (() => {
       });
       ah += '</tr>';
     });
-    ah += '</tbody></table></div><div style="font-size:10px;color:var(--muted);margin-top:6px;">G = Ganztag · F = nur Früh · S = nur Spät · – = nicht verfügbar. Zelle antippen zum Ändern.</div>';
+    ah += '</tbody></table></div><div style="font-size:10px;color:var(--muted);margin-top:6px;">G = Ganztag · F = nur Früh · S = nur Spät · FR = fester freier Tag (Vollzeit) · NV = fester nicht verfügbarer Tag (Teilzeit/Aushilfe). Zelle antippen zum Ändern.</div>';
     avail.innerHTML=ah;
 
     acts.innerHTML = `<div style="font-size:10px;color:var(--muted);margin-bottom:9px;">Kürzel werden im Schichtplan angezeigt. Die Bezeichnung dient als bearbeitbare Legende. Wenn <strong>RK</strong> gelöscht wird, erscheinen Reinigungsvorschläge nur noch, wenn du ein neues Reinigungskürzel anlegst und zuweist.</div>
@@ -2173,7 +2185,7 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
-// ── v29.15: Einstellungs-Module ein-/ausblenden ─────────────
+// ── v29.17: Einstellungs-Module ein-/ausblenden ─────────────
 const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
 function adminSettingsReadState(){
   try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
@@ -2465,8 +2477,103 @@ function formatHours(value) {
   return txt+' h';
 }
 
+
+function wishfreeScopeFromValue(value){
+  const t=String(value||'').toLowerCase();
+  if(t.includes('früh')||t.includes('frueh')) return 'early';
+  if(t.includes('spät')||t.includes('spaet')) return 'late';
+  return 'full';
+}
+function wishfreeScopeFromRequest(req){return wishfreeScopeFromValue(req?.data?.schicht||req?.schicht||'');}
+function availabilityStatusPill(text,kind='free'){
+  const styles={free:['#f8fafc','#475569'],limited:['#FFF2CC','#7D6608'],blocked:['#FCEBEB','#791F1F'],wish:['#FBEAF0','#72243E']};
+  const [bg,fg]=styles[kind]||styles.free;
+  return `<span class="shift-pill" style="background:${bg};color:${fg};border:1px solid ${fg}22;white-space:nowrap;">${escapeHtml(text)}</span>`;
+}
+function isPlainUnplannedShift(s){ return !s || !s.t || s.t==='-'; }
+function contractFreeDayIndices(uid,shifts){
+  const u=USERS?.[String(uid)]||USERS?.[uid]||null;
+  if(!u || u.typ!=='TZ') return new Set();
+  const workDays=Number(u.arbeitstageWoche);
+  if(!Number.isInteger(workDays) || workDays<1 || workDays>7) return new Set();
+  const required=Math.max(0,7-workDays);
+  if(!required) return new Set();
+  const list=Array.from({length:7},(_,i)=>(shifts||[])[i]||{t:'-',z:'',r:[]});
+  let fixedBlocked=0;
+  const candidates=[];
+  list.forEach((sh,i)=>{
+    if(!isPlainUnplannedShift(sh)) return;
+    const code=sh?.availabilityCode||'g';
+    if(code==='n'){ fixedBlocked++; return; }
+    candidates.push(i);
+  });
+  const needed=Math.max(0,required-Math.min(required,fixedBlocked));
+  candidates.sort((a,b)=>{
+    const am=list[a]?.manual===true?0:1, bm=list[b]?.manual===true?0:1;
+    if(am!==bm) return am-bm;
+    const aw=a>=5?0:1, bw=b>=5?0:1; // bei unvollständiger Planung Wochenende bevorzugen
+    if(aw!==bw) return aw-bw;
+    if(aw===0 && bw===0) return b-a; // So vor Sa
+    return a-b;
+  });
+  return new Set(candidates.slice(0,needed));
+}
+function publishedUnplannedText(uid,dayIdx,shifts){
+  const sh=(shifts||[])[dayIdx]||{t:'-'};
+  if(!isPlainUnplannedShift(sh)) return '';
+  const code=sh?.availabilityCode||'g';
+  if(code==='n') return 'XX';
+  const u=USERS?.[String(uid)]||USERS?.[uid]||null;
+  if(u?.typ==='AH') return '';
+  if(u?.typ==='TZ') return contractFreeDayIndices(uid,shifts).has(Number(dayIdx))?'Frei':'';
+  return 'Frei';
+}
+function wishfreePublishedText(s){
+  const scope=s?.wishfreeScope||wishfreeScopeFromValue(s?.wishfreeType||s?.z||'');
+  if(scope==='early') return 'Spät verfügbar';
+  if(scope==='late') return 'verfügbar Früh';
+  return 'XX';
+}
+function planningShiftLabel(s,uid=null,dayIdx=null,shifts=null){
+  if(s?.t==='WF') return availabilityStatusPill('WF','wish');
+  if(!s||!s.t||s.t==='-'){
+    const c=s?.availabilityCode||'g';
+    if(c==='n') return availabilityStatusPill('n. Verfügbar','blocked');
+    if(c==='f') return availabilityStatusPill('nur Früh','limited');
+    if(c==='s') return availabilityStatusPill('nur Spät','limited');
+    if(uid!=null && dayIdx!=null){
+      const txt=publishedUnplannedText(uid,dayIdx,shifts||PLAN?.[uid]||[]);
+      return txt==='Frei'?availabilityStatusPill('Frei','free'):'';
+    }
+    return availabilityStatusPill('Frei','free');
+  }
+  return shiftLabel(s);
+}
+function weekShiftLabel(s,uid=null,dayIdx=null,shifts=null){
+  if(s?.t==='WF'){
+    const txt=wishfreePublishedText(s);
+    return availabilityStatusPill(txt,txt==='XX'?'blocked':'limited');
+  }
+  if(!s||!s.t||s.t==='-'){
+    if(uid!=null && dayIdx!=null){
+      const txt=publishedUnplannedText(uid,dayIdx,shifts||PLAN?.[uid]||[]);
+      if(!txt) return '';
+      return availabilityStatusPill(txt,txt==='XX'?'blocked':'free');
+    }
+    if(s?.availabilityCode==='n') return availabilityStatusPill('XX','blocked');
+    return availabilityStatusPill('Frei','free');
+  }
+  return shiftLabel(s);
+}
+function weeklyHoursDisplay(uid,dayIdx,shifts,s){
+  s=s||(shifts||[])[dayIdx]||{t:'-'};
+  if(s?.t==='WF') return wishfreePublishedText(s);
+  if(isPlainUnplannedShift(s)) return publishedUnplannedText(uid,dayIdx,shifts||[]);
+  return typeof dailyShiftTimes==='function'?dailyShiftTimes(s):(s?.z||'');
+}
+
 function shiftTypeText(s) {
-  if(!s || !s.t || s.t==='-') { if(s?.availabilityCode==='n') return 'Frei · fest'; if(s?.availabilityCode==='f') return 'Verfügbar · Früh'; if(s?.availabilityCode==='s') return 'Verfügbar · Spät'; return 'Frei'; }
+  if(!s || !s.t || s.t==='-') { if(s?.availabilityCode==='n') return 'n. Verfügbar'; if(s?.availabilityCode==='f') return 'nur Früh'; if(s?.availabilityCode==='s') return 'nur Spät'; return 'Frei'; }
   const labels={F:'Früh',S:'Spät',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'KV',BS:'Berufsschule',O:'Office',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
   return labels[s.t]||s.t;
 }
@@ -2530,7 +2637,7 @@ function getWeekTotalHours() {
   return Object.keys(USERS).reduce((sum,uid)=>sum+getEmployeeWeekStats(uid).hours,0);
 }
 
-// v29.15: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
+// v29.17: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
 // Filialleitung, aktive Vertretung, Personalbüro und System-Admin sehen immer die komplette Woche.
 function isEmployeePlanViewer(){
   const uid=String(AppState.currentUserId||'');
@@ -2654,7 +2761,7 @@ function renderPlan() {
       const sh = shifts[i];
       const isToday = d.toDateString() === today.toDateString();
       const tdCls = isToday ? 'class="today-col"' : '';
-      html += `<td ${tdCls}>${shiftLabel(sh)}</td>`;
+      html += `<td ${tdCls}>${weekShiftLabel(sh,uid,i,shifts)}</td>`;
     });
 
     if(isAdmin) {
@@ -2763,7 +2870,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'29.15');
+    const v='v'+(window.NASCH_APP_VERSION||'29.17');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -2941,13 +3048,22 @@ function sendeVerf(){
 
 // ── Verfügbarkeit ─────────────────────────────────────────
 const TAGE=['Mo','Di','Mi','Do','Fr','Sa','So'];
-const VOPTS=[{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'n',l:'Nicht verf.'}];
-const VFARBE={g:['#E1F5EE','#085041'],f:['#FFF2CC','#7D6608'],s:['#FAE5D3','#784212'],n:['#FCEBEB','#791F1F']};
-const vSel={Mo:'g',Di:'g',Mi:'n',Do:'g',Fr:'f',Sa:'f',So:'n'};
+let VOPTS=[];
+function verfOptionsFor(uid){
+  const typ=USERS?.[String(uid||'')]?.typ||'';
+  return typ==='VZ'
+    ? [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'d',l:'Fester freier Tag'}]
+    : [{k:'g',l:'Ganztag'},{k:'f',l:'Nur Früh'},{k:'s',l:'Nur Spät'},{k:'n',l:'Fester nicht verfügbarer Tag'}];
+}
+const VFARBE={g:['#E1F5EE','#085041'],f:['#FFF2CC','#7D6608'],s:['#FAE5D3','#784212'],d:['#EEF7E0','#466A12'],n:['#FCEBEB','#791F1F']};
+const vSel={Mo:'g',Di:'g',Mi:'g',Do:'g',Fr:'g',Sa:'g',So:'g'};
 const vOrig={...vSel};
 function buildVerfDays(){
   const c=document.getElementById('verfDays');
   if(!c) return;
+  VOPTS=verfOptionsFor(AppState.currentUserId);
+  const typ=USERS?.[String(AppState.currentUserId||'')]?.typ||'';
+  TAGE.forEach(tag=>{if(typ==='VZ'){if(vSel[tag]==='n')vSel[tag]='d';if(vOrig[tag]==='n')vOrig[tag]='d';}else if(typ){if(vSel[tag]==='d')vSel[tag]='n';if(vOrig[tag]==='d')vOrig[tag]='n';}});
   c.innerHTML=TAGE.map(tag=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:6px;">
       <div style="display:flex;align-items:center;padding:7px 12px;background:#f8fafc;">
@@ -2964,6 +3080,8 @@ function buildVerfDays(){
     </div>`).join('');
 }
 function selVerf(tag,key){
+  const typ=USERS?.[String(AppState.currentUserId||'')]?.typ||'';
+  if(typ==='VZ' && key==='d') TAGE.forEach(t=>{if(t!==tag&&vSel[t]==='d')vSel[t]='g';});
   vSel[tag]=key;
   TAGE.forEach(t=>{VOPTS.forEach(o=>{const el=document.getElementById('vo_'+t+'_'+o.k);if(el){const act=vSel[t]===o.k;el.style.background=act?VFARBE[o.k][0]:'var(--card)';el.style.borderColor=act?VFARBE[o.k][1]:'var(--border)';el.style.color=act?VFARBE[o.k][1]:'var(--muted)';}});});
   document.getElementById('vst_'+tag).textContent=VOPTS.find(o=>o.k===key)?.l;
@@ -3095,7 +3213,7 @@ function renderPersonalDailyHours(){
     const z=getShiftSurchargeHours(uid,sh,d); total25+=z.pct25; total50+=z.pct50;
     const holiday=getNRWPublicHolidayName(d);
     const dayHint=d.getDay()===0?' · Sonntag':holiday?` · ${holiday}`:'';
-    html+=`<tr style="border-top:1px solid var(--border);"><td style="padding:8px 9px;font-weight:600;white-space:nowrap;">${escapeHtml(formatFullDate(d))}<span style="font-size:9px;color:var(--muted);">${escapeHtml(dayHint)}</span></td><td style="padding:8px 9px;white-space:nowrap;">${escapeHtml(dailyShiftTimes(sh))}</td><td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(h)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;">${formatHours(z.pct25)}</td><td style="padding:8px 9px;text-align:right;font-weight:${z.pct50>0?'700':'400'};">${formatHours(z.pct50)}</td>`:''}</tr>`;
+    html+=`<tr style="border-top:1px solid var(--border);"><td style="padding:8px 9px;font-weight:600;white-space:nowrap;">${escapeHtml(formatFullDate(d))}<span style="font-size:9px;color:var(--muted);">${escapeHtml(dayHint)}</span></td><td style="padding:8px 9px;white-space:nowrap;">${escapeHtml(weeklyHoursDisplay(uid,i,shifts,sh))}</td><td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(h)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;">${formatHours(z.pct25)}</td><td style="padding:8px 9px;text-align:right;font-weight:${z.pct50>0?'700':'400'};">${formatHours(z.pct50)}</td>`:''}</tr>`;
   }
   html+=`<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:700;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;color:var(--navy);">${formatHours(total)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total25)}</td><td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total50)}</td>`:''}</tr></tbody></table></div>`;
   box.innerHTML=html;
@@ -3119,7 +3237,7 @@ function renderAdminDailyHours(){
       const z=getShiftSurchargeHours(uid,sh,d); total25+=z.pct25; total50+=z.pct50;
       const holiday=getNRWPublicHolidayName(d);
       const special=d.getDay()===0?'Sonntag':holiday;
-      rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${escapeHtml(formatFullDate(d))}${special?`<div style="font-size:9px;color:var(--muted);font-weight:500;">${escapeHtml(special)}</div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${escapeHtml(dailyShiftTimes(sh))}</td><td style="padding:7px 9px;text-align:right;font-weight:700;">${formatHours(h)}</td><td style="padding:7px 9px;text-align:right;">${eligible?formatHours(z.pct25):'–'}</td><td style="padding:7px 9px;text-align:right;font-weight:${z.pct50>0?'700':'400'};">${eligible?formatHours(z.pct50):'–'}</td></tr>`;
+      rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${escapeHtml(formatFullDate(d))}${special?`<div style="font-size:9px;color:var(--muted);font-weight:500;">${escapeHtml(special)}</div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${escapeHtml(weeklyHoursDisplay(uid,day,PLAN[uid]||[],sh))}</td><td style="padding:7px 9px;text-align:right;font-weight:700;">${formatHours(h)}</td><td style="padding:7px 9px;text-align:right;">${eligible?formatHours(z.pct25):'–'}</td><td style="padding:7px 9px;text-align:right;font-weight:${z.pct50>0?'700':'400'};">${eligible?formatHours(z.pct50):'–'}</td></tr>`;
     }
     const badge=eligible?'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:var(--ok);color:var(--ok-t);font-weight:700;">Zuschläge: Ja</span>':'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:#f1f5f9;color:#64748b;font-weight:700;">Zuschläge: Nein</span>';
     html+=`<div class="card" style="margin-bottom:10px;overflow:hidden;"><div style="padding:10px 11px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${escapeHtml(u.initials)}</div><strong style="font-size:12px;flex:1;min-width:140px;">${escapeHtml(u.name)}</strong>${badge}<span style="font-size:11px;color:var(--navy);font-weight:800;">Gesamt ${formatHours(total)}</span></div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:550px;"><thead><tr><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Std.</th><th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th></tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(total)}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${eligible?formatHours(total25):'–'}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${eligible?formatHours(total50):'–'}</td></tr></tbody></table></div></div>`;
@@ -3164,7 +3282,7 @@ const ZEITEN={F:['08:00–15:30','09:30–15:30'],S:['15:30–22:00','16:00–22
 const ROLLEN=['Vo/GL','V/SL','V','SL','GL','TO','B',''];
 let mS={t:'-',z:'',r:''};
 
-const AVAILABILITY_LABELS={g:'Ganztag',f:'Nur Früh',s:'Nur Spät',n:'Nicht verfügbar'};
+const AVAILABILITY_LABELS={g:'Ganztag',f:'Nur Früh',s:'Nur Spät',d:'Fester freier Tag',n:'Fester nicht verfügbarer Tag'};
 function getDayAvailability(uid,dayIdx){
   const day=DAYS[dayIdx];
   if(typeof NaschAdminSettings!=='undefined' && NaschAdminSettings.availability){
@@ -3218,8 +3336,8 @@ function buildAdminPlan(){
       if(changed) tdStyle+='background:#fffae8;';
       const klick=editMode?`onclick="openShiftEditor('${uid}',${i})" style="${tdStyle}cursor:pointer;"`:`style="${tdStyle}"`;
       html+=`<td ${klick}>`;
-      if(editMode) html+=`<div style="position:relative;">${shiftLabel(sh)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div>`;
-      else html+=shiftLabel(sh);
+      if(editMode) html+=`<div style="position:relative;">${planningShiftLabel(sh,uid,i,shifts)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div>`;
+      else html+=planningShiftLabel(sh);
       html+='</td>';
     });
     html+=`<td style="background:#f8fafc;text-align:center;font-size:9px;"><span style="color:var(--early-t);display:block;">F:${week.f}</span><span style="color:var(--late-t);display:block;">S:${week.s}</span><strong style="color:var(--navy);display:block;margin-top:2px;">${formatHours(week.hours)}</strong></td></tr>`;
@@ -3267,8 +3385,8 @@ function renderPlanTableDirect(tableId){
       const changed=typeof planChanges!=='undefined'&&planChanges[uid]?.[i];
       let style=isT?'background:rgba(30,58,95,.04);':'';if(changed)style+='background:#fffae8;';
       if(typeof editMode!=='undefined'&&editMode){
-        h+=`<td onclick="openShiftEditor('${uid}',${i})" style="${style}cursor:pointer;"><div style="position:relative;">${shiftLabel(s)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div></td>`;
-      } else { h+=`<td style="${style}">${shiftLabel(s)}</td>`; }
+        h+=`<td onclick="openShiftEditor('${uid}',${i})" style="${style}cursor:pointer;"><div style="position:relative;">${planningShiftLabel(s,uid,i,sh)}<div style="position:absolute;top:1px;right:1px;font-size:8px;opacity:.4;">✏</div></div></td>`;
+      } else { h+=`<td style="${style}">${planningShiftLabel(s,uid,i,sh)}</td>`; }
     });
     h+=`<td style="background:#f8fafc;text-align:center;font-size:9px;"><span style="color:var(--early-t);display:block;">F:${wk.f}</span><span style="color:var(--late-t);display:block;">S:${wk.s}</span><strong style="color:var(--navy);display:block;">${formatHours(wk.hours)}</strong></td></tr>`;
   });
@@ -3470,7 +3588,7 @@ function openShiftEditor(uid,dayIdx){
     // Reinigung nur anbieten, wenn dem Mitarbeiter RK zugeordnet ist.
     const assignedActivities=(typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):activityList(user.taetigkeit));
     if(o.t==='R' && !assignedActivities.includes('RK')) return false;
-    // v29.15: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
+    // v29.17: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
     // Früh, Spät und Teilschicht bleiben immer auswählbar.
     return true;
   });
@@ -3610,6 +3728,8 @@ function applyShift(){
     mS.r1=activityList(mS.r1); mS.r2=activityList(mS.r2); mS.r=[];
   }
   if(!PLAN[curUID]) PLAN[curUID]=Array.from({length:7},()=>({t:'-',z:'',r:''}));
+  if(mS.t!=='WF'){delete mS.wishfreeScope;delete mS.wishfreeType;}
+  if(!['U','WF','K'].includes(mS.t)){delete mS.autoSource;}
   PLAN[curUID][curDay]={...mS};
   if(!planChanges[curUID]) planChanges[curUID]={};
   planChanges[curUID][curDay]={...mS};
@@ -4170,7 +4290,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v29.15: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v29.17: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -4318,9 +4438,9 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
           const kr=requests.find(r=>r.type==='krank'), ur=requests.find(r=>r.type==='urlaub'), wf=requests.find(r=>r.type==='wunschfrei');
           if(kr){plan[uid][i]={t:'K',z:'Krank',r:[],autoSource:'krank',availabilityCode:code};continue;}
           if(ur){plan[uid][i]={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:code};continue;}
-          if(wf){plan[uid][i]={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:code};continue;}
-          if(newWeek && code==='n'){plan[uid][i]={t:'-',z:'',r:[],autoSource:'availability',availabilityCode:'n'};continue;}
-          if(sh.t==='-' || !sh.t){sh.availabilityCode=code; if(code==='n')sh.autoSource=sh.autoSource||'availability'; plan[uid][i]=sh;}
+          if(wf){plan[uid][i]={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:code,wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};continue;}
+          if(newWeek && ['n','d'].includes(code)){plan[uid][i]={t:'-',z:'',r:[],autoSource:'availability',availabilityCode:code};continue;}
+          if(sh.t==='-' || !sh.t){sh.availabilityCode=code; if(['n','d'].includes(code))sh.autoSource=sh.autoSource||'availability'; plan[uid][i]=sh;}
           else sh.availabilityCode=code;
         }
       });
@@ -4607,7 +4727,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
     return (Array.isArray(value)?value:[value]).filter(Boolean).join(' + ');
   }
   function shiftPdfText(s){
-    if(!s || !s.t || s.t==='-') { if(s?.availabilityCode==='n') return 'Frei · fest'; if(s?.availabilityCode==='f') return 'Verfügbar · Früh'; if(s?.availabilityCode==='s') return 'Verfügbar · Spät'; return 'Frei'; }
+    if(!s || !s.t || s.t==='-') { if(s?.availabilityCode==='n') return 'n. Verfügbar'; if(s?.availabilityCode==='f') return 'nur Früh'; if(s?.availabilityCode==='s') return 'nur Spät'; return 'Frei'; }
     if(s.t==='TS'){
       const times=typeof getSplitShiftTimes==='function'?getSplitShiftTimes(s):[s.z1||'',s.z2||''];
       const a1=typeof shiftActivities==='function'?plainActivity(shiftActivities(s,1)):plainActivity(s.r1||s.r);
@@ -4939,7 +5059,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
         if(sh.manual!==true&&['urlaub','wunschfrei','krank'].includes(sh.autoSource)&&!kr&&!ur&&!wf) sh={t:'-',z:'',r:[],availabilityCode:sh.availabilityCode||'g'};
         if(sh.manual!==true&&kr) sh={t:'K',z:'Krank',r:[],autoSource:'krank',availabilityCode:sh.availabilityCode||'g'};
         else if(sh.manual!==true&&ur) sh={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:sh.availabilityCode||'g'};
-        else if(sh.manual!==true&&wf) sh={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:sh.availabilityCode||'g'};
+        else if(sh.manual!==true&&wf) sh={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:sh.availabilityCode||'g',wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};
         if(c){
           sh.businessClosure=c.kind;sh.closureNote=c.note||'';
           if(c.kind==='full'&&sh.manual!==true&&serviceShift(sh.t)) sh={t:'-',z:'',r:[],autoSource:'closure',businessClosure:'full',closureNote:c.note||''};
@@ -7174,8 +7294,8 @@ module.exports = QRCode;
       const d=new Date(mon);d.setDate(mon.getDate()+i);const dk=dateKey254(d),sh=shifts[i]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null;
       const pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;
       const holiday=typeof getNRWPublicHolidayName==='function'?getNRWPublicHolidayName(d):'',dayHint=d.getDay()===0?' · Sonntag':holiday?` · ${holiday}`:'';
-      const times=rec?`${rec.start}–${rec.end}`:(typeof dailyShiftTimes==='function'?dailyShiftTimes(sh):'–');const pend=window.TimeCorrectionStore?.pending?.(uid,dk);const today=new Date();today.setHours(0,0,0,0);const future=d>today;
-      html+=`<tr style="border-top:1px solid var(--border);"><td style="padding:8px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}<span style="font-size:9px;color:var(--muted);">${esc254(dayHint)}</span></td><td style="padding:8px 9px;white-space:nowrap;">${esc254(times)}${st?`<br><span class="time-corr-badge ${st.cls}">${st.text}</span>`:''}</td><td style="padding:8px 9px;text-align:right;"><span class="v254-pause">${esc254(pauseLabel(pause,!rec||pause===requiredPauseMinutesFromMinutes(intervalGrossMinutes(rec?.start,rec?.end))))}</span></td><td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(h)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:8px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}<td style="padding:8px 9px;text-align:right;"><button class="time-corr-btn" ${pend||future?'disabled':''} onclick="openTimeCorrection('${uid}',${i})">${pend?'Offen':future?'Noch nicht':'✏️ Arbeitszeit'}</button></td></tr>`;
+      const times=rec?`${rec.start}–${rec.end}`:weeklyHoursDisplay(uid,i,shifts,sh);const pend=window.TimeCorrectionStore?.pending?.(uid,dk);const today=new Date();today.setHours(0,0,0,0);const future=d>today;const blankWork=!rec&&(isPlainUnplannedShift(sh)||sh?.t==='WF');
+      html+=`<tr style="border-top:1px solid var(--border);"><td style="padding:8px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}<span style="font-size:9px;color:var(--muted);">${esc254(dayHint)}</span></td><td style="padding:8px 9px;white-space:nowrap;">${esc254(times)}${st?`<br><span class="time-corr-badge ${st.cls}">${st.text}</span>`:''}</td><td style="padding:8px 9px;text-align:right;"><span class="v254-pause">${blankWork?'':esc254(pauseLabel(pause,!rec||pause===requiredPauseMinutesFromMinutes(intervalGrossMinutes(rec?.start,rec?.end))))}</span></td><td style="padding:8px 9px;text-align:right;font-weight:800;">${blankWork?'':formatHours(h)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:8px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}<td style="padding:8px 9px;text-align:right;"><button class="time-corr-btn" ${pend||future?'disabled':''} onclick="openTimeCorrection('${uid}',${i})">${pend?'Offen':future?'Noch nicht':'✏️ Arbeitszeit'}</button></td></tr>`;
     }
     html+=`<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;color:var(--navy);">${formatHours(total)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total25)}</td><td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total50)}</td>`:''}<td></td></tr></tbody></table></div>`;
     box.innerHTML=html;const ist=document.getElementById('stzIst');if(ist)ist.textContent=formatHours(total);
@@ -7189,8 +7309,8 @@ module.exports = QRCode;
     entries.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,currentBid254()))).forEach(([uid,u])=>{
       const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;let total=0,totalPause=0,total25=0,total50=0,rows='';
       for(let day=0;day<7;day++){
-        const d=new Date(mon);d.setDate(mon.getDate()+day);const dk=dateKey254(d),sh=(PLAN[uid]||[])[day]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null,pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;const times=rec?`${rec.start}–${rec.end}`:(typeof dailyShiftTimes==='function'?dailyShiftTimes(sh):'–');
-        rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}${st?`<div><span class="time-corr-badge ${st.cls}">${st.text}</span></div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${esc254(times)}</td><td style="padding:7px 9px;text-align:right;">${pause} Min.</td><td style="padding:7px 9px;text-align:right;font-weight:800;">${formatHours(h)}</td>${eligible?`<td style="padding:7px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:7px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}</tr>`;
+        const d=new Date(mon);d.setDate(mon.getDate()+day);const dk=dateKey254(d),sh=(PLAN[uid]||[])[day]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null,pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;const times=rec?`${rec.start}–${rec.end}`:weeklyHoursDisplay(uid,day,PLAN[uid]||[],sh),blankWork=!rec&&(isPlainUnplannedShift(sh)||sh?.t==='WF');
+        rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}${st?`<div><span class="time-corr-badge ${st.cls}">${st.text}</span></div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${esc254(times)}</td><td style="padding:7px 9px;text-align:right;">${blankWork?'':pause+' Min.'}</td><td style="padding:7px 9px;text-align:right;font-weight:800;">${blankWork?'':formatHours(h)}</td>${eligible?`<td style="padding:7px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:7px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}</tr>`;
       }
       const badge=eligible?'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:var(--ok);color:var(--ok-t);font-weight:700;">Zuschläge</span>':'';
       html+=`<div class="card" style="margin-bottom:10px;overflow:hidden;"><div style="padding:10px 11px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${esc254(u.initials)}</div><strong style="font-size:12px;flex:1;min-width:140px;">${esc254(u.name)}</strong>${badge}<span style="font-size:11px;color:var(--navy);font-weight:800;">Netto ${formatHours(total)}</span></div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:${eligible?'650':'500'}px;"><thead><tr><th style="padding:7px 9px;text-align:left;">Datum</th><th style="padding:7px 9px;text-align:left;">Uhrzeit</th><th style="padding:7px 9px;text-align:right;">Pause</th><th style="padding:7px 9px;text-align:right;">Netto</th>${eligible?'<th style="padding:7px 9px;text-align:right;">25 %</th><th style="padding:7px 9px;text-align:right;">50 %</th>':''}</tr></thead><tbody>${rows}<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;">${formatHours(total)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(total25)}</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${formatHours(total50)}</td>`:''}</tr></tbody></table></div></div>`;
@@ -7454,7 +7574,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.15';
+  window.NASCH_APP_VERSION='29.17';
 })();
 </script>
 
@@ -7724,7 +7844,7 @@ module.exports = QRCode;
 (()=>{
   const VERSION='26.4';
   const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
-  const LABEL={g:'Ganztag',f:'Nur Früh',s:'Nur Spät',n:'Nicht verfügbar'};
+  const LABEL={g:'Ganztag',f:'Nur Früh',s:'Nur Spät',d:'Fester freier Tag',n:'Fester nicht verfügbarer Tag'};
   let editMode=false;
   let pendingReq=null;
   let latestReq=null;
@@ -7735,12 +7855,12 @@ module.exports = QRCode;
   const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false;}};
   function db(){try{return firebase.firestore();}catch(_){return null;}}
   function branchRef(col){const x=db();return x?x.collection('nasch').doc(FID()).collection(col):null;}
-  function cleanValues(v){const out={};DAYS.forEach(d=>out[d]=['g','f','s','n'].includes(v?.[d])?v[d]:'g');return out;}
+  function cleanValues(v,uid){const out={};const typ=USERS?.[String(uid||'')]?.typ||'';DAYS.forEach(d=>{let x=['g','f','s','d','n'].includes(v?.[d])?v[d]:'g';if(typ==='VZ'&&x==='n')x='d';if(typ&&typ!=='VZ'&&x==='d')x='n';out[d]=x;});return out;}
   function tsMillis(v){if(!v)return 0;if(typeof v.toMillis==='function')return v.toMillis();const n=Date.parse(v);return Number.isFinite(n)?n:0;}
 
   async function fetchActive(uid){
     const r=branchRef('availability');if(!r)return null;
-    try{const snap=await r.doc(String(uid)).get();return snap.exists?cleanValues(snap.data()):null;}catch(e){console.warn('availability active load',e);return null;}
+    try{const snap=await r.doc(String(uid)).get();return snap.exists?cleanValues(snap.data(),uid):null;}catch(e){console.warn('availability active load',e);return null;}
   }
   async function fetchRequests(uid){
     const r=branchRef('requests');if(!r)return [];
@@ -7783,7 +7903,7 @@ module.exports = QRCode;
     if(!AppState?.currentUserId)return;ensureControls();
     const uid=String(AppState.currentUserId);
     const [active,reqs]=await Promise.all([fetchActive(uid),fetchRequests(uid)]);
-    activeCache=cleanValues(active||SandboxStore?.getAvailability?.(uid)||vOrig);
+    activeCache=cleanValues(active||SandboxStore?.getAvailability?.(uid)||vOrig,uid);
     Object.assign(vOrig,activeCache);Object.assign(vSel,activeCache);
     pendingReq=reqs.find(r=>r.status==='offen')||null;latestReq=reqs[0]||null;editMode=false;
     const ok=document.getElementById('verfOK');if(ok)ok.classList.add('hidden');
@@ -7809,9 +7929,9 @@ module.exports = QRCode;
     if(!changed){document.getElementById('verfErr').textContent='Es wurde keine Änderung ausgewählt.';return;}
     if(!grund){document.getElementById('verfErr').textContent='Bitte Begründung angeben.';return;}
     document.getElementById('verfErr').textContent='';
-    const values=cleanValues(vSel);
-    const id=SandboxStore.addRequest('verfuegbarkeit',AppState.currentUserId,{werte:values,vorher:cleanValues(vOrig),grund});
-    pendingReq={id,type:'verfuegbarkeit',uid:String(AppState.currentUserId),status:'offen',data:{werte:values,vorher:cleanValues(vOrig),grund},createdAt:new Date().toISOString()};
+    const values=cleanValues(vSel,AppState.currentUserId);
+    const id=SandboxStore.addRequest('verfuegbarkeit',AppState.currentUserId,{werte:values,vorher:cleanValues(vOrig,AppState.currentUserId),grund});
+    pendingReq={id,type:'verfuegbarkeit',uid:String(AppState.currentUserId),status:'offen',data:{werte:values,vorher:cleanValues(vOrig,AppState.currentUserId),grund},createdAt:new Date().toISOString()};
     latestReq=pendingReq;editMode=false;Object.assign(vSel,vOrig);
     const ok=document.getElementById('verfOK');if(ok){ok.textContent='✓ Änderungsantrag gesendet – deine bisherige Verfügbarkeit bleibt bis zur Genehmigung aktiv.';ok.classList.remove('hidden');}
     const g=document.getElementById('verfGrund');if(g)g.value='';const gr=document.getElementById('verfGrundWrap');if(gr)gr.style.display='none';const sb=document.getElementById('verfSendBtn');if(sb)sb.classList.add('hidden');
@@ -7852,7 +7972,7 @@ module.exports = QRCode;
     const rr=branchRef('requests'),ar=branchRef('availability');if(!rr||!ar)return;
     try{
       const snap=await rr.doc(id).get();if(!snap.exists)throw new Error('Antrag nicht gefunden.');const q=snap.data();if(q.status!=='offen'){alert('Dieser Antrag wurde bereits bearbeitet.');return;}
-      const vals=cleanValues(q.data?.werte||{});
+      const vals=cleanValues(q.data?.werte||{},uid);
       await ar.doc(String(uid)).set({...vals,approvedFromRequest:id,approvedBy:AppState.currentUser?.name||'Leitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
       await rr.doc(id).set({status:'genehmigt',decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
       try{SandboxStore.saveAvailability(String(uid),vals);SandboxStore.updateRequest(id,{status:'genehmigt'});}catch(_){}
@@ -7951,7 +8071,7 @@ module.exports = QRCode;
     }).join('');
     const totalTxt=typeof formatHours==='function'?formatHours(total):total.toFixed(2)+' h';
     return `${standalone?'':'<section class="sheet">'}
-      <div class="head"><div><div class="brand">NASCH RESTAURANT</div><div class="branch">${esc(branchName())}</div></div><img src="./icon-any-192-v2915.png" alt="NASCH"></div>
+      <div class="head"><div><div class="brand">NASCH RESTAURANT</div><div class="branch">${esc(branchName())}</div></div><img src="./icon-any-192-v2916.png" alt="NASCH"></div>
       <h1>Stundenzettel</h1>
       <div class="meta"><div><span>Mitarbeiter</span><strong>${esc(u.name||uid)}</strong></div><div><span>Mitarbeiter-Nr.</span><strong>${esc(uid)}</strong></div><div><span>Zeitraum</span><strong>${esc(meta.label)}</strong></div><div><span>Beschäftigung</span><strong>${esc(u.label||u.typ||'–')}</strong></div></div>
       <table><thead><tr><th>Datum</th><th>Arbeitszeit</th><th class="r">Pause</th><th class="r">Netto</th>${eligible?'<th class="r">25 %</th><th class="r">50 %</th>':''}<th>Status</th></tr></thead><tbody>${rows}<tr class="sum"><td colspan="2"><strong>Gesamt</strong></td><td class="r"><strong>${totalPause} Min.</strong></td><td class="r"><strong>${esc(totalTxt)}</strong></td>${eligible?`<td class="r"><strong>${esc(typeof formatHours==='function'?formatHours(total25):total25.toFixed(2)+' h')}</strong></td><td class="r"><strong>${esc(typeof formatHours==='function'?formatHours(total50):total50.toFixed(2)+' h')}</strong></td>`:''}<td></td></tr></tbody></table>
@@ -8389,7 +8509,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.15';
+  window.NASCH_APP_VERSION='29.17';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8400,7 +8520,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8539,7 +8659,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8590,7 +8710,7 @@ window.NASCH_APP_VERSION='29.15';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8609,7 +8729,7 @@ window.NASCH_APP_VERSION='29.15';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -8940,7 +9060,7 @@ window.NASCH_APP_VERSION='29.15';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.15')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.17')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -8960,7 +9080,7 @@ window.NASCH_APP_VERSION='29.15';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9473,9 +9593,9 @@ window.NASCH_APP_VERSION='29.15';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
-  const VERSION='29.15';
+  const VERSION='29.17';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9668,7 +9788,7 @@ window.NASCH_APP_VERSION='29.15';
 
 <script id="nasch-v2820-copy-next-cloud">
 /* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9727,7 +9847,7 @@ window.NASCH_APP_VERSION='29.15';
       const wf=hits.find(r=>r.type==='wunschfrei'&&r.status==='genehmigt');
       if(kr)row[i]={t:'K',z:'Krank',r:[],extras:[],autoSource:'krank'};
       else if(ur)row[i]={t:'U',z:'Urlaub',r:[],extras:[],autoSource:'urlaub'};
-      else if(wf)row[i]={t:'WF',z:'Wunschfrei',r:[],extras:[],autoSource:'wunschfrei'};
+      else if(wf)row[i]={t:'WF',z:'Wunschfrei',r:[],extras:[],autoSource:'wunschfrei',wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};
       else{
         let av='g';
         try{if(typeof SandboxStore!=='undefined')av=SandboxStore.getAvailability?.(uid)?.[DAYS7[i]]||'g';}catch(_){}
@@ -9787,9 +9907,9 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.15 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v29.17 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='29.15';
+  const CURRENT='29.17';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
@@ -9877,7 +9997,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 
-<!-- NASCH v29.15: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
+<!-- NASCH v29.17: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
 <style id="nasch-v2824-security-desktop-css">
 #firstPinOverlay{display:none;position:fixed;inset:0;z-index:15000;background:rgba(15,23,42,.78);align-items:center;justify-content:center;padding:18px;}
 #firstPinOverlay.open{display:flex;}
@@ -9934,7 +10054,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10083,7 +10203,7 @@ window.NASCH_APP_VERSION='29.15';
   setTimeout(load,0);
   window.addEventListener('online',()=>{if(!ready){loadPromise=null;load();}});
 
-  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.15 sperrt NICHT nach Inaktivität.
+  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.17 sperrt NICHT nach Inaktivität.
 })();
 
 (()=>{
@@ -10129,8 +10249,8 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
   <button type="button" onclick="NaschEmployeeDemo.exit()">Zurück zum Admin</button>
 </div>
 <script>
-/* NASCH v29.15 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.15';
+/* NASCH v29.17 · versteckter, schreibgeschützter Demo-Mitarbeiter */
+window.NASCH_APP_VERSION='29.17';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10231,8 +10351,8 @@ window.NaschEmployeeDemo=(()=>{
   </div>
 </div>
 <script id="nasch-v2826-features">
-/* NASCH v29.15 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.15';
+/* NASCH v29.17 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
+window.NASCH_APP_VERSION='29.17';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10462,11 +10582,11 @@ window.NaschDeputyRights=(()=>{
 @media(max-width:560px){.n293-grid{grid-template-columns:1fr}}
 </style>
 <script id="nasch-v293-unified">
-/* NASCH v29.15 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
+/* NASCH v29.17 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.15';
+window.NASCH_APP_VERSION='29.17';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -10633,25 +10753,29 @@ async function monthData(uid,year,month){
   const corrections=await fetchCorrections(uid,year,month),sickApprovals=await fetchSickHourApprovals(uid,year,month),rows=[];let work=0,absence=0,p25=0,p50=0;
   const eligible=typeof getEmployeeSurchargeEnabled==='function'?!!getEmployeeSurchargeEnabled(uid):!!u.zuschlaege;
   for(let d=1;d<=days;d++){
-    const date=new Date(year,month-1,d,12),key=mondayKey(date),di=(date.getDay()+6)%7,sh=plans[key]?.[uid]?.[di]||{t:'-',z:'',r:[]},rec=corrections[dkey(date)]||null;
+    const date=new Date(year,month-1,d,12),key=mondayKey(date),di=(date.getDay()+6)%7,weekShifts=plans[key]?.[uid]||[],sh=weekShifts?.[di]||{t:'-',z:'',r:[]},rec=corrections[dkey(date)]||null;
     let ranges=rec?[[String(rec.start||''),String(rec.end||'')]]:timeRanges(sh);ranges=ranges.filter(x=>x[0]&&x[1]);
     let gross=ranges.reduce((s,x)=>s+rangeMinutes(x[0],x[1]),0),pause=rec?Math.max(autoPause(gross),Number(rec.pauseMin)||0):autoPause(gross),net=Math.max(0,(gross-pause)/60);
-    let status='',credit=0;const t=String(sh?.t||'-');
+    let status='',displayStatus='',credit=0;const t=String(sh?.t||'-');
     if(!rec&&t==='K'){status='Krank';if(u?.typ==='AH'){const ap=sickApprovals[dkey(date)];if(ap?.approved===true){credit=quarter(Number(ap.hours)||0);status='Krank'}else{credit=0;status=''}}else credit=dailyAbsenceHours(u);absence+=credit}
     else if(!rec&&t==='U'){status='Urlaub';credit=dailyAbsenceHours(u);absence+=credit}
     else if(!rec&&t==='WF')status='Wunschfrei';
     else if(!rec&&t==='BS')status='Berufsschule';
-    else if(!rec&&t==='-')status='Frei';
+    else if(!rec&&t==='-'){displayStatus=publishedUnplannedText(uid,di,weekShifts);status=displayStatus==='Frei'?'Frei':'';}
     else if(rec)status='Korrigiert';
     else status=typeof shiftTypeText==='function'?shiftTypeText(sh):t;
+    if(!displayStatus){
+      if(!rec&&t==='WF') displayStatus=wishfreePublishedText(sh);
+      else displayStatus=status;
+    }
     const sur=surchargeRanges(ranges,date,net,eligible);work+=net;p25+=sur.p25;p50+=sur.p50;
-    rows.push({date:dkey(date),day:d,weekday:WDS[date.getDay()],holiday:publicHolidayName(date,bid()),shiftType:t,status,ranges,pauseMin:pause,net:quarter(net),credit:quarter(credit),p25:sur.p25,p50:sur.p50,corrected:!!rec});
+    rows.push({date:dkey(date),day:d,weekday:WDS[date.getDay()],holiday:publicHolidayName(date,bid()),shiftType:t,status,displayStatus,ranges,pauseMin:pause,net:quarter(net),credit:quarter(credit),p25:sur.p25,p50:sur.p50,corrected:!!rec});
   }
   const total=quarter(work+absence),soll=Number(u.sollStundenMonat)||0;
   return{uid,year,month,branchId:bid(),branchName:bmeta().name,state:stateForBranch(),employee:clone(u),rows,worked:quarter(work),absence:quarter(absence),total,soll,diff:quarter(total-soll),p25:quarter(p25),p50:quarter(p50),generatedAt:new Date().toISOString()};
 }
 async function hashData(data){
-  const raw=JSON.stringify({uid:data.uid,year:data.year,month:data.month,branchId:data.branchId,state:data.state,soll:data.soll,employee:{stundenlohn:data.employee?.stundenlohn??null,arbeitstageWoche:data.employee?.arbeitstageWoche??null,label:data.employee?.label||data.employee?.typ||''},rows:data.rows.map(r=>({date:r.date,shiftType:r.shiftType,ranges:r.ranges,pauseMin:r.pauseMin,net:r.net,credit:r.credit,p25:r.p25,p50:r.p50,status:r.status,holiday:r.holiday}))});
+  const raw=JSON.stringify({uid:data.uid,year:data.year,month:data.month,branchId:data.branchId,state:data.state,soll:data.soll,employee:{stundenlohn:data.employee?.stundenlohn??null,arbeitstageWoche:data.employee?.arbeitstageWoche??null,label:data.employee?.label||data.employee?.typ||''},rows:data.rows.map(r=>({date:r.date,shiftType:r.shiftType,ranges:r.ranges,pauseMin:r.pauseMin,net:r.net,credit:r.credit,p25:r.p25,p50:r.p50,status:r.status,displayStatus:r.displayStatus||'',holiday:r.holiday}))});
   try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(_){let h=0;for(let i=0;i<raw.length;i++)h=((h<<5)-h+raw.charCodeAt(i))|0;return String(h)}
 }
 
@@ -10735,7 +10859,7 @@ function handbook(){
   else if(central){title='📖 System-Admin-Handbuch';body=card('🏪 Filialen','Filialen aktivieren und Stammdaten prüfen. Emsdetten nutzt NRW-Feiertage; alle anderen bekannten Filialen Niedersachsen.')+card('🧩 Module','Jedes Modul filialweise auf AUS, FILIALE oder BÜRO setzen. Änderungen gelten geräteübergreifend.')+card('🪪 Vertretung','Emsdetten standardmäßig aktiv; in anderen Filialen standardmäßig aus und bei Bedarf aktivieren.')+card('📅 Wochenplan','System-Admin sieht immer die vollständige 7-Tage-Woche und kann auch vergangene Kalenderwochen öffnen. Nur echte Mitarbeiterzugänge blenden vergangene Tage/KWs aus. Der heutige Tag bleibt markiert.')}
   else if(office){title='📖 Büro-Handbuch';const mods=[['stundennachweis','Monats-Stundennachweis'],['vorschuss','Vorschuss'],['gutschein','Gutschein'],['waesche','Wäsche / Schürzen'],['zeiterfassung','Zeiterfassung']].filter(x=>moduleOffice(x[0])).map(x=>`<li>${x[1]}</li>`).join('');body=card('🏢 Büro-Aufgaben',mods?`Für diese Filiale sind aktuell folgende Module ans Büro übertragen:<ul>${mods}</ul>`:'Aktuell ist kein Modul dieser Filiale ans Büro übertragen.')+(moduleOffice('wochenplan')?card('📅 Wochenplan','Wenn der Wochenplan ans Büro übertragen ist, zeigt die Büroansicht immer alle sieben Wochentage und erlaubt auch vergangene Kalenderwochen. Die Mitarbeiter-Ausblendlogik gilt hier nicht.'):'')+card('👁 Teamstatus & Lesen','Soweit für den Büroprozess freigegeben, können Online/zuletzt online und Lesestatus betrieblicher Anfragen angezeigt werden. Pushtexte bleiben neutral.')+card('📄 Stundennachweise','Büro kann die übertragenen Monats-Stundennachweise in einer Mitarbeiterübersicht prüfen und als PDF abrufen. Die Gegenzeichnung erfolgt durch Filialleitung oder berechtigte Vertretung.')}
   else if(dep){title='📖 Vertretungs-Handbuch';body=(moduleVisible('wochenplan')?card('📅 Wochenplan','Wochenplan vollständig bearbeiten und veröffentlichen – auch vergangene Kalenderwochen und alle sieben Wochentage bleiben sichtbar. Der heutige Wochentag ist markiert. Veröffentlichung wird mit deinem Namen und der Rolle Vertretung protokolliert. Bei Verfügbarkeitskonflikten wird gewarnt; die Schicht bleibt planbar und der Mitarbeiter kann angefragt werden.'):'')+(moduleBranch('stundennachweis')?card('📄 Monats-Stundennachweis','Nach der Mitarbeiter-Unterschrift darfst du den Monats-Stundenzettel gegenzeichnen. Jede Gegenzeichnung gilt nur für den gewählten Monat und Datenstand.'):'')+card('🔁 Tausch, Ersatz & Organisation','Normale Tausch-/Ersatzanfragen werden nach Zustimmung freigegeben. Bei einer Mehrfach-Organisation sammelt NASCH mehrere Hilfszusagen; du kannst daraus mehrere Schichtverschiebungen mit passenden Zeiten zusammenstellen und gemeinsam genehmigen. Erst die abschließende Freigabe verändert den veröffentlichten Plan.')+card('👥 KV','KV-Bereitschaften werden ohne Uhrzeit/Tätigkeit geplant. Bei Krankmeldung übernimmt der verbindlich zuständige KV die ursprüngliche Schicht. Der KV-Einsatz kann nicht abgelehnt werden; ein Tausch/Ersatz wird erst nach Freigabe wirksam.')+card('👁 Teamstatus & Lesen','Für die operative Planung sind Online/zuletzt online und der Lesestatus relevanter Anfragen sichtbar. Mitarbeiter sehen diese Teamdaten nicht.')+card('🔒 Rechte','Nicht freigegebene Adminfunktionen werden vollständig ausgeblendet.')}
-  else if(admin){title='📖 Filialleitungs-Handbuch';body=card('🧩 Module','Unter Einstellungen Module pro Filiale als AUS, FILIALE oder BÜRO konfigurieren.')+card('🪪 Vertretung',`${bid()==='FIL001'?'In Emsdetten ist die Vertretung standardmäßig aktiv.':'In dieser Filiale ist die Vertretung standardmäßig deaktiviert und kann bei Bedarf aktiviert werden.'}`)+(moduleVisible('wochenplan')?card('📅 Planung','Der vollständige Wochenplan bleibt für Filialleitung sichtbar – inklusive vergangener Kalenderwochen und aller sieben Wochentage; der heutige Wochentag ist markiert. Verfügbarkeitskonflikte warnen, blockieren aber nicht. „Trotzdem einplanen“ oder Mitarbeiter direkt/nachträglich anfragen. Pläne können veröffentlicht werden.'):'')+(moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis',moduleOffice('stundennachweis')?'Das Modul wird durch das Büro bearbeitet/exportiert. Die fachliche Gegenzeichnung bleibt bei Filialleitung bzw. berechtigter Vertretung. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.':'Für jeden Mitarbeiter und Monat steht eine einfache Übersicht mit offiziellem PDF-Stundennachweis bereit. Zuerst unterschreibt der Mitarbeiter, anschließend Filialleitung oder berechtigte Vertretung. Nur die Filialleitung/Admin kann vollständig unterschriebene PDFs per E-Mail an das Büro senden; die eigene Adresse wird im BCC geführt. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Neben normalem 1:1-Tausch und Ersatz gibt es Organisation/Mehrfachanfrage. Die Begründung wird der Filialleitung angezeigt; mehrere Mitarbeiter können unabhängig ihre Hilfsbereitschaft melden. Filialleitung bzw. berechtigte Vertretung kann daraus mehrere Schichtverschiebungen und passende Zielzeiten in einem zusammenhängenden Vorgang planen und gemeinsam freigeben. Bei Konflikten oder zwischenzeitlich geänderten Ausgangsschichten wird keine Teiländerung gespeichert.')+card('🤒 Krankstunden Aushilfen','Krankmeldungen von Aushilfen erscheinen ohne Freigabe nicht als Krankzeit im Stundensystem. Erst eine ausdrückliche Freigabe der Filialleitung übernimmt die genehmigten Stunden als Krankzeit in den Monatsnachweis.')+card('👁 Online & Lesestatus','Im Teamstatus sind Online/zuletzt online sowie bei betrieblichen Anfragen der Lesestatus sichtbar. Push-Mitteilungen auf dem Sperrbildschirm bleiben neutral und zeigen keine Schicht-, Krank- oder Personaldetails.')+card('🔑 PIN','Persönliche PINs werden nicht im Klartext angezeigt. Reset erzeugt erneute Pflicht zur persönlichen PIN-Vergabe.')}
+  else if(admin){title='📖 Filialleitungs-Handbuch';body=card('🧩 Module','Unter Einstellungen Module pro Filiale als AUS, FILIALE oder BÜRO konfigurieren.')+card('🪪 Vertretung',`${bid()==='FIL001'?'In Emsdetten ist die Vertretung standardmäßig aktiv.':'In dieser Filiale ist die Vertretung standardmäßig deaktiviert und kann bei Bedarf aktiviert werden.'}`)+(moduleVisible('wochenplan')?card('📅 Planung','Der vollständige Wochenplan bleibt für Filialleitung sichtbar – inklusive vergangener Kalenderwochen und aller sieben Wochentage; der heutige Wochentag ist markiert. Verfügbarkeitskonflikte warnen, blockieren aber nicht. Vollzeit kann einen festen freien Tag hinterlegen; Teilzeit/Aushilfe feste nicht verfügbare Tage. „Trotzdem einplanen“ oder Mitarbeiter direkt/nachträglich anfragen. Pläne können veröffentlicht werden.'):'')+(moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis',moduleOffice('stundennachweis')?'Das Modul wird durch das Büro bearbeitet/exportiert. Die fachliche Gegenzeichnung bleibt bei Filialleitung bzw. berechtigter Vertretung. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.':'Für jeden Mitarbeiter und Monat steht eine einfache Übersicht mit offiziellem PDF-Stundennachweis bereit. Zuerst unterschreibt der Mitarbeiter, anschließend Filialleitung oder berechtigte Vertretung. Nur die Filialleitung/Admin kann vollständig unterschriebene PDFs per E-Mail an das Büro senden; die eigene Adresse wird im BCC geführt. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Neben normalem 1:1-Tausch und Ersatz gibt es Organisation/Mehrfachanfrage. Die Begründung wird der Filialleitung angezeigt; mehrere Mitarbeiter können unabhängig ihre Hilfsbereitschaft melden. Filialleitung bzw. berechtigte Vertretung kann daraus mehrere Schichtverschiebungen und passende Zielzeiten in einem zusammenhängenden Vorgang planen und gemeinsam freigeben. Bei Konflikten oder zwischenzeitlich geänderten Ausgangsschichten wird keine Teiländerung gespeichert.')+card('🤒 Krankstunden Aushilfen','Krankmeldungen von Aushilfen erscheinen ohne Freigabe nicht als Krankzeit im Stundensystem. Erst eine ausdrückliche Freigabe der Filialleitung übernimmt die genehmigten Stunden als Krankzeit in den Monatsnachweis.')+card('👁 Online & Lesestatus','Im Teamstatus sind Online/zuletzt online sowie bei betrieblichen Anfragen der Lesestatus sichtbar. Push-Mitteilungen auf dem Sperrbildschirm bleiben neutral und zeigen keine Schicht-, Krank- oder Personaldetails.')+card('🔑 PIN','Persönliche PINs werden nicht im Klartext angezeigt. Reset erzeugt erneute Pflicht zur persönlichen PIN-Vergabe.')}
   else{title='📖 Mitarbeiter-Handbuch';body=card('🔐 PIN','Beim ersten Login bzw. nach einem Reset eine eigene 4-stellige PIN festlegen. Es gibt keine automatische Inaktivitäts-Sperre.')+(moduleVisible('wochenplan')?card('📅 Wochenplan & Verfügbarkeit','Veröffentlichten Wochenplan ansehen. In der aktuellen KW werden bereits vergangene Wochentage ausgeblendet; vergangene Kalenderwochen sind nicht aufrufbar. Zukünftige veröffentlichte KWs können aufgerufen werden. Der heutige Wochentag ist markiert. Verfügbarkeit pflegen; bei einer Konfliktschicht kann eine Nachfrage erscheinen, die mit Ja oder Nein beantwortet wird.'):'')+(moduleVisible('stundennachweis')?card('📋 Arbeitszeiten & Monatsbestätigung','Deine Arbeitszeiten werden direkt in der App als Monatsliste mit Pausen und Zuschlägen angezeigt. Mitarbeiter erhalten keine PDF-Ansicht. Nach Prüfung unterschreibst du den Monat; Filialleitung oder berechtigte Vertretung zeichnet anschließend gegen. Nachträgliche Änderungen machen die Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Für eine einzelne Schicht kannst du Tauschen, Ersatz oder Organisation wählen. Organisation ist für komplexere Fälle gedacht: Begründung eintragen, mehrere Teammitglieder anfragen und deren Rückmeldungen abwarten. Die Filialleitung entscheidet anschließend über die tatsächliche Umplanung; Mitarbeiter verändern den veröffentlichten Plan nicht selbst.')+card('✍ Unterschrift','Für die Monatsunterschrift kann ein großflächiges Unterschriftsfeld geöffnet werden; auf unterstützten Handys wird Querformat genutzt.')+card('🔔 Meldungen','Benachrichtigungen auf dem Sperrbildschirm enthalten keine Schicht-, Krank- oder KV-Details, sondern nur „Neue Meldung verfügbar“. Details sind erst in NASCH sichtbar.')+card('📲 Installation','Unter „Mein Bereich“ NASCH als App installieren. Es gibt kein automatisches Zeitlimit bzw. keine Inaktivitäts-Sperre.')}
   if(u && moduleVisible('wochenplan')) body+=card('🔎 Wochenplan-Anzeige','Unter „Mein Bereich → Wochenplan-Anzeige“ können Uhrzeit und Tätigkeit unabhängig in drei Stufen eingestellt werden. „📍 Heute“ springt im Ansichtsmodus zur aktuellen KW und positioniert den heutigen Tag direkt neben der Namensspalte. Im Bearbeitungsmodus ist dieser Schnellbutton ausgeblendet.');
   page.innerHTML=`<div class="back" onclick="history.back()">‹ Zurück</div><div style="padding:0 4px"><h2 style="font-size:18px;color:var(--navy);margin:0 0 16px">${title}</h2>${body}</div>`;
@@ -10778,7 +10902,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.15 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
+<!-- NASCH v29.17 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
 <style id="nasch-v296-plan-layout">
   .plan-t th.nc,.plan-t th.name-col,
   .plan-t td.nc,.plan-t td.name-cell{
@@ -10883,7 +11007,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.15 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
+<!-- NASCH v29.17 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
 <style id="nasch-v298-plan-view">
   :root{--nasch-time-font-size:11px;--nasch-activity-font-size:8px;}
   .nasch-shift-time{font-size:var(--nasch-time-font-size)!important;font-weight:700;line-height:1.15;white-space:nowrap;}
