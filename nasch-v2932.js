@@ -1,0 +1,406 @@
+/* NASCH v29.32 · Rollenrechte Stundenzettel + Büro-Wochenplan rückwirkend/PDF + Monatsunterschrift/OneDrive */
+(()=>{
+'use strict';
+const BUNDLE_VERSION='29.32';
+const VERSION=String(window.NASCH_APP_VERSION||BUNDLE_VERSION);
+if(!window.NASCH_APP_VERSION) window.NASCH_APP_VERSION=BUNDLE_VERSION;
+
+// v29.15: Android/Chrome-PWA Pull-to-Refresh verhindern, ohne normales Scrollen zu blockieren.
+// CSS overscroll-behavior ist der primäre Schutz; dieser Touch-Guard ist der Fallback
+// für WebView-/Chrome-Konstellationen, in denen am oberen Rand trotzdem neu geladen wird.
+(function installNoPullToRefresh(){
+  let sx=0,sy=0,tracking=false;
+  const scrollTopOf=el=>Math.max(0,Number(el?.scrollTop||0));
+  const hasScrollableAncestorAboveTop=target=>{
+    let el=target instanceof Element?target:null;
+    while(el&&el!==document.documentElement){
+      try{
+        const cs=getComputedStyle(el),oy=cs.overflowY;
+        if((oy==='auto'||oy==='scroll')&&el.scrollHeight>el.clientHeight+1&&scrollTopOf(el)>0)return true;
+      }catch(_){ }
+      el=el.parentElement;
+    }
+    const se=document.scrollingElement||document.documentElement;
+    return scrollTopOf(se)>0;
+  };
+  document.addEventListener('touchstart',e=>{
+    if(e.touches?.length!==1){tracking=false;return;}
+    tracking=true;sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+  },{passive:true,capture:true});
+  document.addEventListener('touchend',()=>{tracking=false},{passive:true,capture:true});
+  document.addEventListener('touchcancel',()=>{tracking=false},{passive:true,capture:true});
+  document.addEventListener('touchmove',e=>{
+    if(!tracking||e.touches?.length!==1)return;
+    const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    // Nur einen klaren vertikalen Zug nach unten am obersten Scrollpunkt abfangen.
+    if(dy<8||dy<=Math.abs(dx)*1.15)return;
+    if(hasScrollableAncestorAboveTop(e.target))return;
+    e.preventDefault();
+  },{passive:false,capture:true});
+})();
+const clone=o=>{try{return JSON.parse(JSON.stringify(o))}catch(_){return o}};
+const bid=()=>String(window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001');
+const uidNow=()=>String(window.AppState?.currentUserId||'');
+const currentUser=()=>window.AppState?.currentUser||(typeof USERS!=='undefined'?USERS?.[uidNow()]:null)||null;
+const db=()=>window.firebase?.firestore?.();
+const ts=()=>window.firebase?.firestore?.FieldValue?.serverTimestamp?.();
+const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dateKey=d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
+const mondayKey=d=>{const x=new Date(d);x.setHours(12,0,0,0);const dow=x.getDay();x.setDate(x.getDate()+(dow===0?-6:1-dow));return dateKey(x)};
+const isCentral=()=>{try{return !!window.BranchSandbox?.isCentral?.(uidNow())}catch(_){return false}};
+const isOffice=()=>{try{return !!window.BranchSandbox?.isOffice?.(uidNow())}catch(_){return false}};
+const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&!!isAdminOrDeputy(uidNow())}catch(_){return currentUser()?.role==='admin'||currentUser()?.role==='vertretung'}};
+const isBranchAdmin=()=>currentUser()?.role==='admin'&&!isCentral()&&!isOffice();
+const employeeEntries=()=>{let a=[];try{a=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{})}catch(_){a=[]}return a.filter(([id,u])=>u&&u.name&&!['BU','SYS'].includes(String(u.typ||''))&&u.role!=='office'&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(id,bid())))};
+function fireReady(){return !!(db()&&window.firebase?.auth?.()?.currentUser)}
+function afterAuth(fn){let n=0;const t=setInterval(()=>{n++;if(fireReady()||n>50){clearInterval(t);if(fireReady())fn()}},120)}
+
+// ---------- Schichteditor: Übernehmen fest + KV ohne eigene Uhrzeit/Tätigkeit ----------
+function patchShiftActionBar(){
+  const modal=document.getElementById('schichtModal');if(!modal)return;
+  const btn=[...modal.querySelectorAll('button')].find(b=>(b.textContent||'').includes('Übernehmen'));
+  btn?.parentElement?.classList.add('n299-shift-actionbar');
+}
+function clearKvBlock(b){if(!b||b.t!=='KV')return b;delete b.start;delete b.end;delete b.z1;delete b.z2;delete b.r1;delete b.r2;b.z='KV';b.r=[];b.kvWorked=false;return b}
+function cleanKvDay(uid,day){try{const d=PLAN?.[uid]?.[day];if(!d)return;if(d.t==='KV')clearKvBlock(d);if(Array.isArray(d.extras))d.extras.forEach(clearKvBlock)}catch(_){}}
+function patchKvEditor(){
+  if(window.buildZeitOpts&&!window.buildZeitOpts.__n299){const old=window.buildZeitOpts;const fn=function(){if(typeof mS!=='undefined'&&mS?.t==='KV'){clearKvBlock(mS);const sec=document.getElementById('zeitSec'),roll=document.getElementById('rollSec'),box=document.getElementById('zeitOpts');if(sec)sec.style.display='none';if(roll)roll.style.display='none';if(box)box.innerHTML='';return}return old.apply(this,arguments)};fn.__n299=true;window.buildZeitOpts=fn;try{buildZeitOpts=fn}catch(_){}}
+  if(window.selST&&!window.selST.__n299){const old=window.selST;const fn=function(t){if(t==='KV'&&typeof mS!=='undefined')clearKvBlock(mS);const r=old.apply(this,arguments);if(t==='KV'){clearKvBlock(mS);const sec=document.getElementById('zeitSec'),roll=document.getElementById('rollSec');if(sec)sec.style.display='none';if(roll)roll.style.display='none'}return r};fn.__n299=true;window.selST=fn;try{selST=fn}catch(_){}}
+  if(window.applyShift&&!window.applyShift.__n299){const old=window.applyShift;const fn=function(){const kv=typeof mS!=='undefined'&&mS?.t==='KV';const u=String(typeof curUID!=='undefined'?curUID:''),d=Number(typeof curDay!=='undefined'?curDay:0);if(kv){mS.start='00:00';mS.end='23:59';mS.z='KV';mS.r=[]}const r=old.apply(this,arguments);if(kv){cleanKvDay(u,d);try{WeekPlanStore?.persistCurrent?.()}catch(_){}setTimeout(()=>{try{buildAdminPlan?.();renderPlan?.()}catch(_){}},0)}return r};fn.__n299=true;window.applyShift=fn;try{applyShift=fn}catch(_){}}
+  const sf=window.NaschShiftFlow;
+  if(sf&&!sf.__n299Kv){sf.__n299Kv=true;const oldType=sf.extraTypeChanged,oldSave=sf.saveExtra;
+    sf.extraTypeChanged=function(){const r=oldType?.apply(this,arguments);const kv=document.getElementById('extraShiftType')?.value==='KV',times=document.getElementById('extraShiftTimes'),act=document.getElementById('extraShiftActivity');if(times)times.style.display=kv?'none':'grid';if(act){act.style.display=kv?'none':'';const lab=act.previousElementSibling;if(lab?.tagName==='LABEL')lab.style.display=kv?'none':'';if(kv)act.value=''}return r};
+    sf.saveExtra=function(){const kv=document.getElementById('extraShiftType')?.value==='KV';if(!kv)return oldSave?.apply(this,arguments);const a=document.getElementById('extraShiftStart'),b=document.getElementById('extraShiftEnd'),act=document.getElementById('extraShiftActivity');if(a)a.value='00:00';if(b)b.value='23:59';if(act)act.value='';const r=oldSave?.apply(this,arguments);try{const i=Number(document.getElementById('extraShiftIndex')?.value),ex=Array.isArray(mS?.extras)?mS.extras:[];if(i>=0&&ex[i])clearKvBlock(ex[i]);else{const q=[...ex].reverse().find(x=>x?.t==='KV');if(q)clearKvBlock(q)}}catch(_){}return r};
+  }
+}
+function hideKvTimesInUi(){document.querySelectorAll('.v2817-kv-row').forEach(r=>{[...r.querySelectorAll('span')].forEach(s=>{if((s.textContent||'').trim()==='–')s.style.display='none'})});const p=document.getElementById('pgAdminKV');if(p){[...p.querySelectorAll('.banner')].forEach(b=>{if(/KV-Zeit zählt|Zeitfenster/i.test(b.textContent||''))b.innerHTML='<span>👥</span><span>KV1–KV4 werden ohne eigene Uhrzeit oder Tätigkeit als verbindliche Bereitschaft geplant. Erst bei Krankmeldung übernimmt der zuständige KV die ursprüngliche Schicht mit Uhrzeit und Tätigkeit.</span>'})}}
+
+// ---------- Hilfen für Planblöcke ----------
+const WORK_TYPES=new Set(['F','S','TS','R','O','T','HO']);
+function workBlock(b){return !!b&&WORK_TYPES.has(String(b.t||''))}
+function descs(day){const d=day||{};const a=[];if(d.t&&d.t!=='-')a.push({key:'main',block:d,main:true});(Array.isArray(d.extras)?d.extras:[]).forEach((b,i)=>{if(b?.t)a.push({key:`extra:${i}`,block:b,main:false,index:i})});return a}
+function setDesc(day,desc,block){if(desc.main){const ex=Array.isArray(day.extras)?day.extras:[];Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,clone(block),{extras:ex})}else{if(!Array.isArray(day.extras))day.extras=[];day.extras[desc.index]=clone(block)}}
+function addBlock(day,b){if(!day.t||['-','K','U','WF'].includes(day.t)){const ex=Array.isArray(day.extras)?day.extras:[];Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,clone(b),{extras:ex})}else{if(!Array.isArray(day.extras))day.extras=[];day.extras.push(clone(b))}}
+function parseRange(z){const m=String(z||'').match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);return m?[m[1].padStart(5,'0'),m[2].padStart(5,'0')]:null}
+function blockRanges(b){if(!b)return[];if(b.t==='TS'){const a=[];const r1=parseRange(b.z1),r2=parseRange(b.z2);if(r1)a.push(r1);if(r2)a.push(r2);return a}if(b.start&&b.end)return[[String(b.start),String(b.end)]];const r=parseRange(b.z);return r?[r]:[]}
+function mins(a,b){const p=x=>{const m=String(x).split(':').map(Number);return m[0]*60+m[1]};let x=p(a),y=p(b);if(y<x)y+=1440;return Math.max(0,y-x)}
+function plannedNetHours(blocks){const gross=blocks.flatMap(b=>blockRanges(b)).reduce((s,r)=>s+mins(r[0],r[1]),0);const pause=window.NaschPauseRules?.requiredPauseMinutesFromMinutes?.(gross)??(gross>=540?45:gross>=300?30:0);return Math.round(Math.max(0,gross-pause)/60*4)/4}
+function labelBlock(b){const typ={F:'Früh',S:'Spät',TS:'Teilschicht',R:'RK',O:'Büro',T:'Tagung',HO:'Home-Office',KV:'KV'}[b?.t]||b?.t||'Schicht';const rr=blockRanges(b).map(x=>x.join('–')).join(' / ');const acts=[...(Array.isArray(b?.r)?b.r:[]),...(Array.isArray(b?.r1)?b.r1:[]),...(Array.isArray(b?.r2)?b.r2:[])].filter(Boolean);return `${typ}${rr?' '+rr:''}${acts.length?' · '+[...new Set(acts)].join(', '):''}`}
+function isSickOn(uid,date){const k=typeof date==='string'?date:dateKey(date);try{return (window.SandboxStore?.getRequests?.()||[]).some(r=>String(r.uid)===String(uid)&&r.type==='krank'&&r.status!=='abgelehnt'&&String(r.data?.von||'')<=k&&String(r.data?.bis||r.data?.von||'')>=k)}catch(_){return false}}
+function freeStandbyCandidates(plan,dayIdx,excludeUid,date){const out=[];for(const [id,u] of employeeEntries()){if(String(id)===String(excludeUid)||isSickOn(id,date))continue;const day=plan?.[id]?.[dayIdx]||{};const ds=descs(day);if(ds.some(x=>workBlock(x.block)))continue;if(ds.some(x=>x.block.t==='KV'))continue;out.push({uid:String(id),u})}return out}
+function kvCandidates(plan,dayIdx,excludeUid,date){const out=[];for(const [id,u] of employeeEntries()){if(String(id)===String(excludeUid)||isSickOn(id,date))continue;const day=plan?.[id]?.[dayIdx]||{};for(const x of descs(day)){if(x.block.t==='KV'){out.push({uid:String(id),u,desc:x,priority:Number(x.block.naschKvPriority||x.block.kvPriority||99)});break}}}out.sort((a,b)=>a.priority-b.priority);return out}
+async function loadPlanDoc(wk){const ref=db().collection('nasch').doc(bid()).collection('plan').doc(wk),snap=await ref.get(),data=snap.exists?(snap.data()||{}):{};return{ref,data,plan:clone(data.publishedPlan||data.plan||data.draftPlan||{})}}
+async function savePlanDoc(ref,data,plan){await ref.set({publishedPlan:plan,draftPlan:plan,plan,published:true,version:Number(data.version||1)+1,updatedAt:ts(),publishedAt:data.publishedAt||ts(),publishedBy:data.publishedBy||'NASCH'},{merge:true})}
+
+// ---------- Präsenz / zuletzt online ----------
+const Presence=(()=>{
+  let timer=null,unsub=null,map=new Map(),startedUid='';
+  const coll=()=>db().collection('nasch').doc(bid()).collection('presence');
+  const ms=v=>v?.toMillis?.()||Date.parse(v||0)||0;
+  async function beat(online=document.visibilityState==='visible'){const u=uidNow();if(!u||!fireReady())return;try{await coll().doc(u).set({uid:u,name:currentUser()?.name||u,online:!!online,lastSeen:ts(),version:VERSION,updatedAt:ts()},{merge:true})}catch(e){console.debug('Presence:',e?.message||e)}}
+  function start(){const u=uidNow();if(!u||!fireReady())return;if(startedUid!==u){startedUid=u;beat(true)}clearInterval(timer);timer=setInterval(()=>beat(document.visibilityState==='visible'),45000);listenIfAllowed()}
+  function listenIfAllowed(){if(!(isManager()||isCentral()||isOffice())||!fireReady()){try{unsub?.()}catch(_){}unsub=null;map.clear();return}try{unsub?.()}catch(_){}unsub=coll().onSnapshot(s=>{map.clear();s.forEach(d=>map.set(String(d.id),d.data()||{}));renderTeam();annotateCandidates()},e=>console.debug('Presence listen:',e?.message||e))}
+  function state(id){const p=map.get(String(id));if(!p)return{online:false,lastSeen:0};const last=ms(p.lastSeen),online=!!p.online&&Date.now()-last<100000;return{...p,online,lastSeen:last}}
+  function text(id){const p=state(id);if(p.online)return'Online';if(!p.lastSeen)return'Noch nie online';const d=new Date(p.lastSeen),today=new Date(),same=d.toDateString()===today.toDateString();return `Zuletzt ${same?'heute '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`}
+  function badge(id){const p=state(id);return `<span class="n299-presence"><span class="n299-team-dot ${p.online?'online':''}"></span>${html(text(id))}</span>`}
+  function list(){return map}
+  document.addEventListener('visibilitychange',()=>{if(uidNow())beat(!document.hidden)});
+  window.addEventListener('pagehide',()=>{if(uidNow())beat(false)},{capture:true});
+  return{start,beat,state,text,badge,list,listenIfAllowed};
+})();
+window.NaschPresence=Presence;
+
+function ensureTeamPage(){const wrap=document.querySelector('#appScreen .page-wrap');if(!wrap)return;if(!document.getElementById('pgTeamStatus')){const p=document.createElement('div');p.className='page';p.id='pgTeamStatus';p.innerHTML='<div class="back" onclick="goTo(\'pgAdmin\',\'Admin\')">‹ Zurück</div><div class="sec">Teamstatus</div><div class="card"><div class="card-b n299-team-list" id="n299TeamList"></div></div><div class="n299-note">„Online“ bedeutet: NASCH ist auf dem Gerät aktuell aktiv und hat sich in den letzten rund 100 Sekunden gemeldet. Bei abrupt geschlossenem Handy kann der Status kurz nachlaufen.</div>';wrap.appendChild(p)}const menu=document.querySelector('#pgAdmin .menu-list');if(menu&&!document.getElementById('miTeamStatus')){const x=document.createElement('div');x.className='mi';x.id='miTeamStatus';x.onclick=()=>goTo('pgTeamStatus','Teamstatus');x.innerHTML='<div class="mi-icon" style="background:#e1f5ee;">👥</div><span class="mi-lbl">Teamstatus · online / zuletzt online</span><span class="mi-arr">›</span>';menu.appendChild(x)}}
+function renderTeam(){const box=document.getElementById('n299TeamList');if(!box)return;if(!(isManager()||isCentral()||isOffice())){box.innerHTML='Keine Berechtigung.';return}box.innerHTML=employeeEntries().map(([id,u])=>{const s=Presence.state(id);return `<div class="row"><span class="n299-team-dot ${s.online?'online':''}"></span><span class="name">${html(u.name)}</span><span class="last">${html(Presence.text(id))}</span></div>`}).join('')||'Keine Mitarbeiter.'}
+function annotateCandidates(){document.querySelectorAll('.v2817-candidate').forEach(l=>{const inp=l.querySelector('input.saCand');if(!inp)return;let s=l.querySelector('.n299-presence');if(!s){s=document.createElement('span');s.className='n299-presence';s.style.marginLeft='5px';l.appendChild(s)}const st=Presence.state(inp.value);s.innerHTML=`<span class="n299-team-dot ${st.online?'online':''}"></span>${html(Presence.text(inp.value))}`})}
+
+// ---------- Meldungen / Lesestatus ----------
+const Notices=(()=>{
+  let unsub=null,rows=[],startedFor='',seen=new Set();const startAt=Date.now();
+  const coll=()=>db().collection('nasch').doc(bid()).collection('notifications');
+  async function create(targetUid,kind,refId,details={}){if(!targetUid||!fireReady())return'';const ref=coll().doc();await ref.set({id:ref.id,targetUid:String(targetUid),kind:String(kind||'info'),refId:String(refId||''),details:clone(details||{}),createdAt:ts(),readAt:null,readBy:null,pushText:'Neue Meldung verfügbar',version:VERSION});return ref.id}
+  async function markRead(id){const u=uidNow();if(!id||!u||!fireReady())return;try{const r=rows.find(x=>x.id===id);await coll().doc(id).set({readAt:ts(),readBy:u},{merge:true});if(r?.refId&&(r.kind==='kv_binding'||r.kind==='shift_request'||String(r.kind||'').includes('shift')))await markActionRead(r.refId);if(r)r.readAt=new Date().toISOString();render()}catch(e){console.debug('read:',e?.message||e)}}
+  async function markActionRead(id){const u=uidNow();if(!id||!u||!fireReady())return;try{await db().collection('nasch').doc(bid()).collection('shiftActions').doc(id).set({readBy:{[u]:ts()},updatedAt:ts()},{merge:true})}catch(e){console.debug('action read:',e?.message||e)}}
+  function label(r){const d=r.details||{};if(r.kind==='kv_binding')return `Verbindlicher KV-Einsatz${d.date?' · '+d.date:''}`;if(r.kind==='shift_request')return `Schichtanfrage${d.date?' · '+d.date:''}`;if(r.kind==='availability_query')return `Planungs-Rückfrage${d.date?' · '+d.date:''}`;if(r.kind==='decision')return d.label||'Rückmeldung zu deiner Anfrage';return d.label||'Neue Information'}
+  function ensureHost(){const p=document.getElementById('pgNotif');if(!p)return null;let h=document.getElementById('n299Notices');if(!h){h=document.createElement('div');h.id='n299Notices';p.insertBefore(h,p.firstChild)}return h}
+  function render(){const h=ensureHost();if(!h)return;const u=uidNow();const mine=rows.filter(r=>String(r.targetUid)===u).sort((a,b)=>(b._ms||0)-(a._ms||0)).slice(0,25);h.innerHTML=mine.length?`<div class="sec">Persönliche Meldungen</div><div class="card">${mine.map(r=>`<div class="real-notif ${r.readAt?'':'unread'}" onclick="NaschNotices.open('${html(r.id)}')" style="cursor:pointer"><div class="ico">${r.readAt?'✓':'🔔'}</div><div style="flex:1"><div class="title">${html(label(r))}</div><div class="body">${r.readAt?'Gelesen':'Antippen zum Öffnen'}${r._ms?' · '+new Date(r._ms).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div></div><span class="status" style="background:${r.readAt?'#e1f5ee':'#fff7ed'};color:${r.readAt?'#085041':'#9a3412'}">${r.readAt?'Gelesen':'Neu'}</span></div>`).join('')}</div>`:''}
+  async function open(id){let r=rows.find(x=>x.id===id);if(!r&&id&&fireReady())try{const s=await coll().doc(id).get();if(s.exists)r=conv(s)}catch(_){}await markRead(id);if(r?.refId&&(r.kind==='kv_binding'||r.kind==='shift_request'))await markActionRead(r.refId);if(r?.kind==='kv_binding'||r?.kind==='shift_request'){try{goTo('pgShiftActions','Schichttausch & Ersatz')}catch(_){}}else if(r?.kind==='availability_query'){try{navTo('notif')}catch(_){}}else{try{navTo('plan')}catch(_){}}}
+  function conv(d){const x={id:d.id,...d.data()};x._ms=x.createdAt?.toMillis?.()||Date.parse(x.createdAt||0)||0;return x}
+  function start(){const u=uidNow();if(!u||!fireReady())return;if(unsub&&startedFor===`${bid()}:${u}`)return;try{unsub?.()}catch(_){}startedFor=`${bid()}:${u}`;rows=[];unsub=coll().where('targetUid','==',u).onSnapshot(s=>{const incoming=[];rows=s.docs.map(d=>conv(d));for(const r of rows){if(!seen.has(r.id)){seen.add(r.id);if(!r.readAt&&r._ms>=startAt-5000)incoming.push(r)}}render();incoming.forEach(r=>notifyNeutral(r))},e=>console.debug('Notices:',e?.message||e))}
+  function list(){return rows.slice()}
+  return{create,markRead,markActionRead,open,start,render,list};
+})();
+window.NaschNotices=Notices;
+
+function signalSettings(){try{return{tone:true,vibrate:true,...JSON.parse(localStorage.getItem('nasch-notify-settings-v1')||'{}')}}catch(_){return{tone:true,vibrate:true}}}
+function saveSignalSettings(x){try{localStorage.setItem('nasch-notify-settings-v1',JSON.stringify(x))}catch(_){}renderNotifySettings()}
+function beep(){const s=signalSettings();if(!s.tone)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=740;g.gain.setValueAtTime(.05,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.18);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.18);setTimeout(()=>c.close?.(),350)}catch(_){}if(s.vibrate)try{navigator.vibrate?.([90])}catch(_){}}
+const neutralNoticeSeen=new Map();
+function notifyNeutral(r){const key=String(r?.id||'');const now=Date.now(),last=neutralNoticeSeen.get(key)||0;if(key&&now-last<10000)return;if(key)neutralNoticeSeen.set(key,now);beep();try{showToast?.('🔔 Neue Meldung verfügbar')}catch(_){}let fcmBackend=false;try{fcmBackend=localStorage.getItem(`nasch-fcm-backend-${bid()}`)==='1'}catch(_){}if(document.hidden&&!fcmBackend&&'Notification'in window&&Notification.permission==='granted'){try{const n=new Notification('NASCH',{body:'Neue Meldung verfügbar',icon:'./icon-any-192-v2915.png',tag:`nasch-${key||now}`,renotify:true});n.onclick=()=>{window.focus();if(key)Notices.open(key)}}catch(_){}}}
+
+async function pushTokenId(token){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,48)}catch(_){return btoa(token).replace(/[^a-z0-9]/gi,'').slice(0,48)}}
+async function setupFcm(){if(!fireReady()||!('serviceWorker'in navigator)||!window.firebase?.messaging)return{active:false,reason:'FCM nicht unterstützt'};let cfg={};try{const s=await db().collection('nasch').doc(bid()).collection('config').doc('push').get();cfg=s.exists?s.data()||{}:{}}catch(_){}if(!cfg.vapidKey)return{active:false,reason:'Hintergrund-Push serverseitig noch nicht aktiviert'};try{const reg=await navigator.serviceWorker.ready,m=firebase.messaging();m.useServiceWorker?.(reg);const token=await m.getToken({vapidKey:String(cfg.vapidKey),serviceWorkerRegistration:reg});if(!token)return{active:false,reason:'Kein Push-Token erhalten'};const id=await pushTokenId(token);await db().collection('nasch').doc(bid()).collection('pushTokens').doc(id).set({uid:uidNow(),token,branchId:bid(),updatedAt:ts(),userAgent:navigator.userAgent.slice(0,180)},{merge:true});const backend=cfg.backendEnabled===true;try{localStorage.setItem(`nasch-fcm-backend-${bid()}`,backend?'1':'0')}catch(_){}try{m.onMessage(payload=>notifyNeutral({id:String(payload?.data?.noticeId||('fcm-'+Date.now()))}))}catch(_){}return{active:backend,reason:backend?'Hintergrund-Push aktiv':'Push-Token bereit · Backend noch nicht aktiviert'}}catch(e){return{active:false,reason:e?.message||String(e)}}}
+async function requestNotifications(){if(!('Notification'in window)){alert('Dieses Gerät unterstützt Browser-Benachrichtigungen nicht.');return}const p=await Notification.requestPermission();let result={active:false,reason:p==='granted'?'Browsermeldungen aktiv':'Benachrichtigungen nicht erlaubt'};if(p==='granted')result=await setupFcm();const el=document.getElementById('n299NotifyStatus');if(el)el.textContent=p==='granted'?`✓ Browsermeldungen erlaubt · ${result.reason}`:'Benachrichtigungen sind im Browser nicht erlaubt.';renderNotifySettings()}
+function ensureNotifySettings(){const page=document.getElementById('pgProfil');if(!page||document.getElementById('n299NotifyCard'))return;const c=document.createElement('div');c.id='n299NotifyCard';c.className='n299-notify-card';c.innerHTML='<div style="font-weight:900;font-size:12px">🔔 NASCH-Benachrichtigungen</div><div class="n299-note">Auf dem Sperrbildschirm erscheint ausschließlich „Neue Meldung verfügbar“. Namen, Schichten, Krankmeldungen und Uhrzeiten werden dort nicht angezeigt.</div><div class="n299-notify-row" style="margin-top:8px"><div id="n299NotifyStatus">Status wird geprüft …</div><button onclick="NaschV299.requestNotifications()">Aktivieren</button></div><div class="n299-notify-row" style="margin-top:7px"><div>Signalton in geöffneter App</div><button id="n299ToneBtn" onclick="NaschV299.toggleSignal(\'tone\')"></button></div><div class="n299-notify-row" style="margin-top:7px"><div>Vibration</div><button id="n299VibrateBtn" onclick="NaschV299.toggleSignal(\'vibrate\')"></button></div>';page.appendChild(c);renderNotifySettings()}
+function renderNotifySettings(){const s=signalSettings();const t=document.getElementById('n299ToneBtn'),v=document.getElementById('n299VibrateBtn'),st=document.getElementById('n299NotifyStatus');if(t){t.textContent=s.tone?'Ein':'Aus';t.classList.toggle('on',s.tone)}if(v){v.textContent=s.vibrate?'Ein':'Aus';v.classList.toggle('on',s.vibrate)}if(st&&'Notification'in window&&!/Hintergrund-Push|Browsermeldungen/.test(st.textContent||''))st.textContent=Notification.permission==='granted'?'Browsermeldungen erlaubt':Notification.permission==='denied'?'Im Browser blockiert':'Noch nicht aktiviert'}
+function toggleSignal(k){const s=signalSettings();s[k]=!s[k];saveSignalSettings(s);if(k==='tone'&&s[k])beep()}
+
+// ---------- ShiftActions: Meldungen, verbindliche KV-Aktivierung ----------
+async function notifyManagers(kind,refId,details){for(const [id,u] of employeeEntries().filter(([,u])=>u.role==='admin'))await Notices.create(id,kind,refId,details)}
+function patchRequestCreation(){const st=window.SandboxStore;if(st?.addRequest&&!st.addRequest.__n299){const old=st.addRequest.bind(st);const fn=function(type,u,data,status){const id=old(type,u,data,status);if(type==='plan_verfuegbarkeit')setTimeout(()=>Notices.create(u,'availability_query',id,{date:data?.date,label:'Planungs-Rückfrage'}),0);return id};fn.__n299=true;st.addRequest=fn}}
+async function createSickCoverBinding(sickUid,von,bis,requestId){
+  const start=new Date(von+'T12:00:00'),end=new Date((bis||von)+'T12:00:00'),weeks=new Map(),messages=[],plannedSick={};for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const wk=mondayKey(d);if(!weeks.has(wk))weeks.set(wk,[]);weeks.get(wk).push(new Date(d))}
+  for(const [wk,dates] of weeks){const {ref,data,plan}=await loadPlanDoc(wk);let changed=false;for(const date of dates){const di=(date.getDay()+6)%7,k=dateKey(date);if(!plan[sickUid])plan[sickUid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const day=plan[sickUid][di]||{t:'-',z:'',r:[],extras:[]};plan[sickUid][di]=day;const all=descs(day),works=all.filter(x=>workBlock(x.block)),standbys=all.filter(x=>x.block.t==='KV');plannedSick[k]={hours:plannedNetHours(works.map(x=>x.block)),shifts:works.map(x=>clone(x.block))};
+      for(const src of works){const candidates=kvCandidates(plan,di,sickUid,date),kv=candidates[0];if(kv){if(!plan[kv.uid])plan[kv.uid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));if(!plan[kv.uid][di])plan[kv.uid][di]={t:'-',z:'',r:[],extras:[]};const targetDay=plan[kv.uid][di];const actionId=await window.NaschShiftActions.create({type:'kv_cover',requesterUid:String(sickUid),assignedUid:kv.uid,acceptedUid:kv.uid,candidateUids:[kv.uid],weekKey:wk,dayIdx:di,date:k,sourceKey:src.key,sourceLabel:labelBlock(src.block),originalShift:clone(src.block),status:'verbindlich',responses:{[kv.uid]:'verbindlich'},readBy:{},requestId});const worked={...clone(src.block),blockId:kv.desc.block.blockId||`kv-${Date.now()}`,fromKV:true,kvWorked:true,kvFor:String(sickUid),kvActionId:actionId,kvWasPriority:kv.priority};setDesc(targetDay,kv.desc,worked);messages.push(`KV${kv.priority<90?kv.priority:''}: ${kv.u.name}`);changed=true}else{const actionId=await window.NaschShiftActions.create({type:'kv_gap',requesterUid:String(sickUid),candidateUids:[],weekKey:wk,dayIdx:di,date:k,sourceKey:src.key,sourceLabel:labelBlock(src.block),originalShift:clone(src.block),status:'kein_kv',requestId});await notifyManagers('shift_request',actionId,{date:k,label:'Keine KV verfügbar'});messages.push('Keine KV verfügbar');changed=true}}
+      if(standbys.length&&!works.length){const candidates=freeStandbyCandidates(plan,di,sickUid,date);const actionId=await window.NaschShiftActions.create({type:'kv_standby_replacement',requesterUid:String(sickUid),candidateUids:candidates.map(x=>x.uid),weekKey:wk,dayIdx:di,date:k,sourceKey:standbys[0].key,sourceLabel:'KV-Bereitschaft',originalShift:{t:'KV',z:'KV',r:[]},responses:{},status:candidates.length?'offen':'kein_kv',requestId});messages.push(candidates.length?'Ersatz für KV-Bereitschaft angefragt':'Kein Ersatz für KV-Bereitschaft verfügbar');changed=true}
+      if(works.length||standbys.length){const keep=(Array.isArray(day.extras)?day.extras:[]).filter(b=>!workBlock(b)&&b.t!=='KV');Object.keys(day).forEach(x=>delete day[x]);Object.assign(day,{t:'K',z:'Krank',r:[],extras:keep});changed=true}
+    }if(changed)await savePlanDoc(ref,data,plan)}
+  try{window.SandboxStore?.updateRequest?.(requestId,{data:{plannedSick}})}catch(_){}
+  try{if(typeof WeekPlanStore!=='undefined'){WeekPlanStore._resetLoaded?.();await window.CloudWeekMigration?.reloadCurrent?.()}}catch(_){}
+  return messages;
+}
+function patchShiftActions(){const SA=window.NaschShiftActions;if(!SA||SA.__n299)return;SA.__n299=true;
+  if(SA.create){const old=SA.create.bind(SA);SA.create=async data=>{const id=await old(data);const targets=Array.from(new Set((data.candidateUids||[]).map(String).filter(Boolean)));for(const u of targets){const kind=data.type==='kv_cover'?'kv_binding':'shift_request';await Notices.create(u,kind,id,{date:data.date||'',label:data.type==='kv_cover'?'Verbindlicher KV-Einsatz':'Schichtanfrage'})}return id}}
+  SA.createSickCover=createSickCoverBinding;
+  const flow=window.NaschShiftFlow;if(flow){const oldApprove=flow.managerApprove?.bind(flow),oldReject=flow.managerReject?.bind(flow);
+    flow.managerApprove=async id=>{const r=SA.rows?.().find(x=>x.id===id);if(r?.type==='kv_standby_replacement'){if(!isManager())throw new Error('Keine Berechtigung.');const target=String(r.acceptedUid||'');if(!target)throw new Error('Ersatzperson fehlt.');const {ref,data,plan}=await loadPlanDoc(r.weekKey);if(!plan[target])plan[target]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const day=plan[target][Number(r.dayIdx)]||{t:'-',z:'',r:[],extras:[]};plan[target][Number(r.dayIdx)]=day;addBlock(day,{t:'KV',z:'KV',r:[],kvWorked:false});await savePlanDoc(ref,data,plan);await db().collection('nasch').doc(bid()).collection('shiftActions').doc(id).set({status:'genehmigt',decidedBy:uidNow(),decidedAt:ts(),updatedAt:ts()},{merge:true});await Notices.create(target,'decision',id,{label:'KV-Tausch/Ersatz genehmigt',date:r.date||''});await Notices.create(r.requesterUid,'decision',id,{label:'KV-Ersatz genehmigt',date:r.date||''});showToast?.('✓ KV-Ersatz genehmigt');return}return oldApprove?.(id)};
+    flow.managerReject=async id=>{const r=SA.rows?.().find(x=>x.id===id);const out=await oldReject?.(id);if(r){if(r.requesterUid)await Notices.create(r.requesterUid,'decision',id,{label:'Anfrage abgelehnt',date:r.date||''});if(r.acceptedUid)await Notices.create(r.acceptedUid,'decision',id,{label:'Anfrage abgelehnt',date:r.date||''})}return out};
+  }
+}
+
+function actionReadText(r){const target=String(r.assignedUid||r.acceptedUid||r.candidateUids?.[0]||''),x=r.readBy?.[target];if(!x)return'Noch nicht gelesen';const m=x?.toMillis?.()||Date.parse(x||0);return m?`Gelesen ${new Date(m).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'Gelesen'}
+async function markVisibleActionsRead(){const SA=window.NaschShiftActions,u=uidNow();if(!SA||!u)return;const rows=SA.rows?.()||[];const relevant=rows.filter(r=>(String(r.assignedUid||'')===u||(r.candidateUids||[]).map(String).includes(u))&&['verbindlich','offen','kv_offen'].includes(r.status));await Promise.all(relevant.map(r=>Notices.markActionRead(r.id)))}
+function enhanceShiftActionPage(){const page=document.getElementById('shiftActionsContent'),SA=window.NaschShiftActions;if(!page||!SA)return;let box=document.getElementById('n299BoundKv');if(!box){box=document.createElement('div');box.id='n299BoundKv';page.prepend(box)}const u=uidNow(),rows=(SA.rows?.()||[]).filter(r=>String(r.assignedUid||'')===u&&r.type==='kv_cover'&&['verbindlich','genehmigt'].includes(r.status));box.innerHTML=rows.length?`<div class="sec">Verbindliche KV-Einsätze</div><div class="card"><div class="card-b">${rows.map(r=>`<div class="v2817-request n299-bound-kv"><strong>${html(r.date||'')} · ${html(r.sourceLabel||'Schicht')}</strong><div class="n299-read ok">Verbindlich eingeplant · Ablehnen nicht möglich</div><div class="n299-read">${html(actionReadText(r))}</div></div>`).join('')}</div></div>`:'';markVisibleActionsRead();setTimeout(()=>{annotateCandidates()},0)}
+function enhanceManagerWorkflow(){const page=document.getElementById('managerWorkflowContent'),SA=window.NaschShiftActions;if(!page||!SA||!isManager())return;let box=document.getElementById('n299KvReadManager');if(!box){box=document.createElement('div');box.id='n299KvReadManager';page.prepend(box)}const rows=(SA.rows?.()||[]).filter(r=>['kv_cover','kv_standby_replacement','replacement','swap'].includes(r.type)&&!['abgelehnt','zurueckgezogen'].includes(r.status)).slice(0,30);box.innerHTML=rows.length?`<div class="sec">Anfragen & KV · Lesestatus</div><div class="card"><div class="card-b">${rows.map(r=>{const targets=Array.from(new Set([r.assignedUid,r.acceptedUid,...(r.candidateUids||[])].filter(Boolean).map(String)));return `<div class="v2817-request"><strong>${html(r.type==='kv_cover'?'Verbindlicher KV-Einsatz':r.type==='kv_standby_replacement'?'KV-Ersatzanfrage':r.type==='swap'?'Tauschanfrage':'Ersatzanfrage')} · ${html(r.date||'')} · ${html(r.sourceLabel||'')}</strong>${targets.length?targets.map(t=>`<div class="n299-read ${r.readBy?.[t]?'ok':''}">${html(USERS?.[t]?.name||t)} · ${html(r.readBy?.[t]?actionReadText({...r,assignedUid:t,acceptedUid:''}):'Noch nicht gelesen')} · ${Presence.badge(t)}</div>`).join(''):'<div class="n299-read">Noch keine Zielperson.</div>'}</div>`}).join('')}</div></div>`:''}
+
+// ---------- Aushilfe: Krankstunden nur mit Admin-Freigabe ----------
+async function sickApprovalsMap(){const m=new Map();if(!fireReady())return m;try{const s=await db().collection('nasch').doc(bid()).collection('sickHourApprovals').get();s.forEach(d=>m.set(d.id,d.data()||{}))}catch(e){console.debug(e)}return m}
+function eachDate(a,b){const out=[],x=new Date(a+'T12:00:00'),z=new Date((b||a)+'T12:00:00');for(let d=x;d<=z;d.setDate(d.getDate()+1))out.push(dateKey(d));return out}
+async function renderSickApprovals(){const host=document.getElementById('n299SickApprovals');if(!host)return;if(!isBranchAdmin()){host.innerHTML='';host.style.display='none';return}host.style.display='block';let requests=[];try{const s=await db().collection('nasch').doc(bid()).collection('requests').where('type','==','krank').get();s.forEach(d=>requests.push({id:d.id,...d.data()}))}catch(_){requests=(window.SandboxStore?.getRequests?.()||[]).filter(r=>r.type==='krank')}const amap=await sickApprovalsMap(),rows=[];for(const r of requests.filter(r=>r.status!=='abgelehnt'&&USERS?.[r.uid]?.typ==='AH'))for(const day of eachDate(r.data?.von,r.data?.bis||r.data?.von)){const id=`${r.uid}_${day}`,ap=amap.get(id),planned=Number(r.data?.plannedSick?.[day]?.hours)||Number(ap?.hours)||0;rows.push({r,day,id,ap,planned})}rows.sort((a,b)=>b.day.localeCompare(a.day));host.innerHTML=`<div class="sec">Aushilfen · Krankstunden-Freigabe</div><div class="card"><div class="card-b">${rows.length?rows.map(x=>`<div class="n299-sick-row"><strong>${html(USERS?.[x.r.uid]?.name||x.r.uid)} · ${html(x.day)}</strong><div class="n299-note">Krankmeldung ist erfasst. Ohne ausdrückliche Freigabe werden im Stundensystem 0 Krankstunden angerechnet.</div><div class="n299-sick-grid"><label>Stunden<input id="n299Sick_${html(x.id)}" type="number" min="0" step="0.25" value="${html(x.planned)}"></label><div>${x.ap?.approved?'<span class="n299-status-chip read">Genehmigt</span>':'<span class="n299-status-chip">Nicht angerechnet</span>'}</div>${x.ap?.approved?`<button class="revoke" onclick="NaschV299.revokeSick('${html(x.r.uid)}','${html(x.day)}')">Freigabe aufheben</button>`:`<button onclick="NaschV299.approveSick('${html(x.r.uid)}','${html(x.day)}','${html(x.r.id)}')">Als Krankzeit genehmigen</button>`}</div></div>`).join(''):'<div style="font-size:11px;color:var(--muted)">Keine aktuellen Krankmeldungen von Aushilfen.</div>'}</div></div>`}
+async function approveSick(u,date,requestId){if(!isBranchAdmin()){alert('Nur die Filialleitung darf Krankstunden von Aushilfen freigeben.');return}const inp=document.getElementById(`n299Sick_${u}_${date}`),hours=Math.max(0,Number(inp?.value)||0);await db().collection('nasch').doc(bid()).collection('sickHourApprovals').doc(`${u}_${date}`).set({uid:String(u),date,hours,approved:true,requestId,approvedBy:uidNow(),approvedByName:currentUser()?.name||'',approvedAt:ts(),updatedAt:ts()},{merge:true});await Notices.create(u,'decision',`${u}_${date}`,{label:'Krankzeit-Freigabe aktualisiert',date});showToast?.('✓ Krankstunden genehmigt');renderSickApprovals();refreshEmployeeHours()}
+async function revokeSick(u,date){if(!isBranchAdmin())return;await db().collection('nasch').doc(bid()).collection('sickHourApprovals').doc(`${u}_${date}`).set({approved:false,updatedAt:ts(),approvedBy:uidNow()},{merge:true});showToast?.('Freigabe aufgehoben');renderSickApprovals();refreshEmployeeHours()}
+function ensureSickApprovalCard(){const p=document.getElementById('pgAdminKrank');if(!p||document.getElementById('n299SickApprovals'))return;const x=document.createElement('div');x.id='n299SickApprovals';p.appendChild(x)}
+
+// ---------- Mitarbeiter: keine PDF/Excel, nur Monatsliste + Zuschläge ----------
+function fmtH(x){return `${(Math.round((Number(x)||0)*100)/100).toLocaleString('de-DE',{maximumFractionDigits:2})} h`}
+function ensureEmployeeHours(){
+  const card=document.getElementById('n293EmployeeMonthly');
+  ['personalTimesheetPdfCard','personalTimesheetPdfBar','signCard','signedBox'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.setProperty('display','none','important')});
+  const legacyDaily=document.getElementById('personalDailyHours')?.closest?.('.card');if(legacyDaily)legacyDaily.style.removeProperty('display');
+  const oldStats=document.querySelector('#pgStunden > .stat-grid');if(oldStats)oldStats.style.setProperty('display','none','important');
+  const old=document.getElementById('n299EmployeeHours');if(old)old.remove();
+  if(window.NaschTimesheetPDF&&!window.NaschTimesheetPDF.__n299EmployeeLocked){window.NaschTimesheetPDF.__n299EmployeeLocked=true;window.NaschTimesheetPDF.openOwn=()=>{try{showToast?.('Deine Stundenübersicht wird direkt in NASCH angezeigt.')}catch(_){}}}
+  if(!card)return;const head=card.querySelector('.n293-head');if(head)head.textContent='✍️ Monatsbestätigung';
+  [...card.querySelectorAll('button')].forEach(b=>{if(/\bPDF\b|\bExcel\b/i.test(b.textContent||''))b.remove()});
+  ensureSignatureLaunchers();
+}
+async function refreshEmployeeHours(){
+  ensureEmployeeHours();
+  if(!isCentral()&&!isOffice()&&!isManager())return window.NaschHoursOverview?.renderEmployee?.();
+}
+
+// ---------- große Querformat-Unterschrift ----------
+let sigTarget='',sigFullscreen=false,sigHas=false,sigCtx=null,sigPrevOrientation='';
+function ensureSignatureOverlay(){if(document.getElementById('n299SignatureOverlay'))return;const o=document.createElement('div');o.id='n299SignatureOverlay';o.innerHTML='<div class="n299-sig-head"><strong>✍ Unterschrift</strong><span style="font-size:10px;color:#cbd5e1">Handy möglichst quer halten</span><button class="light" onclick="NaschV299.closeSignature(false)">✕</button></div><div class="n299-sig-stage"><canvas id="n299SignatureCanvas"></canvas></div><div class="n299-sig-foot"><button class="light" onclick="NaschV299.clearSignature()">Löschen</button><button class="primary" onclick="NaschV299.closeSignature(true)">Unterschrift übernehmen</button></div>';document.body.appendChild(o);bindBigCanvas()}
+function bindBigCanvas(){const c=document.getElementById('n299SignatureCanvas');if(!c||c.dataset.bound)return;c.dataset.bound='1';let draw=false;const resize=()=>{const r=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1);const old=sigHas?c.toDataURL():'';c.width=Math.max(500,Math.round(r.width*ratio));c.height=Math.max(220,Math.round(r.height*ratio));sigCtx=c.getContext('2d');sigCtx.setTransform(ratio,0,0,ratio,0,0);sigCtx.strokeStyle='#1e3a5f';sigCtx.lineWidth=2.6;sigCtx.lineCap='round';if(old){const i=new Image();i.onload=()=>sigCtx.drawImage(i,0,0,r.width,r.height);i.src=old}};new ResizeObserver(()=>resize()).observe(c);const pt=e=>{const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};c.addEventListener('pointerdown',e=>{e.preventDefault();draw=true;const p=pt(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y)});c.addEventListener('pointermove',e=>{if(!draw)return;e.preventDefault();const p=pt(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigHas=true});window.addEventListener('pointerup',()=>draw=false);setTimeout(resize,0)}
+async function openSignature(target){ensureSignatureOverlay();sigTarget=target;sigHas=false;sigPrevOrientation=String(screen.orientation?.type||'');document.getElementById('n299SignatureOverlay').classList.add('open');setTimeout(clearSignature,30);try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement){await document.documentElement.requestFullscreen();sigFullscreen=true}}catch(_){}try{await screen.orientation?.lock?.('landscape')}catch(_){} }
+function clearSignature(){const c=document.getElementById('n299SignatureCanvas');if(!c)return;const ctx=c.getContext('2d');ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);ctx.restore();sigHas=false}
+async function closeSignature(apply){const o=document.getElementById('n299SignatureOverlay'),big=document.getElementById('n299SignatureCanvas'),target=document.getElementById(sigTarget);if(apply){if(!sigHas){alert('Bitte zuerst unterschreiben.');return}if(target&&big){const ctx=target.getContext('2d'),img=new Image(),url=big.toDataURL('image/png');await new Promise(res=>{img.onload=()=>{ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,target.width,target.height);ctx.drawImage(img,0,0,target.width,target.height);ctx.restore();target.dataset.n299Ready='1';if(!target._n299OldHas)target._n299OldHas=target._has;target._has=()=>target.dataset.n299Ready==='1';if(!target._n299OldClear)target._n299OldClear=target._clear;target._clear=()=>{try{target._n299OldClear?.()}catch(_){}target.dataset.n299Ready='';target._has=target._n299OldHas||(()=>false)};res()};img.src=url})}}o?.classList.remove('open');if(sigFullscreen&&sigPrevOrientation)try{await screen.orientation?.lock?.(sigPrevOrientation)}catch(_){}if(sigFullscreen&&document.fullscreenElement)try{await document.exitFullscreen()}catch(_){}try{screen.orientation?.unlock?.()}catch(_){}sigFullscreen=false;sigPrevOrientation='';sigTarget=''}
+function ensureSignatureLaunchers(){[['n293EmpSig','n299OpenEmpSig'],['n293MgrSig','n299OpenMgrSig']].forEach(([id,bid2])=>{const c=document.getElementById(id);if(!c||document.getElementById(bid2))return;const b=document.createElement('button');b.id=bid2;b.className='n299-sig-open';b.textContent='↔ Unterschrift groß / Querformat öffnen';b.onclick=()=>openSignature(id);c.parentElement?.insertAdjacentElement('beforebegin',b)})}
+
+// ---------- Lesestatus für Planungs-Rückfragen ----------
+function markAvailabilityRead(){const u=uidNow();if(!u)return;try{(window.SandboxStore?.getRequests?.()||[]).filter(r=>r.type==='plan_verfuegbarkeit'&&String(r.uid)===u&&r.status==='offen'&&!r.data?.readAt).forEach(r=>window.SandboxStore.updateRequest(r.id,{data:{readAt:new Date().toISOString()}}))}catch(_){} }
+function decorateAvailabilityReads(){const tbl=document.getElementById('adminTbl');if(!tbl||!isManager())return;const entries=typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{}),reqs=window.SandboxStore?.getRequests?.()||[];entries.forEach(([u],ri)=>{const row=tbl.querySelectorAll('tbody tr')[ri];if(!row)return;for(let d=0;d<7;d++){const qid=PLAN?.[u]?.[d]?.availabilityQueryId;if(!qid)continue;const r=reqs.find(x=>String(x.id)===String(qid));const cell=row.children[d+1];cell?.querySelector('.n299-av-read')?.remove();if(r?.data?.readAt&&cell){const x=document.createElement('div');x.className='n299-av-read';x.style.cssText='font-size:8px;color:#047857;font-weight:800;margin-top:2px;';x.textContent='✓ gelesen';cell.appendChild(x)}}})}
+
+
+// ---------- v29.10: offizieller Monats-Stundennachweis PDF-only ----------
+const Timesheets2910=(()=>{
+  const MONTH_NAMES=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const OFFICE_EMAIL='alswede@nasch.com';
+  const MAIL_DOC='timesheetMail';
+  let renderingAdmin=false,renderingOffice=false,mailCfgCache=null,lastAdminRender=0,lastOfficeRender=0,lastEmployeeRender=0,legacyWrapped=false;
+  const h2=x=>(Math.round((Number(x)||0)*100)/100).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const hShort=x=>(Math.round((Number(x)||0)*100)/100).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2});
+  const monthVal=(y,m)=>`${y}-${String(m).padStart(2,'0')}`;
+  const monthLabel=(y,m)=>`${MONTH_NAMES[m-1]} ${y}`;
+  const parseYm=v=>{const [y,m]=String(v||'').split('-').map(Number);return[y||new Date().getFullYear(),m||new Date().getMonth()+1]};
+  function monthOptions(selected){const n=new Date(),a=[];for(let i=-12;i<=6;i++){const d=new Date(n.getFullYear(),n.getMonth()+i,1),v=monthVal(d.getFullYear(),d.getMonth()+1);a.push(`<option value="${v}" ${v===selected?'selected':''}>${html(monthLabel(d.getFullYear(),d.getMonth()+1))}</option>`)}return a.reverse().join('')}
+  function isNormalEmployeeAccess(){const u=currentUser();if(!u)return false;if(isCentral()||isOffice())return false;try{if(typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(uidNow()))return false}catch(_){}return u.role!=='admin'}
+  function timesheetMode(){try{return window.NaschModules?.mode?.(bid(),'stundennachweis')||'FILIALE'}catch(_){return'FILIALE'}}
+  function timesheetEmployees(){return employeeEntries().filter(([id])=>!window.NaschEmployees?.isInactive?.(id))}
+  function canReadOfficialPdf(){return timesheetMode()!=='AUS'&&(isBranchAdmin()||isOffice()||(isManager()&&!isCentral()&&!isOffice()))}
+  function canSendOfficialMail(){return isBranchAdmin()&&timesheetMode()!=='AUS'}
+  function splitAbsence(data){let krank=0,urlaub=0,krankTage=0,urlaubTage=0;for(const r of data?.rows||[]){if(r.status==='Krank'){krank+=Number(r.credit)||0;krankTage++}else if(r.status==='Urlaub'){urlaub+=Number(r.credit)||0;urlaubTage++}}return{krank:Math.round(krank*4)/4,urlaub:Math.round(urlaub*4)/4,krankTage,urlaubTage}}
+  function officialDiff(data){return Math.round(((Number(data?.worked)||0)-(Number(data?.soll)||0))*4)/4}
+  function absenceRange(data,status){const r=(data?.rows||[]).filter(x=>x.status===status);if(!r.length)return'';const f=x=>`${String(x.day).padStart(2,'0')}.${String(data.month).padStart(2,'0')}.${data.year}`;return r.length===1?f(r[0]):`${f(r[0])} – ${f(r[r.length-1])}`}
+  function vacationSummary(data){const s=splitAbsence(data),u=data.employee||{},prev=Number(u.urlaubVorjahr)||0,claim=Number(u.urlaubAnspruch)||0,taken=Number(u.urlaubGenommen);const used=Number.isFinite(taken)?taken:s.urlaubTage;return{prev,claim,used,rest:prev+claim-used}}
+  function rangesCells(r){const a=r?.ranges||[];if(!a.length)return['',''];if(a.length===1)return[a[0][0]||'',a[0][1]||''];return[a.map(x=>(x||[]).join('–')).join(' + '),'']}
+  const MONTH_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MASTER_PDF_ASSET='./assets/timesheet-master.png';
+  function sheetNum(v,min=0,max=2){const n=Number(v);if(!Number.isFinite(n))return'';let s=(Math.round(n*100)/100).toFixed(max);if(max>min&&s.includes('.')){let [a,b]=s.split('.');while(b.length>min&&b.endsWith('0'))b=b.slice(0,-1);s=b?a+'.'+b:a}return s}
+  function monthShort(y,m){return `${MONTH_SHORT[m-1]||''}-${String(y).slice(-2)}`}
+  function employmentLabel(u){const map={VZ:'Vollzeit',TZ:'Teilzeit',AH:'Aushilfe',AZ:'Ausbildung',AZUBI:'Ausbildung'};return u?.label||map[String(u?.typ||'').toUpperCase()]||u?.typ||''}
+  function rangeParts(r){const a=Array.isArray(r?.ranges)?r.ranges:[];if(!a.length)return['',''];if(a.length===1)return[a[0]?.[0]||'',a[0]?.[1]||''];return[a.map(x=>x?.[0]||'').filter(Boolean).join(' / '),a.map(x=>x?.[1]||'').filter(Boolean).join(' / ')]}
+  function svgText(text,x,top,size,opts={}){if(text==null||text==='')return'';const anchor=opts.anchor||'middle',weight=opts.bold?'700':'400',fill=opts.color||'#111',y=Number(top)+Number(size)*.82,cls=opts.cls?` class="${opts.cls}"`:'';return `<text${cls} x="${x}" y="${y.toFixed(2)}" text-anchor="${anchor}" font-size="${size}" font-weight="${weight}" fill="${fill}" font-family="Arial, Helvetica, sans-serif">${html(text)}</text>`}
+  function signatureSvg(entry,x){if(!entry?.image)return'';return `<image href="${html(entry.image)}" x="${x}" y="758" width="126" height="35" preserveAspectRatio="xMidYMid meet"/>`}
+  function buildPdfHtml(data,st){
+    const u=data.employee||{},abs=splitAbsence(data),vac=vacationSummary(data),diff=officialDiff(data),days=new Date(data.year,data.month,0).getDate(),rowTop=102.72,rowH=14.216;
+    const masterUrl=new URL(MASTER_PDF_ASSET,window.location.href).href;
+    let overlay='';
+    overlay+=svgText(monthShort(data.year,data.month),495.9,17.08,13.1);
+    const name=String(u.name||''),emp=String(employmentLabel(u));
+    overlay+=svgText(name,37.54,49.27,name.length>32?6.2:name.length>24?7:8,{bold:true,anchor:'start'});
+    overlay+=svgText(u.stundenlohn!=null?Number(u.stundenlohn).toFixed(2):'',235.6,49.47,7.305);
+    overlay+=svgText(data.branchName||'',348.0,47.50,String(data.branchName||'').length>12?9.5:11.691);
+    overlay+=svgText(emp,496.7,49.47,emp.length>24?5.7:emp.length>16?6.4:7.305);
+    const x=[55.55,82.18,123.57,184.99,235.50,286.72,381.26,474.72,523.30];
+    for(let d=1;d<=31;d++){
+      const r=d<=days?data.rows?.[d-1]:null,top=rowTop+(d-1)*rowH;
+      if(r&&(r.holiday||r.weekday==='SO'))overlay+=`<rect x="36.55" y="${(top+.35).toFixed(2)}" width="52.75" height="${(rowH-.7).toFixed(2)}" fill="#ffff00"/><rect x="36.25" y="${top.toFixed(2)}" width="38.61" height="${rowH.toFixed(2)}" fill="none" stroke="#111" stroke-width=".45"/><rect x="74.86" y="${top.toFixed(2)}" width="14.64" height="${rowH.toFixed(2)}" fill="none" stroke="#111" stroke-width=".45"/>`;
+      if(!r)continue;
+      const dayTop=top+3.80,dataTop=top+4.48,[von,bis]=rangeParts(r),isAbs=r.status==='Krank'||r.status==='Urlaub',hasRanges=Array.isArray(r.ranges)&&r.ranges.length>0,hours=isAbs?Number(r.credit)||0:Number(r.net)||0;
+      const rowStatus=r.shiftType==='KK'?'':(!hasRanges?String(r.displayStatus||((isAbs||r.status==='Frei')?r.status:'')) : '');
+      const rowStatusSize=rowStatus.length>14?4.8:rowStatus.length>10?5.4:rowStatus.length>7?6.2:7.305;
+      overlay+=svgText(String(d),x[0],dayTop,8.794,{bold:true});
+      overlay+=svgText(r.weekday||'',x[1],dataTop,7.305,{bold:true});
+      overlay+=svgText(von,x[2],dataTop,von.length>7?5.8:7.305);
+      overlay+=svgText(bis,x[3],dataTop,bis.length>7?5.8:7.305);
+      overlay+=svgText(hasRanges?sheetNum((Number(r.pauseMin)||0)/60):'',x[4],dataTop,7.305);
+      overlay+=svgText(rowStatus,x[5],dataTop,rowStatusSize);
+      if(hours||isAbs||hasRanges)overlay+=svgText(sheetNum(hours),isAbs?447.15:x[6],dataTop,7.305,{anchor:isAbs?'end':'middle'});
+      if(Number(r.p25))overlay+=svgText(sheetNum(r.p25),x[7],dataTop,7.305);
+      if(Number(r.p50))overlay+=svgText(sheetNum(r.p50),x[8],dataTop,7.305);
+    }
+    overlay+=svgText(sheetNum(data.worked),381.62,551.81,8.008,{bold:true});
+    if(Number(data.p25))overlay+=svgText(sheetNum(data.p25),475.05,552.00,7.305);
+    if(Number(data.p50))overlay+=svgText(sheetNum(data.p50),523.30,552.00,7.305);
+    overlay+=svgText(sheetNum(data.worked),381.62,568.51,8.008,{bold:true});
+    if(abs.krank)overlay+=svgText('+'+sheetNum(abs.krank,1,2),475.10,568.51,8.008,{bold:true,color:'#d40000'});
+    if(abs.urlaub)overlay+=svgText('+'+sheetNum(abs.urlaub,1,2),523.62,568.51,8.008,{bold:true,color:'#003cff'});
+    overlay+=svgText(sheetNum(data.soll),381.62,582.73,8.008,{bold:true});
+    overlay+=svgText(sheetNum(diff),381.62,596.94,8.008,{bold:true});
+    if(abs.krank)overlay+=svgText(sheetNum(abs.krank),346.60,657.14,8.008,{bold:true});
+    const krankRange=absenceRange(data,'Krank').replace(/\s+[–-]\s+/,' – ');if(krankRange)overlay+=svgText(krankRange,236.4,670.48,7.305);
+    overlay+=svgText(sheetNum(vac.prev),123.55,713.71,7.305);
+    overlay+=svgText(sheetNum(vac.claim),208.32,713.71,7.305);
+    overlay+=svgText(sheetNum(vac.used),287.03,713.71,7.305);
+    overlay+=svgText(sheetNum(vac.rest),346.61,713.71,7.305);
+    if(st?.employeeValid)overlay+=signatureSvg(st.doc?.employee,92);
+    if(st?.managerValid)overlay+=signatureSvg(st.doc?.manager,389);
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Stundennachweis ${html(name)} ${html(monthLabel(data.year,data.month))}</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;background:#d1d5db}.toolbar{position:sticky;top:0;z-index:3;display:flex;gap:8px;justify-content:center;padding:8px;background:#fff;border-bottom:1px solid #d1d5db}.toolbar button{border:1px solid #9ca3af;background:#fff;border-radius:6px;padding:7px 11px;font-weight:700;cursor:pointer}.wrap{padding:8px}.sheet{width:210mm;height:297mm;margin:0 auto;background:#fff;box-shadow:0 1px 8px #777;overflow:hidden}.sheet svg{display:block;width:210mm;height:297mm}@media print{html,body{width:210mm;height:297mm;background:#fff}.toolbar{display:none}.wrap{padding:0}.sheet{margin:0;box-shadow:none;width:210mm;height:297mm}}</style></head><body><div class="toolbar"><button onclick="window.print()">🖨 PDF speichern / Drucken</button><button onclick="window.close()">Schließen</button></div><div class="wrap"><div class="sheet"><svg viewBox="0 0 595.28 841.89" xmlns="http://www.w3.org/2000/svg"><image href="${html(masterUrl)}" x="0" y="0" width="595.28" height="841.89" preserveAspectRatio="none"/>${overlay}</svg></div></div></body></html>`;
+  }
+  async function openOfficialTimesheetPdf(uid,y,m){if(!canReadOfficialPdf()){alert('Keine Berechtigung für PDF-Stundennachweise.');return}const api=window.NaschMonthlyTimesheet;if(!api?.monthData||!api?.signatureStatus){alert('Stundennachweis ist noch nicht geladen.');return}const w=window.open('','_blank');if(!w){alert('Bitte Pop-ups erlauben.');return}w.document.write('<p style="font-family:Arial;padding:20px">Stundennachweis wird geladen …</p>');try{const data=await api.monthData(String(uid),Number(y),Number(m)),st=await api.signatureStatus(String(uid),Number(y),Number(m),data);w.document.open();w.document.write(buildPdfHtml(data,st));w.document.close()}catch(e){w.document.body.innerHTML=`<p style="font-family:Arial;padding:20px;color:#991b1b">${html(e?.message||e)}</p>`}}
+  async function mailConfig(force=false){if(mailCfgCache?.branch===bid()&&!force)return mailCfgCache.cfg;let cfg={recipient:OFFICE_EMAIL,bcc:'',backendEnabled:true};try{const s=await db().collection('nasch').doc(bid()).collection('config').doc(MAIL_DOC).get();if(s.exists)cfg={...cfg,...(s.data()||{})}}catch(e){console.warn('Stundenzettel-Mailkonfiguration',e)}cfg.recipient=OFFICE_EMAIL;mailCfgCache={branch:bid(),cfg};return cfg}
+  async function saveBcc(){if(!canSendOfficialMail())return;const el=document.getElementById('n2910BccEmail'),v=String(el?.value||'').trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){alert('Bitte eine gültige BCC-E-Mail-Adresse eingeben.');return}await db().collection('nasch').doc(bid()).collection('config').doc(MAIL_DOC).set({recipient:OFFICE_EMAIL,bcc:v,backendEnabled:true,updatedAt:ts()},{merge:true});mailCfgCache=null;showToast?.('BCC-Adresse gespeichert');await renderAdminOverview(true)}
+  function mailtoFallback(cfg,data){const subject=`Stundennachweis ${data.employee?.name||''} · ${monthLabel(data.year,data.month)}`,body=`Hallo,\n\nim Anhang soll der Stundennachweis für ${data.employee?.name||''} (${monthLabel(data.year,data.month)}, ${data.branchName||''}) versendet werden.\n\nNASCH`;const url=`mailto:${encodeURIComponent(OFFICE_EMAIL)}?bcc=${encodeURIComponent(cfg.bcc||'')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;window.location.href=url}
+  async function sendOfficialTimesheetMail(uid,y,m){
+    if(!canSendOfficialMail()){alert('Nur die Filialleitung/Admin kann Stundennachweise per E-Mail senden.');return}
+    const api=window.NaschMonthlyTimesheet,cfg=await mailConfig(true);if(!cfg.bcc){alert('Bitte zuerst deine BCC-Adresse hinterlegen.');return}
+    const data=await api.monthData(String(uid),Number(y),Number(m)),st=await api.signatureStatus(String(uid),Number(y),Number(m),data);
+    if(!st.valid){alert('Der Stundennachweis kann erst nach Mitarbeiter-Unterschrift und Gegenzeichnung versendet werden.');return}
+    if(cfg.backendEnabled!==true){openOfficialTimesheetPdf(uid,y,m);setTimeout(()=>mailtoFallback(cfg,data),180);alert('Der automatische PDF-Mailversand ist noch nicht serverseitig aktiviert. Der PDF-Stundennachweis und ein E-Mail-Entwurf werden geöffnet.');return}
+    const abs=splitAbsence(data),payload={branchId:bid(),uid:String(uid),year:Number(y),month:Number(m),requestedBy:uidNow(),requestedByName:currentUser()?.name||'',dataHash:st.hash,status:'queued',createdAt:ts(),timesheet:{...data,krankStd:abs.krank,urlaubStd:abs.urlaub,diff:officialDiff(data)}};
+    const ref=await db().collection('nasch').doc(bid()).collection('timesheetMailQueue').add(payload);showToast?.('✉️ Stundennachweis wird per E-Mail versendet');setTimeout(()=>watchMail(ref),300)
+  }
+  async function sendOwnTimesheetTestMail(){
+    if(!canSendOfficialMail()){alert('Nur die Filialleitung/Admin kann den Testversand verwenden.');return}
+    const cfg=await mailConfig(true);
+    const testTo=String(cfg.bcc||'').trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testTo)){alert('Bitte zuerst deine eigene E-Mail-Adresse im Feld „Deine BCC-Adresse“ hinterlegen und speichern.');return}
+    const sel=document.getElementById('n293AdmMonth');
+    const [y,m]=parseYm(sel?.value);
+    const uid=uidNow(),api=window.NaschMonthlyTimesheet;
+    if(!uid||!api?.monthData){alert('Eigener Stundenzettel ist noch nicht verfügbar.');return}
+    const ok=confirm(`TESTVERSAND\n\nDein eigener Stundenzettel für ${monthLabel(y,m)} wird ausschließlich an ${testTo} gesendet.\n\n${OFFICE_EMAIL} erhält bei diesem Test keine E-Mail.\n\nFortfahren?`);
+    if(!ok)return;
+    const data=await api.monthData(uid,y,m),st=await api.signatureStatus(uid,y,m,data),abs=splitAbsence(data);
+    const payload={mode:'test-self',branchId:bid(),uid:String(uid),year:Number(y),month:Number(m),requestedBy:uidNow(),requestedByName:currentUser()?.name||'',dataHash:st?.hash||'',status:'queued',createdAt:ts(),timesheet:{...data,krankStd:abs.krank,urlaubStd:abs.urlaub,diff:officialDiff(data)}};
+    const ref=await db().collection('nasch').doc(bid()).collection('timesheetMailQueue').add(payload);
+    showToast?.(`🧪 Testmail wird nur an ${testTo} gesendet`);
+    setTimeout(()=>watchMail(ref,true,testTo),300);
+  }
+  async function watchMail(ref,isTest=false,testTo=''){for(let i=0;i<12;i++){await new Promise(r=>setTimeout(r,900));try{const s=await ref.get(),d=s.data()||{};if(d.status==='sent'){showToast?.(isTest?`✅ Testmail nur an ${testTo||d.recipient||'deine Adresse'} gesendet`:'✅ Stundennachweis per E-Mail gesendet');return}if(d.status==='error'){alert((isTest?'Testmail':'E-Mail')+'-Versand fehlgeschlagen: '+(d.error||'Unbekannter Fehler'));return}}catch(_){return}}}
+  async function queueOneDriveArchive(uid,y,m){
+    if(!(isBranchAdmin()||(isManager()&&!isCentral()&&!isOffice())))throw new Error('Nur Filialleitung oder berechtigte Vertretung darf die OneDrive-Archivierung anstoßen.');
+    uid=String(uid||'');if(!uid)return null;const api=window.NaschMonthlyTimesheet;if(!api?.monthData||!api?.signatureStatus)return null;
+    const data=await api.monthData(uid,Number(y),Number(m)),st=await api.signatureStatus(uid,Number(y),Number(m),data);if(!st?.valid)return null;
+    const a=st.doc?.archive||{};if(String(a.dataHash||'')===String(st.hash||'')&&['queued','uploading','uploaded'].includes(String(a.status||'')))return a;
+    const payload={branchId:bid(),uid,year:Number(y),month:Number(m),requestedBy:uidNow(),requestedByName:currentUser()?.name||'',dataHash:st.hash,status:'queued',createdAt:ts(),timesheet:{...data,diff:officialDiff(data)}};
+    const ref=await db().collection('nasch').doc(bid()).collection('timesheetArchiveQueue').add(payload);
+    await db().collection('nasch').doc(bid()).collection('monthlySignatures').doc(`${uid}_${Number(y)}-${String(Number(m)).padStart(2,'0')}`).set({archive:{status:'queued',dataHash:st.hash,queueId:ref.id,queuedAt:ts()}},{merge:true});
+    showToast?.('☁️ Unterschriebener Stundenzettel wird in OneDrive archiviert');return{status:'queued',dataHash:st.hash,queueId:ref.id};
+  }
+  function statusBadge(st){if(st.changed)return'<span class="n2910-badge bad">Daten geändert</span>';if(st.valid){const a=st.doc?.archive||{};if(String(a.dataHash||'')===String(st.hash||'')){if(a.status==='uploaded')return'<span class="n2910-badge ok">Unterschrieben · OneDrive ✓</span>';if(a.status==='error')return'<span class="n2910-badge bad">Unterschrieben · OneDrive Fehler</span>';if(a.status==='queued'||a.status==='uploading')return'<span class="n2910-badge wait">Unterschrieben · OneDrive …</span>'}return'<span class="n2910-badge ok">Unterschrieben</span>'}if(st.employeeValid)return'<span class="n2910-badge wait">Gegenzeichnung offen</span>';return'<span class="n2910-badge">Unterschrift offen</span>'}
+  async function rowModel(uid,u,y,m){const api=window.NaschMonthlyTimesheet,data=await api.monthData(uid,y,m),st=await api.signatureStatus(uid,y,m,data),a=splitAbsence(data);return{uid,u,data,st,a}}
+  function overviewTable(models,y,m,allowMail,allowArchive=false){return `<div class="n2910-overview"><table><thead><tr><th>Mitarbeiter</th><th>Gesamt</th><th>Krank</th><th>Urlaub</th><th>Soll</th><th>Diff.</th><th>Status</th><th>PDF</th>${allowArchive?'<th>OneDrive</th>':''}${allowMail?'<th>Mail</th>':''}</tr></thead><tbody>${models.map(x=>{const a=x.st?.doc?.archive||{},same=String(a.dataHash||'')===String(x.st?.hash||''),uploaded=same&&a.status==='uploaded',busy=same&&(a.status==='queued'||a.status==='uploading');return `<tr><td class="name">${html(x.u.name)}</td><td class="num">${h2(x.data.worked)}</td><td class="num">${h2(x.a.krank)}</td><td class="num">${h2(x.a.urlaub)}</td><td class="num">${h2(x.data.soll)}</td><td class="num ${officialDiff(x.data)<0?'minus':''}">${h2(officialDiff(x.data))}</td><td>${statusBadge(x.st)}</td><td><button class="n2910-iconbtn" onclick="NaschV299.openOfficialTimesheetPdf('${html(x.uid)}',${y},${m})">PDF</button></td>${allowArchive?`<td><button class="n2910-iconbtn" ${(x.st.valid&&!uploaded&&!busy)?'':'disabled'} onclick="NaschV299.queueOneDriveArchive('${html(x.uid)}',${y},${m}).then(()=>NaschV299.renderAdminTimesheets(true)).catch(e=>alert(e.message||e))">${uploaded?'✓':busy?'…':'Archivieren'}</button></td>`:''}${allowMail?`<td><button class="n2910-iconbtn mail" ${x.st.valid?'':'disabled'} onclick="NaschV299.sendOfficialTimesheetMail('${html(x.uid)}',${y},${m})">Senden</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`}
+  function adminCardShell(selected,opts,cfg){return `<div class="n293-head">📄 Monats-Stundennachweise · Übersicht</div><div class="n293-body"><div class="n2910-top"><label>Monat<select id="n293AdmMonth">${monthOptions(selected)}</select></label><div class="n2910-mailto">E-Mail an <strong>${html(OFFICE_EMAIL)}</strong>${opts.allowMail?` · BCC: <strong>${cfg?.bcc?html(cfg.bcc):'noch nicht hinterlegt'}</strong>`:''}</div></div><div id="n2910AdminOverview" class="n299-note">Übersicht wird geladen …</div>${opts.allowMail?`<div class="n2910-bcc"><label>Deine BCC-Adresse<input id="n2910BccEmail" type="email" value="${html(cfg?.bcc||'')}" placeholder="deine@email.de"></label><button class="btn btn-outline" onclick="NaschV299.saveTimesheetBcc()">BCC speichern</button></div><div class="n2913-testmail"><div><strong>🧪 Testversand meines Stundenzettels</strong><div>Verwendet deinen eigenen Stundenzettel des oben gewählten Monats. Der Test geht ausschließlich an deine hinterlegte BCC-Adresse; ${html(OFFICE_EMAIL)} erhält nichts. Für den Test sind vollständige Unterschriften nicht erforderlich.</div></div><button class="btn btn-outline" onclick="NaschV299.sendOwnTimesheetTestMail()">Testmail an mich senden</button></div>`:''}<details class="n2910-sign"><summary>Gegenzeichnung</summary><div class="n293-grid"><select id="n293AdmUid">${opts.employeeOpts}</select><div id="n293AdmStatus" class="n293-status n293-off">Mitarbeiter auswählen.</div></div><div class="n293-sig"><canvas id="n293MgrSig" width="600" height="180"></canvas></div><div class="n293-row"><button class="btn btn-outline" onclick="NaschV299.openSignature('n293MgrSig')">Unterschrift öffnen</button><button class="btn btn-outline" onclick="document.getElementById('n293MgrSig')._clear?.()">Löschen</button><button class="btn btn-success" onclick="n293ManagerSign()">Gegenzeichnen</button></div></details></div>`}
+  function deputyCardShell(selected,employeeOpts){return `<div class="n293-head">📄 Monats-Stundenzettel · Gegenzeichnung</div><div class="n293-body"><div class="n2910-top"><label>Monat<select id="n293AdmMonth">${monthOptions(selected)}</select></label><div class="n2910-mailto">Stundenzettel/PDF ansehen und nach gültiger Mitarbeiter-Unterschrift gegenzeichnen. Kein E-Mail-Versand.</div></div><div id="n2910AdminOverview" class="n299-note">Stundenzettel werden geladen …</div><details class="n2910-sign" open><summary>Gegenzeichnung</summary><div class="n293-grid"><select id="n293AdmUid">${employeeOpts}</select><div id="n293AdmStatus" class="n293-status n293-off">Mitarbeiter auswählen.</div></div><div class="n293-sig"><canvas id="n293MgrSig" width="600" height="180"></canvas></div><div class="n293-row"><button class="btn btn-outline" onclick="NaschV299.openSignature('n293MgrSig')">Unterschrift öffnen</button><button class="btn btn-outline" onclick="document.getElementById('n293MgrSig')._clear?.()">Löschen</button><button class="btn btn-success" onclick="n293ManagerSign()">Gegenzeichnen</button></div></details></div>`}
+  async function renderAdminOverview(force=false){
+    const card=document.getElementById('n293AdminMonthly');if(!card||timesheetMode()==='AUS'||renderingAdmin)return;
+    const deputy=isManager()&&!isBranchAdmin()&&!isCentral()&&!isOffice();
+    if(!isBranchAdmin()&&!deputy){card.style.setProperty('display','none','important');return}
+    card.style.removeProperty('display');
+    if(!force&&Date.now()-lastAdminRender<20000)return;renderingAdmin=true;lastAdminRender=Date.now();
+    try{
+      const old=document.getElementById('n293AdmMonth')?.value,now=new Date(),selected=old||monthVal(now.getFullYear(),now.getMonth()+1),[y,m]=parseYm(selected),entries=timesheetEmployees(),employeeOpts=entries.map(([id,u])=>`<option value="${html(id)}">${html(u.name)}</option>`).join('');
+      if(deputy){
+        if(force||card.dataset.n2910!=='deputy'||card.dataset.n2910month!==selected||card.dataset.n2910branch!==bid()){
+          card.dataset.n2910='deputy';card.dataset.n2910month=selected;card.dataset.n2910branch=bid();card.innerHTML=deputyCardShell(selected,employeeOpts);
+          document.getElementById('n293AdmMonth')?.addEventListener('change',()=>renderAdminOverview(true));
+          document.getElementById('n293AdmUid')?.addEventListener('change',async()=>{const e=document.getElementById('n293AdmStatus'),[yy,mm]=parseYm(document.getElementById('n293AdmMonth')?.value);if(e)e.textContent='Status wird geladen …';try{const uid=document.getElementById('n293AdmUid')?.value,api=window.NaschMonthlyTimesheet,d=await api.monthData(uid,yy,mm),st=await api.signatureStatus(uid,yy,mm,d);if(e)e.innerHTML=statusBadge(st)}catch(err){if(e)e.textContent=err.message||String(err)}});ensureSignatureLaunchers();
+        }
+        const box=document.getElementById('n2910AdminOverview');if(box)box.innerHTML='<div class="n299-note">Stundenzettel aller Mitarbeiter werden geladen …</div>';const models=[];for(const [id,u] of entries){try{models.push(await rowModel(String(id),u,y,m))}catch(e){console.warn('Stundenzettel Vertretung',id,e)}}if(box)box.innerHTML=overviewTable(models,y,m,false,true);
+        document.getElementById('n293AdmUid')?.dispatchEvent(new Event('change'));return;
+      }
+      const allowMail=canSendOfficialMail(),allowArchive=true,cfg=allowMail?await mailConfig(force):null;
+      if(force||card.dataset.n2910!=='admin'||card.dataset.n2910month!==selected||card.dataset.n2910branch!==bid()){
+        card.dataset.n2910='admin';card.dataset.n2910month=selected;card.dataset.n2910branch=bid();card.innerHTML=adminCardShell(selected,{allowMail,employeeOpts},cfg);
+        document.getElementById('n293AdmMonth')?.addEventListener('change',()=>renderAdminOverview(true));
+        document.getElementById('n293AdmUid')?.addEventListener('change',async()=>{const e=document.getElementById('n293AdmStatus'),[yy,mm]=parseYm(document.getElementById('n293AdmMonth')?.value);if(e)e.textContent='Status wird geladen …';try{const uid=document.getElementById('n293AdmUid')?.value,api=window.NaschMonthlyTimesheet,d=await api.monthData(uid,yy,mm),st=await api.signatureStatus(uid,yy,mm,d);if(e)e.innerHTML=statusBadge(st)}catch(err){if(e)e.textContent=err.message||String(err)}});ensureSignatureLaunchers();
+      }
+      const box=document.getElementById('n2910AdminOverview');if(box)box.innerHTML='<div class="n299-note">Monatsdaten aller Mitarbeiter werden geladen …</div>';const models=[];for(const [id,u] of entries){try{models.push(await rowModel(String(id),u,y,m))}catch(e){console.warn('Stundenzettel Übersicht',id,e)}}if(box)box.innerHTML=overviewTable(models,y,m,allowMail,allowArchive);
+      document.getElementById('n293AdmUid')?.dispatchEvent(new Event('change'));
+    }finally{renderingAdmin=false}
+  }
+  function officeCardShell(selected,employeeOpts){return `<div class="n293-head">📄 Stundenzettel · Büro</div><div class="n293-body"><div class="n2910-top"><label>Monat<select id="n293OfficeMonth">${monthOptions(selected)}</select></label><div class="n2910-mailto">Nur Ansicht und PDF-Speichern/Download. Keine Gegenzeichnung, kein Mailversand.</div></div><select id="n293OfficeUid" style="display:none">${employeeOpts}</select><div id="n2910OfficeOverview" class="n299-note">Stundenzettel werden geladen …</div></div>`}
+  async function renderOfficeOverview(force=false){
+    const card=document.getElementById('n293OfficeMonthly');if(!card)return;if(!isOffice()||timesheetMode()==='AUS'){card.style.setProperty('display','none','important');return}
+    card.style.removeProperty('display');if(!force&&Date.now()-lastOfficeRender<20000)return;renderingOffice=true;lastOfficeRender=Date.now();
+    try{const old=document.getElementById('n293OfficeMonth')?.value,now=new Date(),selected=old||monthVal(now.getFullYear(),now.getMonth()+1),[y,m]=parseYm(selected),entries=timesheetEmployees(),employeeOpts=entries.map(([id,u])=>`<option value="${html(id)}">${html(u.name)}</option>`).join('');
+      if(force||card.dataset.n2910!=='office'||card.dataset.n2910month!==selected||card.dataset.n2910branch!==bid()){card.dataset.n2910='office';card.dataset.n2910month=selected;card.dataset.n2910branch=bid();card.innerHTML=officeCardShell(selected,employeeOpts);document.getElementById('n293OfficeMonth')?.addEventListener('change',()=>renderOfficeOverview(true));}
+      const box=document.getElementById('n2910OfficeOverview');if(box)box.innerHTML='<div class="n299-note">Stundenzettel aller Mitarbeiter werden geladen …</div>';const models=[];for(const [id,u] of entries){try{models.push(await rowModel(String(id),u,y,m))}catch(e){console.warn('Stundenzettel Büro',id,e)}}if(box)box.innerHTML=overviewTable(models,y,m,false,false);
+    }finally{renderingOffice=false}
+  }
+  function removeExcelUi(){document.querySelectorAll('button').forEach(b=>{if(/\bExcel\b/i.test(b.textContent||''))b.style.setProperty('display','none','important')});for(const id of ['n293AdminExcelBtn','officeTimesheetPdfCard','timesheetPdfAdminCard','personalTimesheetPdfCard']){const el=document.getElementById(id);if(el)el.remove()}if(window.NaschMonthlyTimesheet?.exportExcel)try{delete window.NaschMonthlyTimesheet.exportExcel}catch(_){window.NaschMonthlyTimesheet.exportExcel=undefined}}
+  async function refreshEmployeeList(){
+    ensureEmployeeHours();
+    if(!isNormalEmployeeAccess())return;
+    lastEmployeeRender=Date.now();
+    return window.NaschHoursOverview?.renderEmployee?.();
+  }
+  function wrapLegacyActions(){if(legacyWrapped)return;legacyWrapped=true;const ms=window.n293ManagerSign;if(typeof ms==='function'&&!ms.__n2910){const fn=async function(){const uid=String(document.getElementById('n293AdmUid')?.value||''),[y,m]=parseYm(document.getElementById('n293AdmMonth')?.value);const r=await ms.apply(this,arguments);try{await queueOneDriveArchive(uid,y,m)}catch(e){console.warn('OneDrive-Archivierung konnte nicht eingereiht werden',e);showToast?.('⚠️ OneDrive-Archivierung konnte nicht gestartet werden')}lastAdminRender=0;await renderAdminOverview(true);return r};fn.__n2910=true;window.n293ManagerSign=fn;try{n293ManagerSign=fn}catch(_){}}const es=window.n293EmployeeSign;if(typeof es==='function'&&!es.__n2910){const fn=async function(){const r=await es.apply(this,arguments);lastEmployeeRender=0;await refreshEmployeeList();return r};fn.__n2910=true;window.n293EmployeeSign=fn;try{n293EmployeeSign=fn}catch(_){}}}
+  function patch(){
+    removeExcelUi();wrapLegacyActions();if(window.NaschMonthlyTimesheet)window.NaschMonthlyTimesheet.openPdf=openOfficialTimesheetPdf;
+    const officeCard=document.getElementById('n293OfficeMonthly');if(officeCard&&isOffice()&&timesheetMode()!=='AUS')officeCard.style.removeProperty('display');
+    if(isNormalEmployeeAccess()){if(document.getElementById('pgStunden')?.classList.contains('active'))refreshEmployeeList()}
+    else if(isOffice())renderOfficeOverview();
+    else if(document.getElementById('pgAdminStz')?.classList.contains('active'))renderAdminOverview();if(document.getElementById('pgAdminHours')?.classList.contains('active'))window.NaschHoursOverview?.renderAdmin?.();
+  }
+  return{patch,openOfficialTimesheetPdf,sendOfficialTimesheetMail,sendOwnTimesheetTestMail,saveBcc,renderAdminOverview,renderOfficeOverview,refreshEmployeeList,isNormalEmployeeAccess,queueOneDriveArchive};
+})();
+
+// ---------- Initialisierung / Wrapper ----------
+function patchUi(){patchShiftActionBar();patchKvEditor();patchRequestCreation();patchShiftActions();ensureTeamPage();ensureNotifySettings();ensureSickApprovalCard();ensureEmployeeHours();ensureSignatureOverlay();hideKvTimesInUi();decorateAvailabilityReads();Timesheets2910.patch();if(typeof refreshKindKrankUi==='function')refreshKindKrankUi();if(document.getElementById('pgTeamStatus')?.classList.contains('active'))renderTeam();if(document.getElementById('pgAdminKrank')?.classList.contains('active'))renderSickApprovals();if(document.getElementById('pgShiftActions')?.classList.contains('active'))enhanceShiftActionPage();if(document.getElementById('pgAdminWorkflow')?.classList.contains('active'))enhanceManagerWorkflow()}
+function boot(){if(!uidNow())return;patchUi();Presence.start();Notices.start();refreshEmployeeHours();const q=new URLSearchParams(location.search).get('naschNotice');if(q)Notices.open(q)}
+function wrapNavs(){if(window.goTo&&!window.goTo.__n299){const old=window.goTo;const fn=function(pg,title){const r=old.apply(this,arguments);setTimeout(()=>{patchUi();if(pg==='pgTeamStatus')renderTeam();if(pg==='pgAdminKrank')renderSickApprovals();if(pg==='pgKrank'&&typeof refreshKindKrankUi==='function')refreshKindKrankUi();if(pg==='pgShiftActions')enhanceShiftActionPage();if(pg==='pgAdminWorkflow')enhanceManagerWorkflow();if(pg==='pgStunden')Timesheets2910.refreshEmployeeList();if(pg==='pgAdminStz')Timesheets2910.renderAdminOverview(true);if(pg==='pgAdminHours')window.NaschHoursOverview?.renderAdmin?.();if(pg==='pgNotif'){Notices.render();markAvailabilityRead()}},60);return r};fn.__n299=true;window.goTo=fn;try{goTo=fn}catch(_){}}
+  if(window.navTo&&!window.navTo.__n299){const old=window.navTo;const fn=function(k){const r=old.apply(this,arguments);setTimeout(()=>{patchUi();if(k==='notif'){Notices.render();markAvailabilityRead()}if(k==='profil')ensureNotifySettings();if(k==='office')Timesheets2910.renderOfficeOverview(true)},60);return r};fn.__n299=true;window.navTo=fn;try{navTo=fn}catch(_){}}
+  if(window.buildAdminPlan&&!window.buildAdminPlan.__n299){const old=window.buildAdminPlan;const fn=function(){const r=old.apply(this,arguments);setTimeout(()=>{decorateAvailabilityReads();hideKvTimesInUi()},0);return r};fn.__n299=true;window.buildAdminPlan=fn;try{buildAdminPlan=fn}catch(_){}}
+}
+
+window.NaschV299={requestNotifications,toggleSignal,approveSick,revokeSick,openSignature,closeSignature,clearSignature,renderSickApprovals,refreshEmployeeHours,openOfficialTimesheetPdf:Timesheets2910.openOfficialTimesheetPdf,sendOfficialTimesheetMail:Timesheets2910.sendOfficialTimesheetMail,sendOwnTimesheetTestMail:Timesheets2910.sendOwnTimesheetTestMail,saveTimesheetBcc:Timesheets2910.saveBcc,renderAdminTimesheets:Timesheets2910.renderAdminOverview,renderOfficeTimesheets:Timesheets2910.renderOfficeOverview,queueOneDriveArchive:Timesheets2910.queueOneDriveArchive};
+wrapNavs();patchUi();
+setTimeout(patchUi,150);setTimeout(patchUi,900);
+if(document.getElementById('n293EmpMonth'))document.getElementById('n293EmpMonth').addEventListener('change',()=>setTimeout(refreshEmployeeHours,0));
+afterAuth(()=>{setTimeout(()=>{boot();setupFcm().then(x=>{const e=document.getElementById('n299NotifyStatus');if(e&&'Notification'in window&&Notification.permission==='granted')e.textContent=`✓ Browsermeldungen erlaubt · ${x.reason}`})},350)});
+setInterval(()=>{if(uidNow())patchUi()},5000);
+})();

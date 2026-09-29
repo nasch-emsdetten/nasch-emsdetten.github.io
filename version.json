@@ -1,5 +1,5 @@
 {
-  "version": "29.31",
+  "version": "29.32",
   "date": "2026-09-29",
-  "notes": "v29.31: Laufzeitfix für App-Start (fehlendes outlookKalRow) und Stundenübersicht/Stundenzettel (lokaler Modulmodus); Release-Dokumentation synchronisiert."
+  "notes": "v29.32: Verwaltungszugang auf System-Admin und Personalbüro begrenzt; Desktop/iPad-Handbuch so positioniert, dass die linke Navigation keinen Text überdeckt."
 }
