@@ -1,5 +1,5 @@
 {
-  "version": "29.28",
+  "version": "29.29",
   "date": "2026-09-29",
-  "notes": "v29.28: Vertretung sieht offiziellen Stundenzettel/PDF und kann gegenzeichnen. Büro darf Stundenzettel ansehen/PDF speichern sowie Wochenpläne inklusive vergangener KWs lesen; Wochenplan zeigt Tages- und Wochenstunden und ist als PDF speicherbar."
+  "notes": "v29.29: Behebt die PWA-Update-Dauerschleife. Der Versionswächter verwendet die tatsächlich geladene App-Version und besitzt einen Reload-Schleifenschutz für unvollständige Deployments."
 }

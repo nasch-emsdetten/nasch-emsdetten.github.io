@@ -7648,7 +7648,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.28';
+  window.NASCH_APP_VERSION='29.29';
 })();
 </script>
 
@@ -8593,7 +8593,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.28';
+  window.NASCH_APP_VERSION='29.29';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8604,7 +8604,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8758,7 +8758,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8809,7 +8809,7 @@ window.NASCH_APP_VERSION='29.28';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8828,7 +8828,7 @@ window.NASCH_APP_VERSION='29.28';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9179,7 +9179,7 @@ window.NASCH_APP_VERSION='29.28';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9696,7 +9696,7 @@ window.NASCH_APP_VERSION='29.28';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   const VERSION='29.26';
   const AUTOSAVE_DELAY=1200;
@@ -9891,7 +9891,7 @@ window.NASCH_APP_VERSION='29.28';
 
 <script id="nasch-v2921-copy-next-cloud">
 /* NASCH v29.26 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -10047,12 +10047,28 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.26 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v29.29 · automatische App-Aktualisierung mit Reload-Schleifenschutz */
 (()=>{
-  const CURRENT='29.26';
+  const CURRENT=String(window.NASCH_APP_VERSION||'29.29');
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
+  const UPDATE_GUARD_KEY='nasch-update-attempt-v1';
+  const UPDATE_GUARD_MS=2*60*1000;
   let checking=false, updating=false, lastCheck=0;
+
+  const readUpdateAttempt=()=>{
+    try{return JSON.parse(sessionStorage.getItem(UPDATE_GUARD_KEY)||'null')}catch(_){return null}
+  };
+  const updateRecentlyAttempted=target=>{
+    const a=readUpdateAttempt();
+    return !!(a&&a.target===String(target)&&Number(a.at)>0&&(Date.now()-Number(a.at))<UPDATE_GUARD_MS);
+  };
+  const rememberUpdateAttempt=target=>{
+    try{sessionStorage.setItem(UPDATE_GUARD_KEY,JSON.stringify({target:String(target),at:Date.now()}))}catch(_){}
+  };
+  const clearResolvedUpdateAttempt=()=>{
+    try{const a=readUpdateAttempt();if(a&&a.target===CURRENT)sessionStorage.removeItem(UPDATE_GUARD_KEY)}catch(_){}
+  };
 
   const cleanInternalParams=()=>{
     try{
@@ -10100,7 +10116,12 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
   }
 
   async function installAndReload(target){
-    if(updating)return;updating=true;showUpdateNotice(target);await preserveOpenWork();
+    if(updating)return;
+    if(updateRecentlyAttempted(target)){
+      console.warn('NASCH Update-Schleifenschutz: erneutes Reload für v'+target+' unterdrückt.');
+      return;
+    }
+    updating=true;rememberUpdateAttempt(target);showUpdateNotice(target);await preserveOpenWork();
     try{
       const reg=await registerWorker(target);
       if(reg){
@@ -10121,12 +10142,17 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
     if(checking||updating||!/^https?:$/.test(location.protocol))return;
     const now=Date.now();if(!force&&now-lastCheck<15000)return;
     checking=true;lastCheck=now;
-    try{const latest=await fetchLatestVersion();if(latest&&latest!==CURRENT)await installAndReload(latest);}
+    try{
+      const latest=await fetchLatestVersion();
+      if(latest&&latest!==CURRENT)await installAndReload(latest);
+      else if(latest===CURRENT)clearResolvedUpdateAttempt();
+    }
     catch(e){console.debug?.('NASCH Versionsprüfung nicht möglich:',e?.message||e);}
     finally{checking=false;}
   }
 
   cleanInternalParams();
+  clearResolvedUpdateAttempt();
   window.NaschAutoUpdate={current:CURRENT,check:()=>checkForUpdate(true)};
   window.addEventListener('load',async()=>{await registerWorker(CURRENT);await checkForUpdate(true);});
   window.addEventListener('focus',()=>checkForUpdate(true));
@@ -10194,7 +10220,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10390,7 +10416,7 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
 </div>
 <script>
 /* NASCH v29.26 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10492,7 +10518,7 @@ window.NaschEmployeeDemo=(()=>{
 </div>
 <script id="nasch-v2826-features">
 /* NASCH v29.26 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10726,7 +10752,7 @@ window.NaschDeputyRights=(()=>{
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.28';
+window.NASCH_APP_VERSION='29.29';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];

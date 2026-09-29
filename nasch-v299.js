@@ -1,7 +1,7 @@
-/* NASCH v29.28 · Rollenrechte Stundenzettel + Büro-Wochenplan rückwirkend/PDF + Monatsunterschrift/OneDrive */
+/* NASCH v29.29 · Rollenrechte Stundenzettel + Büro-Wochenplan rückwirkend/PDF + Monatsunterschrift/OneDrive */
 (()=>{
 'use strict';
-const BUNDLE_VERSION='29.28';
+const BUNDLE_VERSION='29.29';
 const VERSION=String(window.NASCH_APP_VERSION||BUNDLE_VERSION);
 if(!window.NASCH_APP_VERSION) window.NASCH_APP_VERSION=BUNDLE_VERSION;
 
