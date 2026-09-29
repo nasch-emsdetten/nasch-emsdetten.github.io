@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>NASCH v29.32 · Leitung & Personalbüro</title>
+<title>NASCH v29.33 · Leitung & Personalbüro</title>
 <link rel="manifest" href="manifest-leitung-v2916.webmanifest">
 <link rel="apple-touch-icon" href="icon-any-180-v2916.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2916.png">
@@ -241,7 +241,7 @@ firebase.auth().signInAnonymously().catch(e => {
 window.FILIAL_ID = '';
 </script>
 <script>window.NASCH_ENTRY_MODE="management";window.NASCH_FIXED_BRANCH="";</script>
-<link rel="stylesheet" href="./nasch-v2932.css">
+<link rel="stylesheet" href="./nasch-v2933.css">
 </head>
 <body>
 
@@ -249,7 +249,7 @@ window.FILIAL_ID = '';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.32</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.33</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -929,7 +929,7 @@ window.FILIAL_ID = '';
 
     <!-- V20: PERSONALBÜRO · READ ONLY -->
     <div class="page" id="pgOffice">
-      <div class="banner binfo"><span>🏢</span><span><strong>Personalbüro</strong> · grundsätzlich nur Lesen. Mitarbeiterverwaltung bzw. Korrektur-Freigaben nur, wenn die Filiale diese Option ausdrücklich aktiviert.</span></div>
+      <div class="banner binfo"><span>🏢</span><span><strong>Personalbüro</strong> · Wochenplan und Stundenzettel lesen/downloaden; Krankmeldungen und genehmigten Urlaub nur ansehen; Mitarbeiter anlegen sowie Urlaubsanspruch, Resturlaub und Vorjahr pflegen.</span></div>
       <div id="v20OfficeContent"></div>
     </div>
 
@@ -1047,7 +1047,7 @@ const PLAN = Object.fromEntries(
   Object.keys(USERS).map(uid => [uid, Array.from({length:7},()=>({t:'-',z:'',r:[]}))])
 );
 
-// NASCH v29.32: Kernzustände für spätere Modulskripte explizit global verfügbar machen.
+// NASCH v29.33: Kernzustände für spätere Modulskripte explizit global verfügbar machen.
 // Top-level const-Bindings liegen in Browsern nicht automatisch auf window.
 window.USERS=USERS;
 window.PINS=PINS;
@@ -5813,10 +5813,12 @@ window.NASCH_SANDBOX_VERSION='V19';
     if(isCentral(uid))return activeBranchIds();
     if(isOffice(uid))return (meta.officeBranches||[]).filter(x=>isBranchActive(x));
     const u=USERS[uid]; if(!u)return [];
-    if(u.role==='admin')return [meta.home[uid]||'FIL001'].filter(x=>isBranchActive(x));
-    return (meta.staff[uid]||[meta.home[uid]||'FIL001']).filter(x=>isBranchActive(x));
+    const persisted=Array.isArray(u.naschBranches)?u.naschBranches.map(String):[];
+    if(u.naschHomeBranch&&!persisted.includes(String(u.naschHomeBranch)))persisted.push(String(u.naschHomeBranch));
+    if(u.role==='admin')return Array.from(new Set([meta.home[uid]||u.naschHomeBranch||'FIL001',...persisted])).filter(x=>isBranchActive(x));
+    return Array.from(new Set([...(meta.staff[uid]||[meta.home[uid]||u.naschHomeBranch||'FIL001']),...persisted])).filter(x=>isBranchActive(x));
   }
-  function workerIn(uid,bid=activeBranch()){return (meta.staff[String(uid)]||[]).includes(bid);}
+  function workerIn(uid,bid=activeBranch()){const id=String(uid),u=USERS[id]||{};return (meta.staff[id]||[]).includes(bid)||(Array.isArray(u.naschBranches)&&u.naschBranches.map(String).includes(String(bid)))||String(u.naschHomeBranch||'')===String(bid);}
   function canAccess(uid,bid=activeBranch()){return accessBranches(uid).includes(bid);}
 
   function genericKeys(){const out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('nasch-')&&!/^nasch-v2\d-/.test(k))out.push(k);}return out;}
@@ -5972,6 +5974,17 @@ window.NASCH_SANDBOX_VERSION='V19';
   }
   function setHome(uid,bid){if(!isCentral(AppState.currentUserId)||!meta.branches[bid])return;meta.home[uid]=bid;meta.staff[uid]=Array.from(new Set([...(meta.staff[uid]||[]),bid]));saveMeta();renderAssignments();}
   function setStaff(uid,bid,on){if(!isCentral(AppState.currentUserId)||!meta.branches[bid])return;let a=meta.staff[uid]||[];a=on?Array.from(new Set([...a,bid])):a.filter(x=>x!==bid);if(!a.includes(meta.home[uid]))a.push(meta.home[uid]);meta.staff[uid]=a;saveMeta();renderAssignments();}
+  function officeAssignEmployee(uid){
+    uid=String(uid||'');
+    if(!isOffice(AppState.currentUserId)||!USERS[uid])return false;
+    const bid=activeBranch();
+    meta.home[uid]=bid;
+    meta.staff[uid]=Array.from(new Set([...(meta.staff[uid]||[]),bid]));
+    USERS[uid].naschHomeBranch=bid;
+    USERS[uid].naschBranches=Array.from(new Set([...(Array.isArray(USERS[uid].naschBranches)?USERS[uid].naschBranches:[]),bid]));
+    saveMeta();
+    return true;
+  }
   function addBranch(){
     if(!isCentral(AppState.currentUserId))return;
     const name=String(document.getElementById('v20NewBranchName')?.value||'').trim();
@@ -6070,7 +6083,7 @@ window.NASCH_SANDBOX_VERSION='V19';
   }
 
   // API
-  window.BranchSandbox={meta:()=>deep(meta),active:activeBranch,branch,accessBranches,workerIn,canAccess,switchBranch,loginBranchChanged,updateBranch,setHome,setStaff,addBranch,renderBranchesPage,renderOfficePage,isCentral,isOffice,isBranchActive,activateExistingBranch,logoTap,openSystemAdmin,closeSystemAdmin,systemAdminLogin,activateDraftBranch,isSystemAdminUnlocked:()=>systemAdminUnlocked};
+  window.BranchSandbox={meta:()=>deep(meta),active:activeBranch,branch,accessBranches,workerIn,canAccess,switchBranch,loginBranchChanged,updateBranch,setHome,setStaff,officeAssignEmployee,addBranch,renderBranchesPage,renderOfficePage,isCentral,isOffice,isBranchActive,activateExistingBranch,logoTap,openSystemAdmin,closeSystemAdmin,systemAdminLogin,activateDraftBranch,isSystemAdminUnlocked:()=>systemAdminUnlocked};
 
   // Init after all legacy scripts.
   if(FIXED_BRANCH)localStorage.setItem(ACTIVE_KEY,FIXED_BRANCH);
@@ -7673,7 +7686,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.32';
+  window.NASCH_APP_VERSION='29.33';
 })();
 </script>
 
@@ -8618,7 +8631,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.32';
+  window.NASCH_APP_VERSION='29.33';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8629,7 +8642,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8783,7 +8796,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8834,7 +8847,7 @@ window.NASCH_APP_VERSION='29.32';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8853,7 +8866,7 @@ window.NASCH_APP_VERSION='29.32';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9204,7 +9217,7 @@ window.NASCH_APP_VERSION='29.32';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9721,7 +9734,7 @@ window.NASCH_APP_VERSION='29.32';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   const VERSION='29.26';
   const AUTOSAVE_DELAY=1200;
@@ -9916,7 +9929,7 @@ window.NASCH_APP_VERSION='29.32';
 
 <script id="nasch-v2921-copy-next-cloud">
 /* NASCH v29.26 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -10074,7 +10087,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 <script id="nasch-v2822-auto-update">
 /* NASCH v29.30 · automatische App-Aktualisierung mit Reload-Schleifenschutz */
 (()=>{
-  const CURRENT=String(window.NASCH_APP_VERSION||'29.32');
+  const CURRENT=String(window.NASCH_APP_VERSION||'29.33');
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   const UPDATE_GUARD_KEY='nasch-update-attempt-v1';
@@ -10245,7 +10258,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10441,7 +10454,7 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
 </div>
 <script>
 /* NASCH v29.26 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10543,7 +10556,7 @@ window.NaschEmployeeDemo=(()=>{
 </div>
 <script id="nasch-v2826-features">
 /* NASCH v29.26 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10777,7 +10790,7 @@ window.NaschDeputyRights=(()=>{
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.32';
+window.NASCH_APP_VERSION='29.33';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -11067,12 +11080,13 @@ function handbook(){
   }
   else if(office){
     title='📖 Büro-Handbuch';roleLabel='Büro-Handbuch';
-    const mods=[['wochenplan','Wochenplan'],['vorschuss','Vorschuss'],['gutschein','Gutschein'],['waesche','Wäsche / Schürzen'],['zeiterfassung','Zeiterfassung']].filter(x=>moduleOffice(x[0])).map(x=>`<li>${x[1]}</li>`).join('');
-    body=card('🏢 Zugewiesene Bereiche',mods?`Für diese Filiale sind aktuell folgende Bereiche auf <strong>BÜRO</strong> gestellt:<ul>${mods}</ul>`:'Für diese Filiale ist aktuell kein Bereich an das Büro übertragen. Nicht zugewiesene Filialfunktionen werden nicht erläutert oder freigeschaltet.')+
-      (moduleVisible('wochenplan')?card('📅 Wochenplan','Vollständige 7-Tage-Ansicht einschließlich vergangener Kalenderwochen. Die Mitarbeiter-Ausblendlogik gilt für den Bürozugang nicht. Pro Arbeitstag werden die geplanten Tagesstunden und je Mitarbeiter die Wochenstunden angezeigt; Tages- und Wochensummen bleiben sichtbar. Der Wochenplan kann als PDF geöffnet und über den Druckdialog gespeichert/heruntergeladen werden.'): '')+
-      (moduleVisible('stundennachweis')?card('⏱ Stunden / Nachweise','Das Büro darf die offiziellen Stundenzettel der Mitarbeiter ansehen und als PDF speichern/herunterladen. Es darf nicht gegenzeichnen, keinen offiziellen Mailversand auslösen und keinen OneDrive-Archivauftrag starten.'): '')+
-      card('👁 Teamstatus & Meldungen','Nur soweit für den Büroprozess freigegeben: Online/zuletzt online und Lesestatus betrieblicher Vorgänge. Push-/Sperrbildschirmtexte bleiben neutral; fachliche Details erscheinen erst nach Öffnen von NASCH.')+
-      card('🔒 Rollenabgrenzung','Keine PIN-/Filialleitungs-/Vertretungs- oder System-Admin-Funktionen verwenden. Schreib-/Verwaltungsrechte gelten nur für die entsprechend auf BÜRO gestellten Module. Wochenplan und Stundenzettel dürfen bei aktivem Modul zusätzlich ausdrücklich read-only eingesehen und als PDF gespeichert werden.');
+    body=card('📅 Wochenplan','Der Wochenplan ist für das Büro reine Lesesicht. Alle sieben Tage sowie vergangene Kalenderwochen können geöffnet werden. Tagesstunden, Wochenstunden und Summen werden angezeigt. Der Wochenplan kann über die PDF-/Druckansicht gespeichert bzw. heruntergeladen werden.')+
+      card('📄 Stundenzettel','Das Büro darf die offiziellen Stundenzettel der Mitarbeiter ansehen und als PDF speichern/herunterladen. Gegenzeichnen, Mailversand und OneDrive-Archivierung bleiben Filialleitung bzw. berechtigter Vertretung vorbehalten.')+
+      card('🤒 Krank & genehmigter Urlaub','Das Büro sieht Krankmeldungen und bereits genehmigten Urlaub ausschließlich zur Information. Wunschfrei, offene Urlaubsanträge, unbezahlter Urlaub und sonstige Abwesenheitsanträge werden im Büro nicht bearbeitet.')+
+      card('👤 Mitarbeiter anlegen','Das Büro darf neue normale Mitarbeiter für die ausgewählte Filiale anlegen. Admin-/Vertretungsrechte werden darüber nicht vergeben. PIN-Reset, Tätigkeiten, Zuschlagsberechtigung, Stundenlohn und andere Filialleitungs-Einstellungen bleiben außerhalb des Bürobereichs.')+
+      card('🏖 Urlaubsdaten bearbeiten','Für bestehende Mitarbeiter darf das Büro ausschließlich Urlaubsanspruch des aktuellen Jahres, Resturlaub aktuell und Rest aus Vorjahr pflegen.')+
+      card('🚫 Nicht im Büro','Keine Wunschfrei-, Krank- oder Urlaubsanträge anlegen/bearbeiten, keine Mängelliste, keine Termine, kein Tausch/Ersatz/Organisation und keine Modulzuordnung. Arbeitszeitkorrekturen werden im Büro nicht freigegeben.')+
+      card('🔒 Datenschutz','Push-/Sperrbildschirmtexte bleiben neutral. Das Büro erhält nur die für seine Aufgaben notwendigen Mitarbeiter- und Nachweisdaten.');
   }
   else if(dep){
     title='📖 Vertretungs-Handbuch';roleLabel='Vertretungs-Handbuch';
@@ -11336,7 +11350,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 })();
 </script>
 
-<script src="./nasch-v2932.js"></script>
+<script src="./nasch-v2933.js"></script>
 
 <!-- NASCH v29.28 · Stundenübersicht / Stundenzettel Rollenrechte + Büro-Wochenplan -->
 <style id="nasch-v2928-hours-overview-css">
@@ -11353,7 +11367,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </style>
 <script id="nasch-v2928-hours-overview-js">
 (()=>{
-  const VERSION='29.32';
+  const VERSION='29.33';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uidNow=()=>String(window.AppState?.currentUserId||'');
   const currentUser=()=>window.AppState?.currentUser||(typeof USERS!=='undefined'?USERS?.[uidNow()]:null)||null;

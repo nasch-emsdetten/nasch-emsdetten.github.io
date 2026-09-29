@@ -1,0 +1,60 @@
+
+/* v29.15 · PWA-Stabilität auf Mobilgeräten
+   Normales Scrollen bleibt erlaubt; Overscroll darf keinen Browser-Reload / Pull-to-Refresh auslösen. */
+html,body{overscroll-behavior-y:none!important;}
+body{overscroll-behavior:none!important;}
+.screen,.page-wrap{overscroll-behavior-y:contain;}
+
+/* NASCH v29.15 · Startbild ohne weiße Ecken + Pull-to-Refresh gesperrt */
+.n299-shift-actionbar{position:sticky!important;bottom:0!important;z-index:30;background:#fff!important;border-top:1px solid var(--border)!important;box-shadow:0 -8px 20px rgba(15,23,42,.08);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important}
+.n299-team-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin-right:5px;vertical-align:1px}.n299-team-dot.online{background:#16a34a;box-shadow:0 0 0 2px #dcfce7}
+.n299-presence{font-size:10px;color:#64748b;white-space:nowrap}.n299-read{font-size:10px;color:#64748b;margin-top:3px}.n299-read.ok{color:#047857;font-weight:700}
+.n299-hours{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-top:9px}.n299-hours table{width:100%;border-collapse:collapse;font-size:10px;min-width:520px}.n299-hours th{background:#f8fafc;color:#334155;text-align:left;padding:7px;border-bottom:1px solid var(--border)}.n299-hours td{padding:6px 7px;border-bottom:1px solid var(--border)}.n299-hours td.r{text-align:right;white-space:nowrap}.n299-hours tr:last-child td{border-bottom:0}.n299-hours .muted{color:#64748b}.n299-hours .warn{color:#b45309;font-weight:700}
+.n299-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:9px 0}.n299-summary>div{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:7px}.n299-summary span{display:block;font-size:8px;color:#64748b}.n299-summary strong{font-size:11px;color:#172033}
+.n299-sig-open{width:100%;border:1px dashed #94a3b8;background:#f8fafc;color:#1e3a5f;border-radius:9px;padding:9px;font-size:11px;font-weight:800;cursor:pointer;margin:6px 0}
+#n299SignatureOverlay{display:none;position:fixed;inset:0;z-index:12000;background:#0f172a;color:#fff;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}#n299SignatureOverlay.open{display:flex;flex-direction:column}.n299-sig-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#111827}.n299-sig-head strong{flex:1}.n299-sig-head button,.n299-sig-foot button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer}.n299-sig-stage{flex:1;min-height:0;padding:8px;background:#e2e8f0;display:flex;align-items:stretch}.n299-sig-stage canvas{width:100%;height:100%;background:#fff;border-radius:10px;touch-action:none}.n299-sig-foot{display:flex;gap:8px;padding:10px 12px;background:#111827}.n299-sig-foot button{flex:1}.n299-sig-foot .primary{background:#16a34a;color:#fff}.n299-sig-foot .light{background:#fff;color:#172033}
+.n299-notify-card{border:1px solid var(--border);border-radius:10px;background:#fff;padding:10px 12px;margin-top:9px}.n299-notify-row{display:flex;align-items:center;gap:8px}.n299-notify-row>div:first-child{flex:1}.n299-notify-card button{border:1px solid var(--border);background:#fff;color:#1e3a5f;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:800;cursor:pointer}.n299-notify-card .on{background:#e1f5ee;color:#085041;border-color:#9bd8c4}.n299-note{font-size:9px;color:#64748b;line-height:1.4;margin-top:6px}
+.n299-team-list .row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:11px}.n299-team-list .row:last-child{border-bottom:0}.n299-team-list .name{flex:1;font-weight:700}.n299-team-list .last{font-size:10px;color:#64748b;text-align:right}
+.n299-sick-row{padding:9px 0;border-bottom:1px solid var(--border)}.n299-sick-row:last-child{border-bottom:0}.n299-sick-grid{display:grid;grid-template-columns:1fr 90px auto;gap:7px;align-items:end;margin-top:6px}.n299-sick-grid input{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px}.n299-sick-grid button{border:0;border-radius:8px;padding:9px 10px;background:#1e3a5f;color:#fff;font-size:10px;font-weight:800;cursor:pointer}.n299-sick-grid .revoke{background:#fff;color:#991b1b;border:1px solid #fecaca}
+.n299-bound-kv{border-left:3px solid #eab308;padding-left:8px}.n299-status-chip{display:inline-block;border-radius:999px;padding:3px 7px;font-size:9px;font-weight:800;background:#f1f5f9;color:#475569}.n299-status-chip.bound{background:#fef9c3;color:#854d0e}.n299-status-chip.read{background:#dcfce7;color:#166534}
+@media(max-width:600px){.n299-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.n299-sick-grid{grid-template-columns:1fr 82px}.n299-sick-grid button{grid-column:1/-1}}
+@media(orientation:landscape){#n299SignatureOverlay .n299-sig-head{padding:6px 10px}#n299SignatureOverlay .n299-sig-foot{padding:6px 10px}.n299-sig-stage{padding:5px}}
+
+/* Mitarbeiter: alte Wochen-PDF-/Wochen-Unterschrift nie anzeigen; Monatsliste ist die einzige Stundenansicht. */
+#personalTimesheetPdfCard,#personalTimesheetPdfBar,#signCard,#signedBox{display:none!important}
+
+/* v29.10 · Monats-Stundennachweis PDF-only / Rollenübersichten */
+.n2910-top{display:flex;align-items:end;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-bottom:9px}.n2910-top label{min-width:180px;font-size:10px;font-weight:700;color:#475569}.n2910-top select{margin-top:4px}.n2910-mailto{font-size:9px;color:#64748b;text-align:right}.n2910-overview{overflow-x:auto;border:1px solid var(--border);border-radius:10px}.n2910-overview table{width:100%;border-collapse:collapse;font-size:10px;min-width:760px}.n2910-overview th{background:#f8fafc;color:#334155;padding:7px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}.n2910-overview th:first-child{text-align:left}.n2910-overview td{padding:7px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}.n2910-overview tr:last-child td{border-bottom:0}.n2910-overview td.name{text-align:left;font-weight:700;white-space:nowrap}.n2910-overview td.num{font-variant-numeric:tabular-nums}.n2910-overview td.minus{color:#b42318;font-weight:800}.n2910-iconbtn{border:1px solid #cbd5e1;background:#fff;color:#1e3a5f;border-radius:7px;padding:6px 9px;font-size:9px;font-weight:800;cursor:pointer;white-space:nowrap}.n2910-iconbtn.mail{background:#1e3a5f;color:#fff;border-color:#1e3a5f}.n2910-iconbtn:disabled{opacity:.35;cursor:default}.n2910-badge{display:inline-block;border-radius:999px;padding:3px 7px;background:#f1f5f9;color:#475569;font-size:8.5px;font-weight:800;white-space:nowrap}.n2910-badge.ok{background:#dcfce7;color:#166534}.n2910-badge.wait{background:#fef3c7;color:#92400e}.n2910-badge.bad{background:#fee2e2;color:#991b1b}.n2910-bcc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:10px;padding:9px;border:1px solid var(--border);border-radius:9px;background:#f8fafc}.n2910-bcc label{font-size:9px;color:#475569;font-weight:700}.n2910-bcc input{width:100%;margin-top:4px}.n2910-bcc .btn{margin:0}.n2910-sign{margin-top:10px;border:1px solid var(--border);border-radius:9px;background:#fff;padding:8px 10px}.n2910-sign summary{cursor:pointer;font-size:10px;font-weight:800;color:#1e3a5f}.n2910-sign[open] summary{margin-bottom:9px}.n299-hours tfoot th{background:#f8fafc;padding:7px;border-top:1px solid var(--border);font-size:9px}.n299-hours tfoot th.r{text-align:right;white-space:nowrap}
+@media(max-width:600px){.n2910-top{display:block}.n2910-mailto{text-align:left;margin-top:6px}.n2910-bcc{grid-template-columns:1fr}.n2910-bcc .btn{width:100%}}
+
+/* v29.13: sicherer Testversand nur an eigene hinterlegte Adresse */
+.n2913-testmail{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:10px;padding:10px;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#1e3a5f}.n2913-testmail strong{display:block;font-size:10px;margin-bottom:3px}.n2913-testmail div div{font-size:9px;line-height:1.45;color:#475569}.n2913-testmail .btn{margin:0;white-space:nowrap}@media(max-width:600px){.n2913-testmail{grid-template-columns:1fr}.n2913-testmail .btn{width:100%}}
+
+
+/* NASCH v29.33 · Desktop/iPad-Handbuch: linke Navigation darf Inhalte nicht überdecken.
+   Der Inhaltsbereich wird explizit rechts neben der festen 210px-Navigation positioniert. */
+@media(min-width:1024px){
+  body.nasch-desktop-admin #appScreen{padding-left:0!important;}
+  body.nasch-desktop-admin .topbar,
+  body.nasch-desktop-admin #v20BranchBar,
+  body.nasch-desktop-admin .page-wrap{
+    margin-left:210px!important;
+    width:calc(100% - 210px)!important;
+    max-width:calc(100% - 210px)!important;
+    min-width:0!important;
+  }
+  body.nasch-desktop-admin #pgHandbuch{
+    padding-left:30px!important;
+    padding-right:30px!important;
+    overflow-wrap:anywhere;
+  }
+  body.nasch-desktop-admin #pgHandbuch .card,
+  body.nasch-desktop-admin #pgHandbuch .card-b{min-width:0!important;}
+}
+
+
+/* NASCH v29.33 · Personalbüro */
+#n2933OfficePolicy{display:contents}
+.n2933-office-policy .card{min-width:0}
+.n2933-list{display:flex;flex-direction:column;gap:0}.n2933-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)}.n2933-row:first-child{border-top:0}.n2933-row>div{flex:1;min-width:0;font-size:11px}.n2933-sub{font-size:10px;color:var(--muted);margin-top:2px}.n2933-chip{font-size:9px;font-weight:800;padding:3px 7px;border-radius:12px;background:#eef2ff;color:#3730a3;white-space:nowrap}.n2933-empty{font-size:11px;color:var(--muted);padding:4px 0}.n2933-grid,.n2933-vac-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.n2933-grid label,.n2933-vac-grid label{font-size:10px;font-weight:700;color:var(--muted)}.n2933-grid input,.n2933-grid select,.n2933-vac-grid input{margin-top:4px}.n2933-note{font-size:10px;color:var(--muted);line-height:1.45;margin:6px 0 9px}.n2933-emp{border-top:1px solid var(--border);padding:10px 0}.n2933-emp:first-of-type{border-top:0}.n2933-emp-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}.n2933-emp-head strong{font-size:12px;flex:1}.n2933-emp-head span{font-size:9px;color:var(--muted);font-weight:800}.n2933-save{width:auto!important;margin:8px 0 0!important;padding:7px 10px!important}
+@media(max-width:620px){.n2933-grid,.n2933-vac-grid{grid-template-columns:1fr}}
