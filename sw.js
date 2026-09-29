@@ -1,10 +1,10 @@
-const VERSION='29.30';
+const VERSION='29.31';
 const CACHE=`nasch-app-v${VERSION}`;
 const CORE=[
   './index.html','./emsdetten.html','./lohne.html','./werlte.html','./loeningen.html','./leitung.html',
   './manifest-emsdetten-v2916.webmanifest','./manifest-lohne-v2916.webmanifest','./manifest-werlte-v2916.webmanifest','./manifest-loeningen-v2916.webmanifest','./manifest-leitung-v2916.webmanifest',
   './manifest-emsdetten.webmanifest','./manifest-lohne.webmanifest','./manifest-werlte.webmanifest','./manifest-loeningen.webmanifest','./manifest-leitung.webmanifest',
-  './version.json','./icon-any-180-v2916.png','./icon-any-192-v2916.png','./icon-any-512-v2916.png','./icon-maskable-192-v2916.png','./icon-maskable-512-v2916.png','./nasch-v2930.js','./nasch-v2930.css','./assets/timesheet-master.png'
+  './version.json','./icon-any-180-v2916.png','./icon-any-192-v2916.png','./icon-any-512-v2916.png','./icon-maskable-192-v2916.png','./icon-maskable-512-v2916.png','./nasch-v2931.js','./nasch-v2931.css','./assets/timesheet-master.png'
 ];
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{
