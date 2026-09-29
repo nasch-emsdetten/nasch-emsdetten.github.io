@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#B91C1C">
-<title>NASCH v29.20 · Werlte</title>
+<title>NASCH v29.23 · Werlte</title>
 <link rel="manifest" href="manifest-werlte-v2916.webmanifest">
 <link rel="apple-touch-icon" href="icon-any-180-v2916.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2916.png">
@@ -147,7 +147,7 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
-/* Einstellungs-Module v29.20 */
+/* Einstellungs-Module v29.23 */
 .settings-module{margin-bottom:10px;}
 .settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
 .settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
@@ -249,7 +249,7 @@ window.FILIAL_ID = 'FIL003';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.20</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.23</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -497,6 +497,11 @@ window.FILIAL_ID = 'FIL003';
       <div class="card">
         <div class="card-h"><div class="card-t">Krankmeldung</div></div>
         <div class="card-b" style="display:flex;flex-direction:column;gap:8px;">
+          <div id="krankArtWrap" style="display:none;">
+            <label>Art der Krankmeldung</label>
+            <select id="krankArt"><option value="krank">Eigene Krankheit</option><option value="kindkrank">Kind krank</option></select>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;">„Kind krank“ ist nur sichtbar, wenn die Filialleitung diese Option für dich freigeschaltet hat.</div>
+          </div>
           <label>Krank ab</label>
           <input type="date" id="krankVon">
           <label>Voraussichtlich bis (optional)</label>
@@ -714,7 +719,7 @@ window.FILIAL_ID = 'FIL003';
         <button id="todayAdminBtn" class="nasch-today-btn" type="button" onclick="NaschPlanView.jumpToday('adminTbl')">📍 Heute</button>
         <button id="editBtn" onclick="toggleEdit()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;">✏️ Bearbeiten</button>
       </div>
-      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Zelle antippen: Schicht, <strong>Urlaub (U)</strong>, <strong>Wunschfrei (WF)</strong>, Krank (K) wählen</span></div>
+      <div id="editBanner" style="display:none;" class="banner binfo"><span>✏️</span><span>Zelle antippen: Schicht, <strong>Urlaub (U)</strong>, <strong>Unbez. Urlaub (UU)</strong>, <strong>Wunschfrei (WF)</strong>, Krank (K) oder freigeschaltet Kind krank (KK) wählen</span></div>
       <div id="planDebug" style="font-size:10px;color:#dc2626;padding:4px 8px;white-space:pre-wrap;display:none;background:#fef2f2;border-radius:6px;margin-bottom:8px;"></div>
 <div id="abwesenheitsPanel" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;">
   <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;">⚡ Schnelleingabe Abwesenheiten</div>
@@ -735,8 +740,10 @@ window.FILIAL_ID = 'FIL003';
       <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">Typ</label>
       <div style="display:flex;gap:5px;">
         <button onclick="setAbwTyp('U')" id="abwU" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">✈️ Urlaub</button>
+        <button onclick="setAbwTyp('UU')" id="abwUU" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">🕓 Unbez. Urlaub</button>
         <button onclick="setAbwTyp('WF')" id="abwWF" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">🏖 Wunschfrei</button>
         <button onclick="setAbwTyp('K')" id="abwK" style="padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">🤒 Krank</button>
+        <button onclick="setAbwTyp('KK')" id="abwKK" style="display:none;padding:6px 10px;border:2px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;background:var(--card);">👶 Kind krank</button>
       </div>
     </div>
     <button onclick="doAbwesenheit()" style="padding:7px 16px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:1px;">Eintragen</button>
@@ -1107,7 +1114,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v29.20: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v29.23: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -1565,7 +1572,7 @@ function eurFmt(v) {
 // ── SANDBOX: Admin-Einstellungen für Mitarbeiter und Schichtplanung ──
 const NaschAdminSettings = (() => {
   const KEY = 'nasch-sandbox-admin-v4';
-  const SCHEMA_VERSION = 7;
+  const SCHEMA_VERSION = 8;
   const DEFAULT_ORDER = Object.keys(USERS);
   const DEFAULT_ACTIVITIES = ['Vo/GL','V/SL','V','SL','GL','TO','B','RK'];
   const DEFAULT_ACTIVITY_LEGEND = {
@@ -1743,6 +1750,7 @@ const NaschAdminSettings = (() => {
       u.stundenlohn = hasOwn(p,'hourlyRate') ? p.hourlyRate : base.hourlyRate;
       u.arbeitstageWoche = hasOwn(p,'weeklyWorkDays') ? p.weeklyWorkDays : base.weeklyWorkDays;
       u.zuschlaege = p.surchargeEligible === true;
+      u.kindKrankAktiv = ['VZ','TZ'].includes(typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):String(u.typ||'').toUpperCase()) && p.childSickEnabled === true;
       const assigned = profileActivities(uid);
       u.taetigkeiten = assigned;
       u.taetigkeit = assigned.join(' + '); // Legacy-Anzeigen bleiben kompatibel
@@ -1753,6 +1761,11 @@ const NaschAdminSettings = (() => {
   function entries(){ return state.order.filter(id=>USERS[id]).map(id=>[id, USERS[id]]); }
   function activities(){ return [...state.activities]; }
   function surchargeEligible(uid){ return state.profiles[uid]?.surchargeEligible === true; }
+  function childSickEnabled(uid){
+    const u=USERS?.[String(uid)]||USERS?.[uid];
+    const typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):String(u.typ||'').toUpperCase();
+    return !!u && ['VZ','TZ'].includes(typ) && state.profiles[String(uid)]?.childSickEnabled === true;
+  }
   function activityLabel(code){ return String(state.activityLegend?.[code]||'').trim(); }
   function activityDisplay(code){ const label=activityLabel(code); return label ? `${code} · ${label}` : code; }
   function times(type){ return [...(state.times[type] || [])]; }
@@ -1784,6 +1797,7 @@ const NaschAdminSettings = (() => {
       next.weeklyWorkDays = Number.isInteger(d) && d >= 1 && d <= 7 ? d : null;
     }
     if('surchargeEligible' in patch) next.surchargeEligible = patch.surchargeEligible === true || patch.surchargeEligible === 'true' || patch.surchargeEligible === 1 || patch.surchargeEligible === '1';
+    if('childSickEnabled' in patch) next.childSickEnabled = patch.childSickEnabled === true || patch.childSickEnabled === 'true' || patch.childSickEnabled === 1 || patch.childSickEnabled === '1';
     if('defaultActivities' in patch) {
       next.defaultActivities = normalizeActivityList(patch.defaultActivities);
       delete next.defaultActivity;
@@ -1949,6 +1963,8 @@ const NaschAdminSettings = (() => {
       const wage = hasOwn(p,'hourlyRate') ? (p.hourlyRate ?? '') : (u.stundenlohn ?? '');
       const weeklyDays = hasOwn(p,'weeklyWorkDays') ? (p.weeklyWorkDays ?? '') : (u.arbeitstageWoche ?? '');
       const surcharge = p.surchargeEligible === true;
+      const empType=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):String(u.typ||'').toUpperCase();
+      const childSick = p.childSickEnabled === true && ['VZ','TZ'].includes(empType);
       const assigned = profileActivities(uid);
       return `<div class="card" style="padding:10px 12px;margin-bottom:8px;overflow:visible;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -1961,7 +1977,7 @@ const NaschAdminSettings = (() => {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div><label style="margin-top:0;">Stunden / Monat</label><input type="number" min="0" step="0.25" value="${monthly}" placeholder="nicht hinterlegt" onchange="adminProfileChange('${uid}','monthlyHours',this.value)"></div>
           <div><label style="margin-top:0;">Stundenlohn (€)</label><input type="number" min="0" step="0.01" value="${wage}" placeholder="nicht hinterlegt" onchange="adminProfileChange('${uid}','hourlyRate',this.value)"></div>
-          ${['VZ','TZ'].includes(u.typ)?`<div><label style="margin-top:0;">Arbeitstage / Woche</label><input type="number" min="1" max="7" step="1" value="${weeklyDays}" placeholder="z. B. 5" onchange="adminProfileChange('${uid}','weeklyWorkDays',this.value)"></div>`:''}
+          ${['VZ','TZ'].includes(empType)?`<div><label style="margin-top:0;">Arbeitstage / Woche</label><input type="number" min="1" max="7" step="1" value="${weeklyDays}" placeholder="z. B. 5" onchange="adminProfileChange('${uid}','weeklyWorkDays',this.value)"></div>`:''}
         </div>
         <label>Zuschläge</label>
         <select onchange="adminProfileChange('${uid}','surchargeEligible',this.value==='1')">
@@ -1969,6 +1985,7 @@ const NaschAdminSettings = (() => {
           <option value="1" ${surcharge?'selected':''}>Ja</option>
         </select>
         <div style="font-size:10px;color:var(--muted);margin-top:4px;">Ja = 25 % ab 20:00 Uhr bzw. 50 % an Sonn- und NRW-Feiertagen. Es gilt immer nur der höhere zutreffende Zuschlag.</div>
+        ${['VZ','TZ'].includes(empType)?`<label>Kind krank (KK)</label><select onchange="adminProfileChange('${uid}','childSickEnabled',this.value==='1')"><option value="0" ${childSick?'':'selected'}>Nicht freigeschaltet</option><option value="1" ${childSick?'selected':''}>Für diesen Mitarbeiter aktiv</option></select><div style="font-size:10px;color:var(--muted);margin-top:4px;">Nur für diesen Vollzeit-/Teilzeit-Mitarbeiter. Erst nach Aktivierung erscheint „Kind krank“ in der Krankmeldung und Planbearbeitung.</div>`:''}
         <label>Standard-Tätigkeiten <span style="font-size:10px;color:var(--muted);font-weight:400;">(Mehrfachauswahl)</span></label>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           ${state.activities.map(a=>{const on=assigned.includes(a);return `<button type="button" onclick="adminToggleEmployeeActivity('${uid}','${encodeURIComponent(a).replace(/'/g,'%27')}')" title="${esc(activityLabel(a)||a)}" style="padding:6px 10px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:600;border:1.5px solid ${on?'var(--navy)':'var(--border)'};background:${on?'#f0f5ff':'#fff'};color:${on?'var(--navy)':'var(--text)'};">${on?'✓ ':''}${esc(activityDisplay(a))}</button>`}).join('')}
@@ -2015,7 +2032,7 @@ const NaschAdminSettings = (() => {
   function reset(){ try{localStorage.removeItem(KEY);}catch(_){} }
 
   load();
-  return {getOrder, entries, activities, surchargeEligible, activityLabel, activityDisplay, times, move, addEmployee, updateProfile, addActivity, updateActivity, removeActivity, toggleEmployeeActivity, profileActivities, addTime, removeTime, availability, cycleAvailability, buildAdminSettings, hydrateCloud, reset};
+  return {getOrder, entries, activities, surchargeEligible, childSickEnabled, activityLabel, activityDisplay, times, move, addEmployee, updateProfile, addActivity, updateActivity, removeActivity, toggleEmployeeActivity, profileActivities, addTime, removeTime, availability, cycleAvailability, buildAdminSettings, hydrateCloud, reset};
 })();
 
 function getOrderedUserEntries(){
@@ -2031,6 +2048,7 @@ function getActivityLabel(code){ return NaschAdminSettings.activityLabel(code); 
 function getActivityDisplay(code){ return NaschAdminSettings.activityDisplay(code); }
 function getEmployeeActivities(uid){ return NaschAdminSettings.profileActivities(uid); }
 function getEmployeeSurchargeEnabled(uid){ return NaschAdminSettings.surchargeEligible(uid); }
+function getEmployeeChildSickEnabled(uid){ try{return NaschAdminSettings.childSickEnabled(uid);}catch(_){return false;} }
 function getShiftTimeSuggestions(type){ return NaschAdminSettings.times(type); }
 
 // ── SANDBOX: temporäre Vertretung ───────────────────────────
@@ -2201,7 +2219,7 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
-// ── v29.20: Einstellungs-Module ein-/ausblenden ─────────────
+// ── v29.23: Einstellungs-Module ein-/ausblenden ─────────────
 const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
 function adminSettingsReadState(){
   try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
@@ -2418,7 +2436,7 @@ function shiftClass(t) {
   const map = {
     'F':'s-early','S':'s-late','TS':'s-ho','U':'s-vacation','KV':'s-kv',
     'BS':'s-bs','O':'s-office','T':'s-meeting','HO':'s-ho',
-    'R':'s-clean','WF':'s-vacation','K':'s-vacation','-':'s-off',
+    'R':'s-clean','WF':'s-vacation','K':'s-vacation','KK':'s-vacation','UU':'s-vacation','-':'s-off',
   };
   return map[t] || 's-off';
 }
@@ -2470,7 +2488,7 @@ function getSplitShiftTimes(s) {
 }
 
 function getShiftHours(s) {
-  if(!s || !s.t || ['-','U','WF','K','BS'].includes(s.t)) return 0;
+  if(!s || !s.t || ['-','U','UU','WF','K','KK','BS'].includes(s.t)) return 0;
   if(s.t==='TS') {
     const [z1,z2]=getSplitShiftTimes(s);
     const separated=hoursFromTimeText(z1)+hoursFromTimeText(z2);
@@ -2587,6 +2605,8 @@ function weekShiftLabel(s,uid=null,dayIdx=null,shifts=null){
 }
 function weeklyHoursDisplay(uid,dayIdx,shifts,s){
   s=s||(shifts||[])[dayIdx]||{t:'-'};
+  if(s?.t==='UU') return ['VZ','TZ'].includes(typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):String(USERS?.[String(uid)]?.typ||'').toUpperCase())?'Frei':'';
+  if(s?.t==='KK') return 'KK';
   if(s?.t==='WF') return wishfreePublishedText(s);
   if(isPlainUnplannedShift(s)) return publishedUnplannedText(uid,dayIdx,shifts||[]);
   return typeof dailyShiftTimes==='function'?dailyShiftTimes(s):(s?.z||'');
@@ -2594,7 +2614,7 @@ function weeklyHoursDisplay(uid,dayIdx,shifts,s){
 
 function shiftTypeText(s) {
   if(!s || !s.t || s.t==='-') { if(s?.availabilityCode==='n') return 'n. Verfügbar'; if(s?.availabilityCode==='f') return 'nur Früh'; if(s?.availabilityCode==='s') return 'nur Spät'; return 'Frei'; }
-  const labels={F:'Früh',S:'Spät',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'KV',BS:'Berufsschule',O:'Office',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
+  const labels={F:'Früh',S:'Spät',TS:'Teilschicht',U:'Urlaub',UU:'Unbezahlter Urlaub',WF:'Wunschfrei',K:'Krank',KK:'KK',KV:'KV',BS:'Berufsschule',O:'Office',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
   return labels[s.t]||s.t;
 }
 
@@ -2657,7 +2677,7 @@ function getWeekTotalHours() {
   return Object.keys(USERS).reduce((sum,uid)=>sum+getEmployeeWeekStats(uid).hours,0);
 }
 
-// v29.20: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
+// v29.23: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
 // Filialleitung, aktive Vertretung, Personalbüro und System-Admin sehen immer die komplette Woche.
 function isEmployeePlanViewer(){
   const uid=String(AppState.currentUserId||'');
@@ -2890,7 +2910,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'29.20');
+    const v='v'+(window.NASCH_APP_VERSION||'29.23');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -3017,6 +3037,12 @@ function tglSwitch(el){
 }
 
 // ── Formulare ─────────────────────────────────────────────
+function refreshKindKrankUi(){
+  const wrap=document.getElementById('krankArtWrap'),sel=document.getElementById('krankArt'),uid=String(AppState?.currentUserId||'');
+  const ok=typeof getEmployeeChildSickEnabled==='function'&&getEmployeeChildSickEnabled(uid);
+  if(wrap)wrap.style.display=ok?'block':'none';
+  if(sel&&!ok)sel.value='krank';
+}
 function sendeKrank(){
   const von=document.getElementById('krankVon').value;
   const bis=document.getElementById('krankBis').value;
@@ -3317,6 +3343,8 @@ const SCHICHT_OPTS=[
   {t:'TS',l:'🔵 Teilschicht · 2 Zeitblöcke',bg:'#E6F1FB',tx:'#0C447C'},
   {t:'WF',l:'🏖 Wunschfrei',bg:'#FBEAF0',tx:'#72243E'},
   {t:'U',l:'✈️ Urlaub',bg:'#FBEAF0',tx:'#72243E'},
+  {t:'UU',l:'🕓 Unbezahlter Urlaub',bg:'#F1F5F9',tx:'#475569'},
+  {t:'KK',l:'👶 Kind krank (KK)',bg:'#FCEBEB',tx:'#791F1F'},
   {t:'KV',l:'👥 KV',bg:'#fef08a',tx:'#633806'},
   {t:'K',l:'🤒 Krank',bg:'#FCEBEB',tx:'#791F1F'},
   {t:'HO',l:'🏠 Home-Office',bg:'#E6F1FB',tx:'#0C447C'},
@@ -3327,6 +3355,7 @@ const SCHICHT_OPTS=[
 const ZEITEN={F:['08:00–15:30','09:30–15:30'],S:['15:30–22:00','16:00–22:00'],KV:['08:00–15:30','15:30–22:00'],R:['06:00–10:00']};
 const ROLLEN=['Vo/GL','V/SL','V','SL','GL','TO','B',''];
 let mS={t:'-',z:'',r:''};
+function absenceShiftLabel(t){return ({U:'Urlaub',UU:'UU',WF:'Wunschfrei',K:'Krank',KK:'KK'})[t]||'';}
 
 const AVAILABILITY_LABELS={g:'Ganztag',f:'Nur Früh',s:'Nur Spät',d:'Fester freier Tag',n:'Fester nicht verfügbarer Tag'};
 function getDayAvailability(uid,dayIdx){
@@ -3455,7 +3484,7 @@ function renderPlanTableDirect(tableId){
 let _abwTyp = 'U';
 function setAbwTyp(t){
   _abwTyp=t;
-  ['U','WF','K'].forEach(x=>{
+  ['U','UU','WF','K','KK'].forEach(x=>{
     const btn=document.getElementById('abw'+x);
     if(!btn)return;
     const active=x===t;
@@ -3463,6 +3492,12 @@ function setAbwTyp(t){
     btn.style.background=active?'var(--navy)':'var(--card)';
     btn.style.color=active?'#fff':'var(--text)';
   });
+}
+function _abwChildSickAllowed(uid){return typeof getEmployeeChildSickEnabled==='function'&&getEmployeeChildSickEnabled(String(uid||''));}
+function updateAbwKindKrankVisibility(){
+  const uid=document.getElementById('abwMA')?.value||'',btn=document.getElementById('abwKK'),ok=_abwChildSickAllowed(uid);
+  if(btn)btn.style.display=ok?'':'none';
+  if(!ok&&_abwTyp==='KK')setAbwTyp('U');
 }
 function _abwISO(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -3488,6 +3523,8 @@ function buildAbwPanel(){
   const current=sel.value;
   sel.innerHTML=emps.map(([uid,u])=>`<option value="${uid}">${u.name}</option>`).join('');
   if(current&&USERS[current])sel.value=current;
+  sel.onchange=()=>updateAbwKindKrankVisibility();
+  updateAbwKindKrankVisibility();
 
   // Datumswahl ist nicht mehr an die angezeigte KW gebunden.
   // Standard bleibt die aktuell angezeigte Woche, kann aber auf jedes Datum geändert werden.
@@ -3517,8 +3554,9 @@ async function doAbwesenheit(){
   if(days>366){if(msg)msg.textContent='❌ Maximal 366 Tage pro Eingabe';return;}
   if(typeof firebase==='undefined'||!firebase.firestore){if(msg)msg.textContent='❌ Firebase ist nicht verfügbar';return;}
 
-  const labels={U:'Urlaub',WF:'Wunschfrei',K:'Krank'};
-  const requestTypes={U:'urlaub',WF:'wunschfrei',K:'krank'};
+  const labels={U:'Urlaub',UU:'Unbezahlter Urlaub',WF:'Wunschfrei',K:'Krank',KK:'Kind krank'};
+  const requestTypes={U:'urlaub',UU:'unbezahlt',WF:'wunschfrei',K:'krank',KK:'kindkrank'};
+  if(_abwTyp==='KK'&&!_abwChildSickAllowed(uid)){if(msg)msg.textContent='❌ Kind krank ist für diesen Mitarbeiter nicht freigeschaltet';return;}
   const groups=new Map();
   for(let d=new Date(von);d<=bis;d.setDate(d.getDate()+1)){
     const copy=new Date(d),key=_abwMondayKey(copy),idx=_abwDayIndex(copy);
@@ -3631,10 +3669,11 @@ function openShiftEditor(uid,dayIdx){
   const opts=SCHICHT_OPTS.filter(o=>{
     if(['HO','T','O'].includes(o.t)&&!isAdmin) return false;
     if(o.t==='BS'&&!isAzubi) return false;
+    if(o.t==='KK' && !(typeof getEmployeeChildSickEnabled==='function' && getEmployeeChildSickEnabled(uid))) return false;
     // Reinigung nur anbieten, wenn dem Mitarbeiter RK zugeordnet ist.
     const assignedActivities=(typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):activityList(user.taetigkeit));
     if(o.t==='R' && !assignedActivities.includes('RK')) return false;
-    // v29.20: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
+    // v29.23: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
     // Früh, Spät und Teilschicht bleiben immer auswählbar.
     return true;
   });
@@ -3653,10 +3692,10 @@ function openShiftEditor(uid,dayIdx){
 
 function selST(t){
   const availabilityCode=mS?.availabilityCode||getDayAvailability(curUID,curDay)||'g';
-  if(['-','U','WF','K'].includes(t)){
+  if(['-','U','UU','WF','K','KK'].includes(t)){
     const wishScope=t==='WF'?(mS?.wishfreeScope||'full'):undefined;
     const wishType=t==='WF'?(mS?.wishfreeType||'Ganzer Tag'):undefined;
-    mS={t,z:t==='U'?'Urlaub':t==='WF'?'Wunschfrei':t==='K'?'Krank':'',r:[],extras:[],manual:true,availabilityCode};
+    mS={t,z:absenceShiftLabel(t),r:[],extras:[],manual:true,availabilityCode};
     if(t==='WF'){mS.wishfreeScope=wishScope;mS.wishfreeType=wishType;}
   }else{
     mS.t=t;mS.manual=true;mS.availabilityCode=availabilityCode;
@@ -3780,9 +3819,9 @@ function applyShift(){
   // Eine bewusste Änderung im Editor ersetzt den alten Tagesdatensatz vollständig.
   // Volltägige Abwesenheiten dürfen keine alten Zeiten, Tätigkeiten oder Extras behalten.
   const availabilityCode=mS?.availabilityCode||getDayAvailability(curUID,curDay)||'g';
-  if(['-','U','WF','K'].includes(mS.t)){
+  if(['-','U','UU','WF','K','KK'].includes(mS.t)){
     const t=mS.t,scope=mS.wishfreeScope||'full',wishType=mS.wishfreeType||'Ganzer Tag';
-    mS={t,z:t==='U'?'Urlaub':t==='WF'?'Wunschfrei':t==='K'?'Krank':'',r:[],extras:[],manual:true,availabilityCode};
+    mS={t,z:absenceShiftLabel(t),r:[],extras:[],manual:true,availabilityCode};
     if(t==='WF'){mS.wishfreeScope=scope;mS.wishfreeType=wishType;}
   }else{
     mS.manual=true;mS.availabilityCode=availabilityCode;
@@ -3795,7 +3834,7 @@ function applyShift(){
   }
   if(!PLAN[curUID]) PLAN[curUID]=Array.from({length:7},()=>({t:'-',z:'',r:''}));
   if(mS.t!=='WF'){delete mS.wishfreeScope;delete mS.wishfreeType;}
-  if(!['U','WF','K'].includes(mS.t)){delete mS.autoSource;}
+  if(!['U','UU','WF','K','KK'].includes(mS.t)){delete mS.autoSource;}
   if(mS.t!=='TS'){
     delete mS.z1;delete mS.z2;delete mS.r1;delete mS.r2;
     delete mS.start1;delete mS.end1;delete mS.start2;delete mS.end2;
@@ -4360,7 +4399,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v29.20: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v29.23: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -4504,10 +4543,12 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
           const date=addDays(monday,i), code=av?.[DAYS[i]]||'g';
           let sh=plan[uid][i]||emptyShift();
           if(sh.manual===true){continue;}
-          const requests=(SandboxStore.getRequests?SandboxStore.getRequests():[]).filter(r=>r.uid===uid&&['urlaub','wunschfrei','krank'].includes(r.type)&&((r.type==='krank'&&r.status!=='abgelehnt')||(['urlaub','wunschfrei'].includes(r.type)&&r.status==='genehmigt'))&&reqCovers(r,date));
-          const kr=requests.find(r=>r.type==='krank'), ur=requests.find(r=>r.type==='urlaub'), wf=requests.find(r=>r.type==='wunschfrei');
+          const requests=(SandboxStore.getRequests?SandboxStore.getRequests():[]).filter(r=>r.uid===uid&&['urlaub','unbezahlt','wunschfrei','krank','kindkrank'].includes(r.type)&&((['krank','kindkrank'].includes(r.type)&&r.status!=='abgelehnt')||(['urlaub','unbezahlt','wunschfrei'].includes(r.type)&&r.status==='genehmigt'))&&reqCovers(r,date));
+          const kr=requests.find(r=>r.type==='krank'), kk=requests.find(r=>r.type==='kindkrank'), ur=requests.find(r=>r.type==='urlaub'), uu=requests.find(r=>r.type==='unbezahlt'), wf=requests.find(r=>r.type==='wunschfrei');
           if(kr){plan[uid][i]={t:'K',z:'Krank',r:[],autoSource:'krank',availabilityCode:code};continue;}
+          if(kk){plan[uid][i]={t:'KK',z:'KK',r:[],autoSource:'kindkrank',availabilityCode:code};continue;}
           if(ur){plan[uid][i]={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:code};continue;}
+          if(uu){plan[uid][i]={t:'UU',z:'UU',r:[],autoSource:'unbezahlt',availabilityCode:code};continue;}
           if(wf){plan[uid][i]={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:code,wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};continue;}
           if(newWeek && ['n','d'].includes(code)){plan[uid][i]={t:'-',z:'',r:[],autoSource:'availability',availabilityCode:code};continue;}
           if(sh.t==='-' || !sh.t){sh.availabilityCode=code; if(['n','d'].includes(code))sh.autoSource=sh.autoSource||'availability'; plan[uid][i]=sh;}
@@ -4552,7 +4593,22 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
     function currentKey(){return state.loadedKey||keyForOffset();}
     init();
     function _resetLoaded(){state.loadedKey=null;}
-  return {loadOffset,persistCurrent,copyEmployeeToNext,currentKey,keyForOffset,syncAllConstraints,_resetLoaded};
+  function getWeekSnapshot(offset=AppState.weekOffset){
+      const key=keyForOffset(offset),mon=getMonday(offset);
+      if(state.loadedKey===key) persistCurrent();
+      if(!state.weeks[key]) state.weeks[key]=createWeek(mon);
+      ensureUserRows(state.weeks[key]);
+      return deepClone(state.weeks[key]);
+    }
+    function setWeekSnapshot(offset,plan){
+      const key=keyForOffset(offset),next=deepClone(plan||{});
+      ensureUserRows(next);
+      state.weeks[key]=next;
+      if(state.loadedKey===key) swapInto(next);
+      saveState();
+      return deepClone(next);
+    }
+  return {loadOffset,persistCurrent,copyEmployeeToNext,currentKey,keyForOffset,syncAllConstraints,getWeekSnapshot,setWeekSnapshot,_resetLoaded};
   })();
   window.WeekPlanStore=WeekPlanStore;
 
@@ -4812,7 +4868,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
     const type=typeof shiftTypeText==='function'?shiftTypeText(s):(s.t||'');
     const activity=plainActivity(s.r);
     const time=s.z||'';
-    if(['U','WF','K','BS'].includes(s.t)) return `${type}${time?' · '+escapeHtml(time):''}`;
+    if(['U','UU','WF','K','KK','BS'].includes(s.t)) return `${type}${time?' · '+escapeHtml(time):''}`;
     return `${escapeHtml(type)}${time?' · '+escapeHtml(time):''}${activity?' · '+escapeHtml(activity):''}`;
   }
   function dateMetaForPdf(d){
@@ -5119,7 +5175,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
     const d=r.data||{},k=dateKey(date),von=d.von||d.datum,bis=d.bis||von;
     return !!von&&k>=von&&k<=(bis||von);
   }
-  function activeRequests(uid,date){return effectiveRequests().filter(r=>r.uid===uid&&['urlaub','wunschfrei','krank'].includes(r.type)&&((r.type==='krank'&&r.status!=='abgelehnt')||(['urlaub','wunschfrei'].includes(r.type)&&r.status==='genehmigt'))&&requestCovers(r,date));}
+  function activeRequests(uid,date){return effectiveRequests().filter(r=>r.uid===uid&&['urlaub','unbezahlt','wunschfrei','krank','kindkrank'].includes(r.type)&&((['krank','kindkrank'].includes(r.type)&&r.status!=='abgelehnt')||(['urlaub','unbezahlt','wunschfrei'].includes(r.type)&&r.status==='genehmigt'))&&requestCovers(r,date));}
 
   function applyCurrentConstraints(){
     if(typeof PLAN==='undefined'||typeof getMonday!=='function')return;
@@ -5130,10 +5186,12 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
         const date=addDays(mon,i), c=closureForDate(date);
         let sh=PLAN[uid][i]||{t:'-',z:'',r:[]};
         delete sh.businessClosure;delete sh.closureConflict;delete sh.closureNote;
-        const reqs=activeRequests(uid,date),kr=reqs.find(r=>r.type==='krank'),ur=reqs.find(r=>r.type==='urlaub'),wf=reqs.find(r=>r.type==='wunschfrei');
-        if(sh.manual!==true&&['urlaub','wunschfrei','krank'].includes(sh.autoSource)&&!kr&&!ur&&!wf) sh={t:'-',z:'',r:[],availabilityCode:sh.availabilityCode||'g'};
+        const reqs=activeRequests(uid,date),kr=reqs.find(r=>r.type==='krank'),kk=reqs.find(r=>r.type==='kindkrank'),ur=reqs.find(r=>r.type==='urlaub'),uu=reqs.find(r=>r.type==='unbezahlt'),wf=reqs.find(r=>r.type==='wunschfrei');
+        if(sh.manual!==true&&['urlaub','unbezahlt','wunschfrei','krank','kindkrank'].includes(sh.autoSource)&&!kr&&!kk&&!ur&&!uu&&!wf) sh={t:'-',z:'',r:[],availabilityCode:sh.availabilityCode||'g'};
         if(sh.manual!==true&&kr) sh={t:'K',z:'Krank',r:[],autoSource:'krank',availabilityCode:sh.availabilityCode||'g'};
+        else if(sh.manual!==true&&kk) sh={t:'KK',z:'KK',r:[],autoSource:'kindkrank',availabilityCode:sh.availabilityCode||'g'};
         else if(sh.manual!==true&&ur) sh={t:'U',z:'Urlaub',r:[],autoSource:'urlaub',availabilityCode:sh.availabilityCode||'g'};
+        else if(sh.manual!==true&&uu) sh={t:'UU',z:'UU',r:[],autoSource:'unbezahlt',availabilityCode:sh.availabilityCode||'g'};
         else if(sh.manual!==true&&wf) sh={t:'WF',z:'Wunschfrei',r:[],autoSource:'wunschfrei',availabilityCode:sh.availabilityCode||'g',wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};
         if(c){
           sh.businessClosure=c.kind;sh.closureNote=c.note||'';
@@ -5292,7 +5350,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
     const id=uidSafe(r.id),d=r.data||{};
     return `<div class="v15-card" id="req_${id}"><div class="v15-grid">
       <div><label>Mitarbeiter</label><select id="rq_uid_${id}">${(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid,u])=>`<option value="${uid}" ${r.uid===uid?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>
-      <div><label>Art</label><select id="rq_type_${id}"><option value="wunschfrei" ${r.type==='wunschfrei'?'selected':''}>Wunschfrei</option><option value="urlaub" ${r.type==='urlaub'?'selected':''}>Urlaub</option><option value="krank" ${r.type==='krank'?'selected':''}>Krank</option></select></div>
+      <div><label>Art</label><select id="rq_type_${id}"><option value="wunschfrei" ${r.type==='wunschfrei'?'selected':''}>Wunschfrei</option><option value="urlaub" ${r.type==='urlaub'?'selected':''}>Urlaub</option><option value="krank" ${r.type==='krank'?'selected':''}>Krank</option><option value="kindkrank" ${r.type==='kindkrank'?'selected':''}>Kind krank</option><option value="unbezahlt" ${r.type==='unbezahlt'?'selected':''}>Unbezahlter Urlaub</option></select></div>
       <div><label>Von</label><input id="rq_von_${id}" type="date" value="${d.von||''}"></div><div><label>Bis</label><input id="rq_bis_${id}" type="date" value="${d.bis||d.von||''}"></div>
       <div><label>Schicht / Umfang</label><input id="rq_shift_${id}" value="${esc(d.schicht||'')}"></div><div><label>Status</label><select id="rq_status_${id}"><option value="offen" ${r.status==='offen'?'selected':''}>Offen</option><option value="genehmigt" ${r.status==='genehmigt'?'selected':''}>Genehmigt</option><option value="abgelehnt" ${r.status==='abgelehnt'?'selected':''}>Abgelehnt</option></select></div>
       <div class="full"><label>Hinweis</label><input id="rq_note_${id}" value="${esc(d.hinweis||'')}"></div></div>
@@ -5300,21 +5358,23 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
   }
   function renderRequests(){
     const box=document.getElementById('v15RequestList');if(!box)return;
-    const list=effectiveRequests().filter(r=>['wunschfrei','urlaub','krank'].includes(r.type)).sort((a,b)=>String(a.data?.von||'').localeCompare(String(b.data?.von||''))||String(USERS[a.uid]?.name||'').localeCompare(String(USERS[b.uid]?.name||''),'de'));
+    const list=effectiveRequests().filter(r=>['wunschfrei','urlaub','unbezahlt','krank','kindkrank'].includes(r.type)).sort((a,b)=>String(a.data?.von||'').localeCompare(String(b.data?.von||''))||String(USERS[a.uid]?.name||'').localeCompare(String(USERS[b.uid]?.name||''),'de'));
     box.innerHTML=list.length?list.map(requestCard).join(''):'<div class="v15-empty">Noch keine Wunschfrei-/Urlaub-/Krank-Einträge vorhanden.</div>';
   }
   function saveRequestFromCard(id){
-    const s=uidSafe(id),type=document.getElementById(`rq_type_${s}`)?.value||'wunschfrei',von=document.getElementById(`rq_von_${s}`)?.value||'',bis=document.getElementById(`rq_bis_${s}`)?.value||von;
+    const s=uidSafe(id),type=document.getElementById(`rq_type_${s}`)?.value||'wunschfrei',von=document.getElementById(`rq_von_${s}`)?.value||'',bis=document.getElementById(`rq_bis_${s}`)?.value||von,uid=document.getElementById(`rq_uid_${s}`)?.value||'';
     if(!von){alert('Bitte ein Von-Datum angeben.');return;}if(bis<von){alert('Bis darf nicht vor Von liegen.');return;}
-    const blocked=type==='krank'?[]:blockedInRange(von,bis,type);
+    if(type==='kindkrank'&&!(typeof getEmployeeChildSickEnabled==='function'&&getEmployeeChildSickEnabled(uid))){alert('„Kind krank“ ist für diesen Mitarbeiter nicht freigeschaltet.');return;}
+    const blocked=['krank','kindkrank'].includes(type)?[]:blockedInRange(von,bis,type);
     if(blocked.length&&!confirm(`Achtung: ${blocked.map(x=>`${fmt(x.date)} (${x.hits.map(h=>h.title).join(', ')})`).join('; ')} ist gesperrt. Trotzdem als Admin speichern?`))return;
-    updateRequest(id,{uid:document.getElementById(`rq_uid_${s}`).value,type,status:document.getElementById(`rq_status_${s}`).value,data:{von,bis,schicht:document.getElementById(`rq_shift_${s}`).value.trim(),hinweis:document.getElementById(`rq_note_${s}`).value.trim()}});
+    updateRequest(id,{uid,type,status:document.getElementById(`rq_status_${s}`).value,data:{von,bis,schicht:document.getElementById(`rq_shift_${s}`).value.trim(),hinweis:document.getElementById(`rq_note_${s}`).value.trim()}});
     showToast?.('✓ Eintrag aktualisiert');
   }
   function addRequestFromForm(){
     const uid=document.getElementById('v15NewReqUid')?.value,type=document.getElementById('v15NewReqType')?.value,von=document.getElementById('v15NewReqVon')?.value,bis=document.getElementById('v15NewReqBis')?.value||von,override=document.getElementById('v15NewReqOverride')?.checked;
     if(!uid||!von){alert('Bitte Mitarbeiter und Datum angeben.');return;}if(bis<von){alert('Bis darf nicht vor Von liegen.');return;}
-    const blocked=type==='krank'?[]:blockedInRange(von,bis,type);if(blocked.length&&!override){alert('Der Zeitraum enthält eine Sperre. Für eine kurzfristige Admin-Ergänzung „Sperre übersteuern“ aktivieren.');return;}
+    if(type==='kindkrank'&&!(typeof getEmployeeChildSickEnabled==='function'&&getEmployeeChildSickEnabled(uid))){alert('„Kind krank“ ist für diesen Mitarbeiter nicht freigeschaltet.');return;}
+    const blocked=['krank','kindkrank'].includes(type)?[]:blockedInRange(von,bis,type);if(blocked.length&&!override){alert('Der Zeitraum enthält eine Sperre. Für eine kurzfristige Admin-Ergänzung „Sperre übersteuern“ aktivieren.');return;}
     addManualRequest({type,uid,von,bis,schicht:document.getElementById('v15NewReqShift')?.value.trim()||'',hinweis:document.getElementById('v15NewReqNote')?.value.trim()||'',status:'genehmigt'});
     ['v15NewReqVon','v15NewReqBis','v15NewReqShift','v15NewReqNote'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});if(document.getElementById('v15NewReqOverride'))document.getElementById('v15NewReqOverride').checked=false;
     showToast?.('✓ Kurzfristiger Eintrag ergänzt');
@@ -5410,7 +5470,7 @@ function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSet
   }
 
   // ── Admin Planungsseite ──
-  function newRequestFormHtml(){return `<div class="v15-card"><div style="font-weight:700;margin-bottom:8px;">Kurzfristig ergänzen</div><div class="v15-grid"><div><label>Mitarbeiter</label><select id="v15NewReqUid">${(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid,u])=>`<option value="${uid}">${esc(u.name)}</option>`).join('')}</select></div><div><label>Art</label><select id="v15NewReqType"><option value="wunschfrei">Wunschfrei</option><option value="urlaub">Urlaub</option><option value="krank">Krank</option></select></div><div><label>Von</label><input id="v15NewReqVon" type="date"></div><div><label>Bis</label><input id="v15NewReqBis" type="date"></div><div><label>Schicht / Umfang</label><input id="v15NewReqShift" placeholder="Ganzer Tag / Nur Früh …"></div><div><label>Hinweis</label><input id="v15NewReqNote"></div><div class="full"><label class="v15-check"><input id="v15NewReqOverride" type="checkbox"> Sperre bewusst übersteuern</label></div></div><button class="btn btn-primary" onclick="V15Planning.addManualRequest()">+ Eintrag ergänzen</button></div>`;}
+  function newRequestFormHtml(){return `<div class="v15-card"><div style="font-weight:700;margin-bottom:8px;">Kurzfristig ergänzen</div><div class="v15-grid"><div><label>Mitarbeiter</label><select id="v15NewReqUid">${(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS)).map(([uid,u])=>`<option value="${uid}">${esc(u.name)}</option>`).join('')}</select></div><div><label>Art</label><select id="v15NewReqType"><option value="wunschfrei">Wunschfrei</option><option value="urlaub">Urlaub</option><option value="krank">Krank</option><option value="kindkrank">Kind krank</option><option value="unbezahlt">Unbezahlter Urlaub</option></select></div><div><label>Von</label><input id="v15NewReqVon" type="date"></div><div><label>Bis</label><input id="v15NewReqBis" type="date"></div><div><label>Schicht / Umfang</label><input id="v15NewReqShift" placeholder="Ganzer Tag / Nur Früh …"></div><div><label>Hinweis</label><input id="v15NewReqNote"></div><div class="full"><label class="v15-check"><input id="v15NewReqOverride" type="checkbox"> Sperre bewusst übersteuern</label></div></div><button class="btn btn-primary" onclick="V15Planning.addManualRequest()">+ Eintrag ergänzen</button></div>`;}
   function buildAdminPlanningPage(){
     const page=document.getElementById('pgAdminPlanning');if(!page)return;
     page.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div class="banner binfo"><span>🗂️</span><span>Planungszentrale: Wunschfrei/Urlaub/Krank, Termine, Sperren, Schließtage, Mangelliste und Gruppenaufgaben.</span></div><div class="v15-tabs"><button onclick="V15Planning.tab('requests')" data-v15tab="requests">Wunschfrei</button><button onclick="V15Planning.tab('events')" data-v15tab="events">Termine</button><button onclick="V15Planning.tab('blocks')" data-v15tab="blocks">Sperren & Betrieb</button><button onclick="V15Planning.tab('shortages')" data-v15tab="shortages">Mangelliste</button><button onclick="V15Planning.tab('cleaning')" data-v15tab="cleaning">Gruppenaufgaben</button></div>
@@ -5912,8 +5972,8 @@ window.NASCH_SANDBOX_VERSION='V19';
   function renderOfficePage(){
     const box=document.getElementById('v20OfficeContent');if(!box||!isOffice(AppState.currentUserId))return;const b=branch(),m=b.modules,workers=currentWorkers();const month=new Date().toLocaleDateString('de-DE',{month:'long',year:'numeric'});
     if(b.monthClosed){box.innerHTML=`<div class="card"><div class="card-b"><strong>${escapeHtml(month)}</strong><div style="font-size:11px;color:var(--muted);margin-top:5px;">Monat abgeschlossen. Der laufende Stundenzettel ist ausgeblendet. Historie bleibt in der späteren Archivverwaltung erhalten.</div></div></div>`;return;}
-    const requests=(typeof SandboxStore!=='undefined'&&SandboxStore.getRequests?SandboxStore.getRequests():[]).filter(r=>['urlaub','krank'].includes(r.type)&&workerIn(r.uid,activeBranch()));
-    box.innerHTML=`<div class="v20-office-grid"><div class="v20-office-stat"><b>${workers.length}</b><span>Mitarbeiter dieser Filiale</span></div><div class="v20-office-stat"><b>${escapeHtml(month)}</b><span>nur aktueller Monat</span></div></div><div class="card"><div class="card-h"><div class="card-t">Mitarbeiter & Lohn · nur Ansicht</div></div><div class="card-b">${workers.map(([uid,u])=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:11px;"><strong style="flex:1;">${escapeHtml(u.name)}</strong><span>${escapeHtml(u.typ||'')}</span><span style="font-weight:800;">${Number.isFinite(u.stundenlohn)?u.stundenlohn.toFixed(2).replace('.',',')+' €/h':'–'}</span></div>`).join('')||'<span style="font-size:11px;color:var(--muted);">Keine Mitarbeiter.</span>'}</div></div>${m.timeTracking?`<div class="card"><div class="card-h"><div class="card-t">Stundenzettel</div></div><div class="card-b" style="font-size:11px;"><div style="color:var(--muted);margin-bottom:8px;">Arbeitszeiten und PDFs werden aus den gespeicherten Wochen-/Korrekturdaten geladen.</div><button class="btn btn-outline" onclick="goTo(\'pgAdminStz\',\'Stundenzettel\')">Stundenzettel öffnen</button></div></div>`:''}${m.absence?`<div class="card"><div class="card-h"><div class="card-t">Urlaub / Krank · nur Ansicht</div></div><div class="card-b" style="font-size:11px;">${requests.length?requests.slice(-8).map(r=>`<div style="padding:6px 0;border-top:1px solid var(--border);"><strong>${escapeHtml(USERS[r.uid]?.name||r.uid)}</strong> · ${r.type==='urlaub'?'Urlaub':'Krank'} · ${escapeHtml(r.data?.von||r.data?.datum||'')}</div>`).join(''):'Keine Einträge.'}</div></div>`:''}${m.weekPlan?`<div class="card"><div class="card-b"><button class="btn btn-outline" onclick="navTo('plan')">📅 Wochenplan ansehen</button><button class="btn btn-outline" onclick="typeof exportWeekPlanPDF==='function'&&exportWeekPlanPDF()">📄 Wochenplan PDF</button></div></div>`:''}<div class="banner ${b.employeeMgmtOffice?'bok':'binfo'}"><span>👤</span><span>Mitarbeiterverwaltung durch Personalbüro: <strong>${b.employeeMgmtOffice?'JA':'NEIN'}</strong></span></div><div class="banner ${b.correctionOfficeApproval?'bok':'binfo'}"><span>✅</span><span>Korrektur-Freigabe durch Personalbüro: <strong>${b.correctionOfficeApproval?'JA':'NEIN'}</strong></span></div>`;
+    const requests=(typeof SandboxStore!=='undefined'&&SandboxStore.getRequests?SandboxStore.getRequests():[]).filter(r=>['urlaub','unbezahlt','krank','kindkrank'].includes(r.type)&&workerIn(r.uid,activeBranch()));
+    box.innerHTML=`<div class="v20-office-grid"><div class="v20-office-stat"><b>${workers.length}</b><span>Mitarbeiter dieser Filiale</span></div><div class="v20-office-stat"><b>${escapeHtml(month)}</b><span>nur aktueller Monat</span></div></div><div class="card"><div class="card-h"><div class="card-t">Mitarbeiter & Lohn · nur Ansicht</div></div><div class="card-b">${workers.map(([uid,u])=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:11px;"><strong style="flex:1;">${escapeHtml(u.name)}</strong><span>${escapeHtml(u.typ||'')}</span><span style="font-weight:800;">${Number.isFinite(u.stundenlohn)?u.stundenlohn.toFixed(2).replace('.',',')+' €/h':'–'}</span></div>`).join('')||'<span style="font-size:11px;color:var(--muted);">Keine Mitarbeiter.</span>'}</div></div>${m.timeTracking?`<div class="card"><div class="card-h"><div class="card-t">Stundenzettel</div></div><div class="card-b" style="font-size:11px;"><div style="color:var(--muted);margin-bottom:8px;">Arbeitszeiten und PDFs werden aus den gespeicherten Wochen-/Korrekturdaten geladen.</div><button class="btn btn-outline" onclick="goTo(\'pgAdminStz\',\'Stundenzettel\')">Stundenzettel öffnen</button></div></div>`:''}${m.absence?`<div class="card"><div class="card-h"><div class="card-t">Urlaub / Krank · nur Ansicht</div></div><div class="card-b" style="font-size:11px;">${requests.length?requests.slice(-8).map(r=>`<div style="padding:6px 0;border-top:1px solid var(--border);"><strong>${escapeHtml(USERS[r.uid]?.name||r.uid)}</strong> · ${r.type==='urlaub'?'Urlaub':r.type==='unbezahlt'?'Unbezahlter Urlaub':r.type==='kindkrank'?'Kind krank':'Krank'} · ${escapeHtml(r.data?.von||r.data?.datum||'')}</div>`).join(''):'Keine Einträge.'}</div></div>`:''}${m.weekPlan?`<div class="card"><div class="card-b"><button class="btn btn-outline" onclick="navTo('plan')">📅 Wochenplan ansehen</button><button class="btn btn-outline" onclick="typeof exportWeekPlanPDF==='function'&&exportWeekPlanPDF()">📄 Wochenplan PDF</button></div></div>`:''}<div class="banner ${b.employeeMgmtOffice?'bok':'binfo'}"><span>👤</span><span>Mitarbeiterverwaltung durch Personalbüro: <strong>${b.employeeMgmtOffice?'JA':'NEIN'}</strong></span></div><div class="banner ${b.correctionOfficeApproval?'bok':'binfo'}"><span>✅</span><span>Korrektur-Freigabe durch Personalbüro: <strong>${b.correctionOfficeApproval?'JA':'NEIN'}</strong></span></div>`;
   }
 
   function decorateAdminSettings(){
@@ -7369,7 +7429,7 @@ module.exports = QRCode;
       const d=new Date(mon);d.setDate(mon.getDate()+i);const dk=dateKey254(d),sh=shifts[i]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null;
       const pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;
       const holiday=typeof getNRWPublicHolidayName==='function'?getNRWPublicHolidayName(d):'',dayHint=d.getDay()===0?' · Sonntag':holiday?` · ${holiday}`:'';
-      const times=rec?`${rec.start}–${rec.end}`:weeklyHoursDisplay(uid,i,shifts,sh);const pend=window.TimeCorrectionStore?.pending?.(uid,dk);const today=new Date();today.setHours(0,0,0,0);const future=d>today;const blankWork=!rec&&(isPlainUnplannedShift(sh)||sh?.t==='WF');
+      const times=rec?`${rec.start}–${rec.end}`:weeklyHoursDisplay(uid,i,shifts,sh);const pend=window.TimeCorrectionStore?.pending?.(uid,dk);const today=new Date();today.setHours(0,0,0,0);const future=d>today;const blankWork=!rec&&(isPlainUnplannedShift(sh)||['WF','UU','KK'].includes(sh?.t));
       html+=`<tr style="border-top:1px solid var(--border);"><td style="padding:8px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}<span style="font-size:9px;color:var(--muted);">${esc254(dayHint)}</span></td><td style="padding:8px 9px;white-space:nowrap;">${esc254(times)}${st?`<br><span class="time-corr-badge ${st.cls}">${st.text}</span>`:''}</td><td style="padding:8px 9px;text-align:right;"><span class="v254-pause">${blankWork?'':esc254(pauseLabel(pause,!rec||pause===requiredPauseMinutesFromMinutes(intervalGrossMinutes(rec?.start,rec?.end))))}</span></td><td style="padding:8px 9px;text-align:right;font-weight:800;">${blankWork?'':formatHours(h)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:8px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}<td style="padding:8px 9px;text-align:right;"><button class="time-corr-btn" ${pend||future?'disabled':''} onclick="openTimeCorrection('${uid}',${i})">${pend?'Offen':future?'Noch nicht':'✏️ Arbeitszeit'}</button></td></tr>`;
     }
     html+=`<tr style="border-top:2px solid var(--border);background:#f8fafc;"><td colspan="2" style="padding:8px 9px;font-weight:800;">Gesamt</td><td style="padding:8px 9px;text-align:right;font-weight:800;">${totalPause} Min.</td><td style="padding:8px 9px;text-align:right;font-weight:900;color:var(--navy);">${formatHours(total)}</td>${eligible?`<td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total25)}</td><td style="padding:8px 9px;text-align:right;font-weight:700;">${formatHours(total50)}</td>`:''}<td></td></tr></tbody></table></div>`;
@@ -7384,7 +7444,7 @@ module.exports = QRCode;
     entries.filter(([uid,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||'')&&(!window.BranchSandbox?.workerIn||window.BranchSandbox.workerIn(uid,currentBid254()))).forEach(([uid,u])=>{
       const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;let total=0,totalPause=0,total25=0,total50=0,rows='';
       for(let day=0;day<7;day++){
-        const d=new Date(mon);d.setDate(mon.getDate()+day);const dk=dateKey254(d),sh=(PLAN[uid]||[])[day]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null,pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;const times=rec?`${rec.start}–${rec.end}`:weeklyHoursDisplay(uid,day,PLAN[uid]||[],sh),blankWork=!rec&&(isPlainUnplannedShift(sh)||sh?.t==='WF');
+        const d=new Date(mon);d.setDate(mon.getDate()+day);const dk=dateKey254(d),sh=(PLAN[uid]||[])[day]||{t:'-'},rec=window.TimeCorrectionStore?.getRecord?.(uid,dk)||null,pause=rec?recordPause(rec):shiftAutoPause(sh),h=rec?recordNetHours(rec):shiftNetHours(sh),z=rec?correctedSurchargeNet(uid,rec,d,h):plannedSurchargeNet(uid,sh,d,h),st=dayStatus(uid,dk);total+=h;totalPause+=pause;total25+=Number(z.pct25)||0;total50+=Number(z.pct50)||0;const times=rec?`${rec.start}–${rec.end}`:weeklyHoursDisplay(uid,day,PLAN[uid]||[],sh),blankWork=!rec&&(isPlainUnplannedShift(sh)||['WF','UU','KK'].includes(sh?.t));
         rows+=`<tr style="border-top:1px solid var(--border);"><td style="padding:7px 9px;font-weight:600;white-space:nowrap;">${esc254(formatFullDate(d))}${st?`<div><span class="time-corr-badge ${st.cls}">${st.text}</span></div>`:''}</td><td style="padding:7px 9px;white-space:nowrap;">${esc254(times)}</td><td style="padding:7px 9px;text-align:right;">${blankWork?'':pause+' Min.'}</td><td style="padding:7px 9px;text-align:right;font-weight:800;">${blankWork?'':formatHours(h)}</td>${eligible?`<td style="padding:7px 9px;text-align:right;">${formatHours(z.pct25||0)}</td><td style="padding:7px 9px;text-align:right;">${formatHours(z.pct50||0)}</td>`:''}</tr>`;
       }
       const badge=eligible?'<span style="font-size:10px;padding:3px 7px;border-radius:12px;background:var(--ok);color:var(--ok-t);font-weight:700;">Zuschläge</span>':'';
@@ -7603,7 +7663,7 @@ module.exports = QRCode;
   function setQuotaEnabled(flag){quota.enabled=!!flag;saveQuotaLocal();saveQuotaCloud();renderAll();showToast?.(quota.enabled?'✓ Wunschfrei-Kontingent eingeschaltet':'✓ Wunschfrei-Kontingent ausgeschaltet');}
   function quotaEditor(){const on=quota.enabled!==false;return `<details class="v271-quota-box" open><summary>⭐ Wunschfrei-Kontingent</summary><div class="v271-quota-body"><label style="display:flex;align-items:center;gap:9px;padding:9px 10px;margin-bottom:9px;border:1px solid var(--border);border-radius:9px;background:${on?'#f0fdf4':'#f8fafc'};font-size:11px;font-weight:800;cursor:pointer;"><input type="checkbox" ${on?'checked':''} onchange="NaschRequestView271.setQuotaEnabled(this.checked)" style="width:18px;height:18px;"><span>Kontingent verwenden</span><span style="margin-left:auto;font-size:10px;color:${on?'#087f5b':'var(--muted)'};">${on?'EIN':'AUS'}</span></label>${on?`<div class="v271-quota-defaults">${[['VZ','Vollzeit'],['TZ','Teilzeit'],['AH','Aushilfe']].map(([t,l])=>`<label>${l}<input type="number" min="0" step="0.5" value="${esc(quota.defaults[t])}" onchange="NaschRequestView271.setQuotaDefault('${t}',this.value)"></label>`).join('')}</div><div style="overflow-x:auto;"><table class="v271-quota-table"><thead><tr><th>Mitarbeiter</th><th>Kontingent</th></tr></thead><tbody>${entries().map(([uid,u])=>`<tr><td>${esc(u.name)}</td><td><select onchange="NaschRequestView271.setQuotaOverride('${esc(uid)}',this.value)"><option value="" ${!Object.prototype.hasOwnProperty.call(quota.overrides,uid)?'selected':''}>Standard (${esc(quota.defaults[u.typ]??u.wunschKont??0)})</option>${Array.from({length:13},(_,i)=>i/2).map(v=>`<option value="${v}" ${Number(quota.overrides[uid])===v?'selected':''}>${String(v).replace('.',',')}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>`:`<div class="v271-empty">Wunschfrei kann ohne festes Kontingent beantragt werden. Gespeicherte Kontingentwerte bleiben erhalten und werden beim Einschalten wieder verwendet.</div>`}</div></details>`;}
 
-  function employeeApprovedHtml(){const uid=String(AppState?.currentUserId||'');const list=reqs().filter(r=>String(r.uid)===uid&&['urlaub','wunschfrei'].includes(r.type)&&r.status==='genehmigt'&&activeFuture(r)).sort((a,b)=>requestStart(a).localeCompare(requestStart(b)));if(!list.length)return '<div class="v271-empty">Keine aktuell genehmigten Urlaubs- oder Wunschfrei-Zeiträume.</div>';return `<div style="overflow-x:auto;"><table class="v271-emp-table"><thead><tr><th>Art</th><th>Zeitraum</th><th>Umfang</th></tr></thead><tbody>${list.map(r=>`<tr><td><strong>${r.type==='urlaub'?'🏖 Urlaub':'⭐ Wunschfrei'}</strong></td><td>${esc(rangeText(r))}</td><td>${esc(r.data?.schicht||'Ganzer Tag')}</td></tr>`).join('')}</tbody></table></div>`;}
+  function employeeApprovedHtml(){const uid=String(AppState?.currentUserId||'');const list=reqs().filter(r=>String(r.uid)===uid&&['urlaub','unbezahlt','wunschfrei'].includes(r.type)&&r.status==='genehmigt'&&activeFuture(r)).sort((a,b)=>requestStart(a).localeCompare(requestStart(b)));if(!list.length)return '<div class="v271-empty">Keine aktuell genehmigten Urlaubs- oder Wunschfrei-Zeiträume.</div>';return `<div style="overflow-x:auto;"><table class="v271-emp-table"><thead><tr><th>Art</th><th>Zeitraum</th><th>Umfang</th></tr></thead><tbody>${list.map(r=>`<tr><td><strong>${r.type==='urlaub'?'🏖 Urlaub':r.type==='unbezahlt'?'🕓 Unbezahlter Urlaub':'⭐ Wunschfrei'}</strong></td><td>${esc(rangeText(r))}</td><td>${esc(r.data?.schicht||'Ganzer Tag')}</td></tr>`).join('')}</tbody></table></div>`;}
   function decorateEmployee(){
     const wp1=document.getElementById('wp1'),wp2=document.getElementById('wp2'),wp3=document.getElementById('wp3');if(!wp1||!wp2||!wp3)return;
     [...wp1.children].filter(x=>x.classList?.contains('bwarn')).forEach(x=>x.style.display='none');
@@ -7620,7 +7680,7 @@ module.exports = QRCode;
   function wishListHtml(){const list=reqs().filter(r=>r.type==='wunschfrei'&&r.status!=='abgelehnt'&&activeFuture(r)).sort((a,b)=>requestStart(a).localeCompare(requestStart(b))||String(USERS?.[a.uid]?.name||'').localeCompare(String(USERS?.[b.uid]?.name||''),'de'));if(!list.length)return '<div class="v271-empty">Keine aktuellen oder zukünftigen Wunschfrei-Anträge.</div>';return `<div style="overflow-x:auto;"><table class="v271-wish-table"><thead><tr><th>Termin</th><th>Name</th><th>Umfang</th><th>Status</th><th></th></tr></thead><tbody>${list.map(r=>`<tr class="v271-wish-row" data-open-request="${esc(r.id)}"><td class="v271-wish-date">${esc(wishRangeText(r))}</td><td class="v271-wish-name">${esc(USERS?.[r.uid]?.name||r.uid)}</td><td>${esc(r.data?.schicht||'Ganzer Tag')}</td><td><span class="v271-status ${statusClass(r.status)}">${statusText(r.status)}</span></td><td><div class="v271-actions">${r.status==='offen'?`<button class="v271-approve" data-action="approve" data-id="${esc(r.id)}">✓</button><button class="v271-reject" data-action="reject" data-id="${esc(r.id)}">✕</button>`:''}<button class="v271-edit" data-action="edit" data-id="${esc(r.id)}">✎</button></div></td></tr>`).join('')}</tbody></table></div>`;}
   function vacationMonths(){const map=new Map();const list=reqs().filter(r=>r.type==='urlaub'&&r.status!=='abgelehnt'&&activeFuture(r));for(const r of list){let a=fromKey(requestStart(r)),z=fromKey(requestEnd(r));if(a<today())a=today();for(let d=a;d<=z;d=addDays(d,1)){const mk=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;if(!map.has(mk))map.set(mk,{dateMap:new Map(),rows:new Map(),month:new Date(d.getFullYear(),d.getMonth(),1,12)});const m=map.get(mk),dk=key(d);m.dateMap.set(dk,new Date(d));if(!m.rows.has(r.uid))m.rows.set(r.uid,new Map());const cell=m.rows.get(r.uid);if(!cell.has(dk))cell.set(dk,[]);cell.get(dk).push(r);}}return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));}
   function vacationHtml(){const months=vacationMonths();if(!months.length)return '<div class="v271-empty">Keine aktuellen oder zukünftigen Urlaubsanträge.</div>';return `<div class="v271-legend"><span><span class="v271-dot" style="background:#fff2cc"></span>offen</span><span><span class="v271-dot" style="background:#dff3eb"></span>genehmigt</span><span>U = Urlaub</span></div>${months.map(([mk,m],idx)=>{const dates=[...m.dateMap.keys()].sort(),uids=[...m.rows.keys()].sort((a,b)=>String(USERS?.[a]?.name||a).localeCompare(String(USERS?.[b]?.name||b),'de'));const label=m.month.toLocaleDateString('de-DE',{month:'long',year:'numeric'});return `<div class="v271-month ${idx%2?'b':'a'}"><div class="v271-month-head">${esc(label)}</div><div class="v271-vac-scroll"><table class="v271-vac-table"><thead><tr><th>Name</th>${dates.map(d=>`<th>${Number(d.slice(8,10))}</th>`).join('')}</tr></thead><tbody>${uids.map(uid=>`<tr><td>${esc(USERS?.[uid]?.name||uid)}</td>${dates.map(d=>{const hits=m.rows.get(uid)?.get(d)||[];if(!hits.length)return'<td></td>';const r=hits.find(x=>x.status==='offen')||hits[0],cls=hits.some(x=>x.status==='genehmigt')?'ok':'open';return `<td><button class="v271-vac-cell ${cls}" data-action="edit" data-id="${esc(r.id)}" title="${esc(statusText(r.status))}">U</button></td>`;}).join('')}</tr>`).join('')}</tbody></table></div></div>`;}).join('')}`;}
-  function sickHtml(){const list=reqs().filter(r=>r.type==='krank'&&r.status!=='abgelehnt'&&activeFuture(r)).sort((a,b)=>requestStart(a).localeCompare(requestStart(b)));if(!list.length)return'';return `<div class="v271-admin-section"><div class="v271-admin-section-title">Krankmeldungen · aktuell</div><div style="overflow-x:auto;"><table class="v271-wish-table"><tbody>${list.map(r=>`<tr><td><strong>${esc(wishRangeText(r))}</strong></td><td>${esc(USERS?.[r.uid]?.name||r.uid)}</td><td><span class="v271-status ${statusClass(r.status)}">${statusText(r.status)}</span></td><td><button class="v271-edit" data-action="edit" data-id="${esc(r.id)}">✎</button></td></tr>`).join('')}</tbody></table></div></div>`;}
+  function sickHtml(){const list=reqs().filter(r=>['krank','kindkrank'].includes(r.type)&&r.status!=='abgelehnt'&&activeFuture(r)).sort((a,b)=>requestStart(a).localeCompare(requestStart(b)));if(!list.length)return'';return `<div class="v271-admin-section"><div class="v271-admin-section-title">Krankmeldungen · aktuell</div><div style="overflow-x:auto;"><table class="v271-wish-table"><tbody>${list.map(r=>`<tr><td><strong>${esc(wishRangeText(r))}</strong></td><td>${esc(USERS?.[r.uid]?.name||r.uid)}</td><td>${r.type==='kindkrank'?'<strong>KK</strong> ':''}<span class="v271-status ${statusClass(r.status)}">${statusText(r.status)}</span></td><td><button class="v271-edit" data-action="edit" data-id="${esc(r.id)}">✎</button></td></tr>`).join('')}</tbody></table></div></div>`;}
 
   function renderAdmin(){const box=document.getElementById('v15RequestList');if(!box)return;const pane=document.getElementById('v15Pane_requests');if(pane){const secs=[...pane.querySelectorAll('.sec')];const first=secs.find(x=>/Wunschfrei-Frist/.test(x.textContent));if(first)first.textContent='Frist · Urlaub & Wunschfrei';const last=secs.find(x=>/Übersicht|Bearbeitung/.test(x.textContent));if(last)last.textContent='Aktuelle Anträge';const tab=document.querySelector('[data-v15tab="requests"]');if(tab)tab.textContent='Urlaub & Wunschfrei';}
     const di=document.getElementById('v15NextDeadlines');if(di)di.innerHTML=deadlineHtml();
@@ -7631,10 +7691,10 @@ module.exports = QRCode;
   function findReq(id){return reqs().find(r=>String(r.id)===String(id))||null;}
   function refreshPlans(){try{window.WeekPlanStore?.syncAllConstraints?.();}catch(_){}try{renderPlan?.();}catch(_){}try{if(typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId))buildAdminPlan?.();}catch(_){} }
   function setStatus(id,status){const r=findReq(id);if(!r)return;try{SandboxStore?.updateRequest?.(id,{status,decidedBy:AppState.currentUser?.name||'Leitung',decidedAt:new Date().toISOString()});}catch(e){console.warn(e)}refreshPlans();renderAll();showToast?.(status==='genehmigt'?'✓ Antrag genehmigt':'✕ Antrag abgelehnt');}
-  function ensureModal(){let o=document.getElementById('v271RequestModal');if(o)return o;o=document.createElement('div');o.id='v271RequestModal';o.className='v271-modal';o.innerHTML=`<div class="v271-modal-card"><div style="display:flex;align-items:center;gap:8px;"><div style="font-size:15px;font-weight:900;flex:1;">Antrag bearbeiten</div><button class="v271-edit" onclick="NaschRequestView271.closeModal()">✕</button></div><input type="hidden" id="v271mId"><div class="v271-modal-grid" style="margin-top:10px;"><div><label>Mitarbeiter</label><select id="v271mUid"></select></div><div><label>Art</label><select id="v271mType"><option value="wunschfrei">Wunschfrei</option><option value="urlaub">Urlaub</option><option value="krank">Krank</option></select></div><div><label>Von</label><input type="date" id="v271mVon"></div><div><label>Bis</label><input type="date" id="v271mBis"></div><div><label>Schicht / Umfang</label><input id="v271mShift"></div><div><label>Status</label><select id="v271mStatus"><option value="offen">Offen</option><option value="genehmigt">Genehmigt</option><option value="abgelehnt">Abgelehnt</option></select></div><div class="full"><label>Hinweis</label><input id="v271mNote"></div></div><div class="v271-modal-foot"><button class="btn btn-outline" onclick="NaschRequestView271.closeModal()">Abbrechen</button><button class="btn btn-primary" onclick="NaschRequestView271.saveModal()">Speichern</button></div></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')});return o;}
+  function ensureModal(){let o=document.getElementById('v271RequestModal');if(o)return o;o=document.createElement('div');o.id='v271RequestModal';o.className='v271-modal';o.innerHTML=`<div class="v271-modal-card"><div style="display:flex;align-items:center;gap:8px;"><div style="font-size:15px;font-weight:900;flex:1;">Antrag bearbeiten</div><button class="v271-edit" onclick="NaschRequestView271.closeModal()">✕</button></div><input type="hidden" id="v271mId"><div class="v271-modal-grid" style="margin-top:10px;"><div><label>Mitarbeiter</label><select id="v271mUid"></select></div><div><label>Art</label><select id="v271mType"><option value="wunschfrei">Wunschfrei</option><option value="urlaub">Urlaub</option><option value="krank">Krank</option><option value="kindkrank">Kind krank</option><option value="unbezahlt">Unbezahlter Urlaub</option></select></div><div><label>Von</label><input type="date" id="v271mVon"></div><div><label>Bis</label><input type="date" id="v271mBis"></div><div><label>Schicht / Umfang</label><input id="v271mShift"></div><div><label>Status</label><select id="v271mStatus"><option value="offen">Offen</option><option value="genehmigt">Genehmigt</option><option value="abgelehnt">Abgelehnt</option></select></div><div class="full"><label>Hinweis</label><input id="v271mNote"></div></div><div class="v271-modal-foot"><button class="btn btn-outline" onclick="NaschRequestView271.closeModal()">Abbrechen</button><button class="btn btn-primary" onclick="NaschRequestView271.saveModal()">Speichern</button></div></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')});return o;}
   function openModal(id){const r=findReq(id);if(!r)return;const o=ensureModal();document.getElementById('v271mId').value=r.id;const sel=document.getElementById('v271mUid');sel.innerHTML=entries().map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name)}</option>`).join('');sel.value=r.uid;document.getElementById('v271mType').value=r.type;document.getElementById('v271mVon').value=requestStart(r);document.getElementById('v271mBis').value=requestEnd(r);document.getElementById('v271mShift').value=r.data?.schicht||'';document.getElementById('v271mStatus').value=r.status||'offen';document.getElementById('v271mNote').value=r.data?.hinweis||'';o.classList.add('open');}
   function closeModal(){document.getElementById('v271RequestModal')?.classList.remove('open');}
-  function saveModal(){const id=document.getElementById('v271mId')?.value,r=findReq(id);if(!r)return;const von=document.getElementById('v271mVon').value,bis=document.getElementById('v271mBis').value||von;if(!von){alert('Bitte Von-Datum angeben.');return}if(bis<von){alert('Bis darf nicht vor Von liegen.');return}const patch={uid:document.getElementById('v271mUid').value,type:document.getElementById('v271mType').value,status:document.getElementById('v271mStatus').value,data:{von,bis,schicht:document.getElementById('v271mShift').value.trim(),hinweis:document.getElementById('v271mNote').value.trim()}};try{SandboxStore?.updateRequest?.(id,patch);}catch(e){console.warn(e)}closeModal();refreshPlans();renderAll();showToast?.('✓ Antrag aktualisiert');}
+  function saveModal(){const id=document.getElementById('v271mId')?.value,r=findReq(id);if(!r)return;const von=document.getElementById('v271mVon').value,bis=document.getElementById('v271mBis').value||von;if(!von){alert('Bitte Von-Datum angeben.');return}if(bis<von){alert('Bis darf nicht vor Von liegen.');return}const uid=document.getElementById('v271mUid').value,type=document.getElementById('v271mType').value;if(type==='kindkrank'&&!(typeof getEmployeeChildSickEnabled==='function'&&getEmployeeChildSickEnabled(uid))){alert('„Kind krank“ ist für diesen Mitarbeiter nicht freigeschaltet.');return;}const patch={uid,type,status:document.getElementById('v271mStatus').value,data:{von,bis,schicht:document.getElementById('v271mShift').value.trim(),hinweis:document.getElementById('v271mNote').value.trim()}};try{SandboxStore?.updateRequest?.(id,patch);}catch(e){console.warn(e)}closeModal();refreshPlans();renderAll();showToast?.('✓ Antrag aktualisiert');}
   function bindAdminActions(root){root.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const id=b.dataset.id,a=b.dataset.action;if(a==='approve')setStatus(id,'genehmigt');if(a==='reject'&&confirm('Antrag ablehnen?'))setStatus(id,'abgelehnt');if(a==='edit')openModal(id);}));root.querySelectorAll('[data-open-request]').forEach(r=>r.addEventListener('click',()=>openModal(r.dataset.openRequest)));}
 
   function renderAll(){applyAllQuota(false);decorateEmployee();renderAdmin();}
@@ -7649,7 +7709,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.20';
+  window.NASCH_APP_VERSION='29.23';
 })();
 </script>
 
@@ -7968,7 +8028,7 @@ module.exports = QRCode;
     else box.innerHTML='';
     if(editMode) bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.cancelEdit()">↩ Abbrechen</button>';
     else bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.startEdit()">✏️ Verfügbarkeit bearbeiten</button>';
-    // v29.20: Tagesoptionen sind direkt antippbar. Der erste Tipp startet automatisch den Bearbeitungsmodus.
+    // v29.23: Tagesoptionen sind direkt antippbar. Der erste Tipp startet automatisch den Bearbeitungsmodus.
     setDayControlsEnabled(!pendingReq);
   }
   function renderDays(){
@@ -8102,7 +8162,7 @@ module.exports = QRCode;
   function statusForShift(sh,rec){
     if(rec)return 'Korrigiert';
     const t=String(sh?.t||'-');
-    return ({U:'Urlaub',K:'Krank',WF:'Wunschfrei',BS:'Berufsschule',HO:'Home-Office','-':'Frei'})[t]||'Plan';
+    return ({U:'Urlaub',UU:'Frei',K:'Krank',KK:'KK',WF:'Wunschfrei',BS:'Berufsschule',HO:'Home-Office','-':'Frei'})[t]||'Plan';
   }
   function surchargeForPdf(uid,sh,rec,d,net){
     const eligible=typeof getEmployeeSurchargeEnabled==='function'?getEmployeeSurchargeEnabled(uid):false;
@@ -8390,7 +8450,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
       return `${esc(times[0]||'-')}${a1?' · '+esc(a1):''}<br>${esc(times[1]||'-')}${a2?' · '+esc(a2):''}`;
     }
     const type=typeof shiftTypeText==='function'?shiftTypeText(s):s.t;
-    if(['U','WF','K','BS'].includes(s.t))return esc(type||s.t);
+    if(['U','UU','WF','K','KK','BS'].includes(s.t))return esc(type||s.t);
     const time=s.z||((s.start&&s.end)?`${s.start}–${s.end}`:'');
     const act=plainActivity(s.r);
     return `${time?esc(time):esc(type||s.t)}${act?' · '+esc(act):''}`;
@@ -8594,7 +8654,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.20';
+  window.NASCH_APP_VERSION='29.23';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8605,7 +8665,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8744,11 +8804,11 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
-  function requestText(r){const type={urlaub:'Urlaub',wunschfrei:'Wunschfrei',krank:'Krankmeldung',homeoffice:'Home-Office',verfuegbarkeit:'Verfügbarkeit',abwesenheit_aenderung:'Änderung',plan_verfuegbarkeit:'Planungs-Rückfrage'}[r.type]||r.type||'Antrag';const d=r.data||{},a=d.von||d.datum||d.date||'',b=d.bis||a;return{type,range:a?(b&&b!==a?`${a} bis ${b}`:a):''};}
+  function requestText(r){const type={urlaub:'Urlaub',wunschfrei:'Wunschfrei',krank:'Krankmeldung',kindkrank:'Kind krank',unbezahlt:'Unbezahlter Urlaub',homeoffice:'Home-Office',verfuegbarkeit:'Verfügbarkeit',abwesenheit_aenderung:'Änderung',plan_verfuegbarkeit:'Planungs-Rückfrage'}[r.type]||r.type||'Antrag';const d=r.data||{},a=d.von||d.datum||d.date||'',b=d.bis||a;return{type,range:a?(b&&b!==a?`${a} bis ${b}`:a):''};}
   function statusInfo(s){if(s==='genehmigt')return['✅','Genehmigt','#E1F5EE','#085041'];if(s==='abgelehnt')return['❌','Abgelehnt','#FCEBEB','#791F1F'];if(s==='zurueckgezogen')return['↩','Zurückgezogen','#f1f5f9','#64748b'];if(s==='zugesagt')return['✅','Zugesagt','#E1F5EE','#085041'];return['🕘','Offen','#FEF3C7','#854D0E'];}
   function refreshNotifications(){const box=document.getElementById('realNotifList');if(!box)return;const uid=String(AppState?.currentUserId||'');let list=[];try{list=(window.SandboxStore?.getRequests?.()||[]).filter(r=>String(r.uid)===uid);}catch(_){}list.sort((a,b)=>(reqDate(b)?.getTime()||0)-(reqDate(a)?.getTime()||0));const items=[];const cs=window.CloudWeekMigration?.state?.();if(cs?.published)items.push(`<div class="real-notif"><div class="ico">📅</div><div style="flex:1"><div class="title">Wochenplan veröffentlicht</div><div class="body">Die aktuell geladene Kalenderwoche ist veröffentlicht.</div></div><span class="status" style="background:#E1F5EE;color:#085041">Aktuell</span></div>`);list.slice(0,20).forEach(r=>{const x=requestText(r),si=statusInfo(r.status),dt=reqDate(r),when=dt&&!Number.isNaN(dt.getTime())?dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';items.push(`<div class="real-notif"><div class="ico">${si[0]}</div><div style="flex:1"><div class="title">${esc(x.type)}</div><div class="body">${esc(x.range)}${when?` · gespeichert ${esc(when)}`:''}</div></div><span class="status" style="background:${si[2]};color:${si[3]}">${si[1]}</span></div>`)});box.innerHTML=items.length?`<div class="card">${items.join('')}</div>`:'<div class="card"><div class="card-b" style="color:var(--muted);">Keine aktuellen Meldungen.</div></div>';}
   window.NaschRealNotifications={refresh:refreshNotifications};
@@ -8756,7 +8816,7 @@ window.NASCH_APP_VERSION='29.20';
   const localStamp=(d,hhmm)=>{const m=String(hhmm||'00:00').match(/\d{1,2}:\d{2}/),parts=(m?m[0]:'00:00').split(':').map(Number);return `${dayKey(d)}T${pad(parts[0])}${pad(parts[1])}00`;};
   const icsEsc=s=>String(s??'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
   function rangesForShift(s){if(!s||!s.t||s.t==='-')return[];if(s.t==='TS'){return[s.z1,s.z2].filter(Boolean).map(v=>String(v).match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/)).filter(Boolean).map(m=>[m[1],m[2]])}if(s.start&&s.end)return[[s.start,s.end]];const m=String(s.z||'').match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);return m?[[m[1],m[2]]]:[];}
-  const calLabels={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
+  const calLabels={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',UU:'Unbezahlter Urlaub',WF:'Wunschfrei',K:'Krank',KK:'Kind krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
   function shiftEvents(uid,mon,days,yearFilter=null){const events=[];for(let i=0;i<7;i++){const s=days?.[i];if(!s||!s.t||s.t==='-')continue;const d=new Date(mon);d.setDate(mon.getDate()+i);if(yearFilter!==null&&d.getFullYear()!==yearFilter)continue;const ranges=rangesForShift(s),summary=`NASCH ${window.BranchSandbox?.branch?.()?.name||'Filiale'} – ${calLabels[s.t]||s.t}`,desc=[s.z,Array.isArray(s.r)?s.r.join(', '):s.r].filter(Boolean).join(' · '),stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');if(ranges.length){ranges.forEach(([a,b],idx)=>{let endDate=d;if(String(b)<=String(a))endDate=addDay(d);events.push(['BEGIN:VEVENT',`UID:nasch-${uid}-${dayKey(d)}-${idx}@${window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001'}.nasch`,`DTSTAMP:${stamp}`,`DTSTART;TZID=Europe/Berlin:${localStamp(d,a)}`,`DTEND;TZID=Europe/Berlin:${localStamp(endDate,b)}`,`SUMMARY:${icsEsc(summary)}`,`DESCRIPTION:${icsEsc(desc)}`,'END:VEVENT'].join('\r\n'))})}else events.push(['BEGIN:VEVENT',`UID:nasch-${uid}-${dayKey(d)}-all@${window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001'}.nasch`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${dayKey(d)}`,`DTEND;VALUE=DATE:${dayKey(addDay(d))}`,`SUMMARY:${icsEsc(summary)}`,`DESCRIPTION:${icsEsc(desc)}`,'END:VEVENT'].join('\r\n'))}return events;}
   function icsFile(events){return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//NASCH//Mitarbeiter-App//DE','CALSCALE:GREGORIAN','METHOD:PUBLISH',`X-WR-CALNAME:NASCH ${window.BranchSandbox?.branch?.()?.name||'Filiale'}`,...events,'END:VCALENDAR'].join('\r\n');}
   function downloadIcs(content,name){const blob=new Blob([content],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);return blob;}
@@ -8795,7 +8855,7 @@ window.NASCH_APP_VERSION='29.20';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8814,7 +8874,7 @@ window.NASCH_APP_VERSION='29.20';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9029,7 +9089,7 @@ window.NASCH_APP_VERSION='29.20';
   const GOOGLE_CLIENT_ID='791791893008-h78e4psheouomih6reg5m606fi23rmaq.apps.googleusercontent.com';
   const GOOGLE_CAL_SCOPE='https://www.googleapis.com/auth/calendar.app.created';
   const GOOGLE_API='https://www.googleapis.com/calendar/v3';
-  const G_CAL_LABELS={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',WF:'Wunschfrei',K:'Krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
+  const G_CAL_LABELS={F:'Frühschicht',S:'Spätschicht',TS:'Teilschicht',U:'Urlaub',UU:'Unbezahlter Urlaub',WF:'Wunschfrei',K:'Krank',KK:'Kind krank',KV:'Krankenvertretung',BS:'Berufsschule',O:'Büro',T:'Tagung',HO:'Home-Office',R:'Reinigung'};
   function gRanges(s){if(!s||!s.t||s.t==='-')return[];if(s.t==='TS'){const vals=[s.z1,s.z2].filter(Boolean),out=[];for(const v of vals){const m=String(v).match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);if(m)out.push([m[1],m[2]])}if(out.length)return out;}if(s.start&&s.end)return[[String(s.start),String(s.end)]];const m=String(s.z||'').match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);return m?[[m[1],m[2]]]:[];}
   let googleToken=null,googleTokenExpiresAt=0,googleTokenClient=null,gisPromise=null;
   const gStateKey=uid=>`nasch-google-calendar-v2816-${FID()}-${uid}`;
@@ -9145,7 +9205,7 @@ window.NASCH_APP_VERSION='29.20';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.20')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.23')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -9165,7 +9225,7 @@ window.NASCH_APP_VERSION='29.20';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9211,29 +9271,32 @@ window.NASCH_APP_VERSION='29.20';
     day=normalizeDay(day);if(key==='main')return{slot:'main',index:-1,block:day};
     const raw=String(key||'');const byId=raw.match(/^xid:(.+)$/);if(byId){const i=day.extras.findIndex(b=>String(b?.blockId||'')===byId[1]);return i>=0?{slot:'extra',index:i,block:day.extras[i]}:null;}const m=raw.match(/^x:(\d+)$/);if(!m)return null;const i=Number(m[1]);return day.extras[i]?{slot:'extra',index:i,block:day.extras[i]}:null;
   }
+  function dayAvailabilityMeta(day){return day&&day.availabilityCode!=null?{availabilityCode:day.availabilityCode}:{};}
+  function cleanMovedBlock(block){const b=clone(block||{});delete b.extras;delete b.availabilityCode;delete b.availabilityConflict;delete b.availabilityCodeAtPlanning;delete b.availabilityQueryId;delete b.autoSource;delete b.businessClosure;delete b.closureConflict;delete b.closureNote;return b;}
   function replaceBlock(day,key,newBlock){
     day=normalizeDay(day);
     if(key==='main'){
-      const keep=day.extras;const b={...clone(newBlock),extras:keep};Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,b);return;
+      const keep=day.extras,meta=dayAvailabilityMeta(day),b={...cleanMovedBlock(newBlock),...meta,extras:keep};Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,b);return;
     }
-    const r=resolveBlock(day,key);if(r)day.extras[r.index]={...clone(newBlock),blockId:day.extras[r.index].blockId||newBlock.blockId||makeId('x')};
+    const r=resolveBlock(day,key);if(r)day.extras[r.index]={...cleanMovedBlock(newBlock),blockId:day.extras[r.index].blockId||newBlock.blockId||makeId('x')};
   }
   function removeBlock(day,key){
     day=normalizeDay(day);
     if(key==='main'){
-      if(day.extras.length){const promoted=day.extras.shift();const rest=day.extras;Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,{...promoted,extras:rest});}
-      else{Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,{t:'-',z:'',r:[],extras:[]});}
+      const meta=dayAvailabilityMeta(day);
+      if(day.extras.length){const promoted=cleanMovedBlock(day.extras.shift()),rest=day.extras;Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,{...promoted,...meta,extras:rest});}
+      else{Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,{t:'-',z:'',r:[],...meta,extras:[]});}
       return;
     }
     const r=resolveBlock(day,key);if(r)day.extras.splice(r.index,1);
   }
   function addBlock(day,block){
-    day=normalizeDay(day);const b={...clone(block),blockId:block.blockId||makeId('x')};
-    if(!day.t||day.t==='-'){const ex=day.extras;Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,{...b,extras:ex});return 'main';}
+    day=normalizeDay(day);const meta=dayAvailabilityMeta(day),b={...cleanMovedBlock(block),blockId:block.blockId||makeId('x')};
+    if(!day.t||day.t==='-'){const ex=day.extras;Object.keys(day).forEach(k=>delete day[k]);Object.assign(day,{...b,...meta,extras:ex});return 'main';}
     day.extras.push(b);return `xid:${b.blockId}`;
   }
   function rangesForBlock(b){
-    if(!b||!b.t||['-','U','WF','K','BS'].includes(b.t))return[];
+    if(!b||!b.t||['-','U','UU','WF','K','KK','BS'].includes(b.t))return[];
     if(b.t==='KV'&&!b.kvWorked)return b.start&&b.end?[[String(b.start),String(b.end)]]:(parseRange(b.z)?[parseRange(b.z)]:[]);
     if(b.t==='TS'){
       let vals=[];try{vals=typeof getSplitShiftTimes==='function'?getSplitShiftTimes(b):[b.z1,b.z2];}catch(_){vals=[b.z1,b.z2];}
@@ -9243,7 +9306,7 @@ window.NASCH_APP_VERSION='29.20';
     const r=parseRange(b.z);return r?[r]:[];
   }
   function timeText(b){const rs=rangesForBlock(b);return rs.length?rs.map(r=>r.join('–')).join(' / '):(b?.z||'–');}
-  function isWorkingBlock(b){return (!!b&&!!b.t&&!['-','U','WF','K','BS','KV'].includes(b.t)) || (b?.t==='KV'&&b?.kvWorked===true);}
+  function isWorkingBlock(b){return (!!b&&!!b.t&&!['-','U','UU','WF','K','KK','BS','KV'].includes(b.t)) || (b?.t==='KV'&&b?.kvWorked===true);}
   function blockHours(b){
     if(!b||!b.t)return 0;if(b.t==='KV'&&!b.kvWorked)return 0;
     const rs=rangesForBlock(b);if(rs.length)return rs.reduce((s,r)=>s+intervalMinutes(r[0],r[1])/60,0);
@@ -9259,7 +9322,7 @@ window.NASCH_APP_VERSION='29.20';
   window.dailyShiftTimes=function(s){const a=blockDescriptors(s||{}).map(({block:b})=>`${labelShort(b)} ${timeText(b)}`.trim());return a.length?a.join(' · '):'–';};
   try{dailyShiftTimes=window.dailyShiftTimes}catch(_){ }
 
-  function labelShort(b){if(!b)return'';if(b.t==='KV')return`KV${Number(b.naschKvPriority||b.kvPriority||0)||''}`;if(b.t==='R')return'RK';if(b.fromKV)return'KV-Einsatz';return({F:'Früh',S:'Spät',TS:'Teil',O:'Büro',T:'Tagung',HO:'Home-Office',U:'Urlaub',K:'Krank',WF:'WF',BS:'Schule'})[b.t]||b.t||'';}
+  function labelShort(b){if(!b)return'';if(b.t==='KV')return`KV${Number(b.naschKvPriority||b.kvPriority||0)||''}`;if(b.t==='R')return'RK';if(b.fromKV)return'KV-Einsatz';return({F:'Früh',S:'Spät',TS:'Teil',O:'Büro',T:'Tagung',HO:'Home-Office',U:'Urlaub',UU:'Frei',K:'Krank',KK:'KK',WF:'WF',BS:'Schule'})[b.t]||b.t||'';}
   function extraPill(b){
     const pri=Number(b.naschKvPriority||b.kvPriority||0)||0;
     const tm=timeText(b);let bg='#f1f5f9',fg='#334155';
@@ -9387,8 +9450,19 @@ window.NASCH_APP_VERSION='29.20';
   function rangesOverlap(a,b){let a1=minutes(a?.[0]),a2=minutes(a?.[1]),b1=minutes(b?.[0]),b2=minutes(b?.[1]);if([a1,a2,b1,b2].some(x=>x==null))return false;if(a2<a1)a2+=1440;if(b2<b1)b2+=1440;return a1<b2&&b1<a2;}
   function rangesOverlapAny(A,B){if(!A.length||!B.length)return false;return A.some(a=>B.some(b=>rangesOverlap(a,b)));}
   function activityCodes(uid,b){let a=[];if(Array.isArray(b?.r))a.push(...b.r);if(Array.isArray(b?.r1))a.push(...b.r1);if(Array.isArray(b?.r2))a.push(...b.r2);if(!a.length){try{a=typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):[]}catch(_){}}return Array.from(new Set(a.map(x=>String(x).trim()).filter(Boolean)));}
-  function samePosition(srcUid,srcBlock,cuid){const need=activityCodes(srcUid,srcBlock),have=activityCodes(cuid,null);if(!need.length)return true;return need.some(x=>have.includes(x));}
-  function hasAbsenceDate(uid,dt){const dk=dateKey(dt);try{return (SandboxStore?.getRequests?.()||[]).some(r=>String(r.uid)===String(uid)&&['urlaub','krank'].includes(r.type)&&r.status!=='abgelehnt'&&String(r.data?.von||'')<=dk&&String(r.data?.bis||r.data?.von||'')>=dk);}catch(_){return false;}}
+  function samePosition(srcUid,srcBlock,cuid){const need=activityCodes(srcUid,srcBlock),have=activityCodes(cuid,null);if(!need.length)return true;return need.every(x=>have.includes(x));}
+  function requestActive(r){return !!r&&!['abgelehnt','zurueckgezogen','storniert'].includes(String(r.status||'offen'));}
+  function requestCoversDate(r,dk){const von=String(r?.data?.von||r?.data?.datum||''),bis=String(r?.data?.bis||r?.data?.von||r?.data?.datum||'');return !!von&&von<=dk&&(!bis||bis>=dk);}
+  function wishfreeAllowsBlock(reqOrDay,block){const scope=reqOrDay?.wishfreeScope||wishfreeScopeFromValue?.(reqOrDay?.data?.schicht||reqOrDay?.wishfreeType||reqOrDay?.z||'');if(scope==='full')return false;if(scope==='early')return block?.t==='S';if(scope==='late')return block?.t==='F';return false;}
+  function hasAbsenceDate(uid,dt){const dk=dateKey(dt);try{return (SandboxStore?.getRequests?.()||[]).some(r=>String(r.uid)===String(uid)&&requestActive(r)&&requestCoversDate(r,dk)&&['urlaub','krank','kindkrank','unbezahlt'].includes(String(r.type||'')));}catch(_){return false;}}
+  function hasAbsenceForBlock(uid,dt,block){const dk=dateKey(dt);try{return (SandboxStore?.getRequests?.()||[]).some(r=>{if(String(r.uid)!==String(uid)||!requestActive(r)||!requestCoversDate(r,dk))return false;const t=String(r.type||'');if(['urlaub','krank','kindkrank','unbezahlt'].includes(t))return true;if(t==='wunschfrei')return !wishfreeAllowsBlock({wishfreeScope:wishfreeScopeFromRequest?.(r),data:r.data},block);return false;});}catch(_){return false;}}
+  function hardPlanStatusBlocks(day,block){day=normalizeDay(day||{});if(['U','UU','K','KK','BS'].includes(String(day.t||'')))return true;if(day.t==='WF')return !wishfreeAllowsBlock(day,block);return false;}
+  function availabilityAllowsBlock(day,block){day=normalizeDay(day||{});const code=String(day.availabilityCode||'g');if(code==='n'||code==='d')return false;if(['F','S','TS'].includes(String(block?.t||''))&&typeof isSuggestedShiftType==='function')return isSuggestedShiftType(block.t,code);return true;}
+  function employeeCanReceiveBlock(uid,dayIdx,block,plan=PLAN,opt={}){const dt=opt.date||dayDate(dayIdx);if(hasAbsenceForBlock(uid,dt,block))return false;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});if(hardPlanStatusBlocks(day,block))return false;if(opt.strictAvailability!==false&&!availabilityAllowsBlock(day,block))return false;return true;}
+  function prepareDayForAssignment(day,block){day=normalizeDay(day||{});if(day.t==='WF'&&wishfreeAllowsBlock(day,block))removeBlock(day,'main');return day;}
+  function isActiveEmployee(uid){return activeEmployeeEntries().some(([id])=>String(id)===String(uid));}
+  function actionDate(r){if(r?.date)return new Date(String(r.date)+'T12:00:00');return weekDate(r?.weekKey,Number(r?.dayIdx||0));}
+  function assertActionNotPast(r){const d=actionDate(r),today=new Date();today.setHours(0,0,0,0);d.setHours(0,0,0,0);if(d<today)throw new Error('Diese Schicht liegt bereits in der Vergangenheit. Bitte den Plan nicht rückwirkend über Tausch/Ersatz ändern.');}
   function hasAbsence(uid,dt){return hasAbsenceDate(uid,dt);}
   function weekDate(wk,dayIdx){const m=String(wk||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return dayDate(dayIdx);const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);d.setDate(d.getDate()+Number(dayIdx||0));return d;}
   function smallHash(s){let h=2166136261;for(let i=0;i<String(s).length;i++){h^=String(s).charCodeAt(i);h=Math.imul(h,16777619);}return(h>>>0).toString(36);}
@@ -9398,12 +9472,12 @@ window.NASCH_APP_VERSION='29.20';
   function ensurePlanDay(plan,uid,dayIdx){uid=String(uid);if(!plan[uid])plan[uid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));while(plan[uid].length<7)plan[uid].push({t:'-',z:'',r:[],extras:[]});plan[uid][dayIdx]=normalizeDay(plan[uid][dayIdx]||{t:'-',z:'',r:[],extras:[]});return plan[uid][dayIdx];}
   function applyTimeOverride(block,start,end){const b=clone(block);if(!start&&!end)return b;if(!start||!end)throw new Error('Für eine Zeitänderung müssen Start und Ende angegeben sein.');if(b.t==='TS')throw new Error('Geteilte Schichten bitte im normalen Wochenplan-Editor zeitlich anpassen.');if(intervalMinutes(start,end)<=0)throw new Error('Die angepasste Arbeitszeit ist ungültig.');b.start=String(start);b.end=String(end);b.z=`${start}–${end}`;return b;}
   function removeOverlappingKv(day,block){const rs=rangesForBlock(block);if(!rs.length)return;let again=true;while(again){again=false;for(const x of blockDescriptors(day)){if(x.block.t==='KV'&&!x.block.kvWorked&&rangesOverlapAny(rangesForBlock(x.block),rs)){removeBlock(day,x.key);again=true;break;}}}}
-  function validateOrganizationPlan(plan,wk){for(const [uid,days] of Object.entries(plan||{})){if(!Array.isArray(days))continue;for(let di=0;di<7;di++){const work=blockDescriptors(normalizeDay(days[di]||{})).filter(x=>isWorkingBlock(x.block));for(let a=0;a<work.length;a++)for(let b=a+1;b<work.length;b++)if(rangesOverlapAny(rangesForBlock(work[a].block),rangesForBlock(work[b].block))){const name=USERS?.[uid]?.name||uid;throw new Error(`${name} hat am ${DAYS?.[di]||'Tag'} überlappende Schichten. Bitte Organisation oder Zeiten anpassen.`);}}}return true;}
-  function normalizeOrganizationOperations(ops){return (Array.isArray(ops)?ops:[]).map(o=>({sourceUid:String(o.sourceUid||''),sourceDayIdx:Number(o.sourceDayIdx),sourceBlockId:String(o.sourceBlockId||''),targetUid:String(o.targetUid||''),targetDayIdx:Number(o.targetDayIdx),start:String(o.start||''),end:String(o.end||'')})).filter(o=>o.sourceUid&&o.targetUid&&o.sourceBlockId&&Number.isInteger(o.sourceDayIdx)&&o.sourceDayIdx>=0&&o.sourceDayIdx<7&&Number.isInteger(o.targetDayIdx)&&o.targetDayIdx>=0&&o.targetDayIdx<7);}
-  function applyOrganizationOperations(basePlan,request,ops){const plan=ensurePlanBlockIds(clone(basePlan||{})),clean=normalizeOrganizationOperations(ops);if(!clean.length)throw new Error('Bitte mindestens eine Planänderung festlegen.');for(const op of clean){const sday=ensurePlanDay(plan,op.sourceUid,op.sourceDayIdx),src=findBlockById(sday,op.sourceBlockId);if(!src)throw new Error(`Eine ausgewählte Ausgangsschicht von ${USERS?.[op.sourceUid]?.name||op.sourceUid} wurde inzwischen geändert. Bitte Organisation neu öffnen.`);let moved=applyTimeOverride(src.block,op.start,op.end);const same=op.sourceUid===op.targetUid&&op.sourceDayIdx===op.targetDayIdx;if(same){replaceBlock(sday,src.key,{...moved,organizationId:request.id,organizedBy:uidNow()});continue;}const targetDate=weekDate(request.weekKey,op.targetDayIdx);if(hasAbsenceDate(op.targetUid,targetDate))throw new Error(`${USERS?.[op.targetUid]?.name||op.targetUid} ist am Zieltag als krank/Urlaub eingetragen.`);removeBlock(sday,src.key);const tday=ensurePlanDay(plan,op.targetUid,op.targetDayIdx);removeOverlappingKv(tday,moved);moved={...moved,blockId:moved.blockId||makeId('org'),organizationId:request.id,organizedFrom:op.sourceUid,organizedBy:uidNow()};addBlock(tday,moved);}validateOrganizationPlan(plan,request.weekKey);return{plan,operations:clean};}
+  function validateOrganizationPlan(plan,wk){for(const [uid,days] of Object.entries(plan||{})){if(!Array.isArray(days))continue;for(let di=0;di<7;di++){const day=normalizeDay(days[di]||{}),work=blockDescriptors(day).filter(x=>isWorkingBlock(x.block));if(['U','UU','K','KK','BS'].includes(String(day.t||''))&&work.some(x=>x.key!=='main')){const name=USERS?.[uid]?.name||uid;throw new Error(`${name} hat am ${DAYS?.[di]||'Tag'} Abwesenheit und gleichzeitig eine Arbeitsschicht.`);}for(let a=0;a<work.length;a++)for(let b=a+1;b<work.length;b++)if(rangesOverlapAny(rangesForBlock(work[a].block),rangesForBlock(work[b].block))){const name=USERS?.[uid]?.name||uid;throw new Error(`${name} hat am ${DAYS?.[di]||'Tag'} überlappende Schichten. Bitte Organisation oder Zeiten anpassen.`);}}}return true;}
+  function normalizeOrganizationOperations(ops){return (Array.isArray(ops)?ops:[]).map(o=>({sourceUid:String(o.sourceUid||''),sourceDayIdx:Number(o.sourceDayIdx),sourceBlockId:String(o.sourceBlockId||''),sourceFingerprint:String(o.sourceFingerprint||''),targetUid:String(o.targetUid||''),targetDayIdx:Number(o.targetDayIdx),start:String(o.start||''),end:String(o.end||'')})).filter(o=>o.sourceUid&&o.targetUid&&o.sourceBlockId&&Number.isInteger(o.sourceDayIdx)&&o.sourceDayIdx>=0&&o.sourceDayIdx<7&&Number.isInteger(o.targetDayIdx)&&o.targetDayIdx>=0&&o.targetDayIdx<7);}
+  function applyOrganizationOperations(basePlan,request,ops){const plan=ensurePlanBlockIds(clone(basePlan||{})),clean=normalizeOrganizationOperations(ops);if(!clean.length)throw new Error('Bitte mindestens eine Planänderung festlegen.');for(const op of clean){const sday=ensurePlanDay(plan,op.sourceUid,op.sourceDayIdx),src=findBlockById(sday,op.sourceBlockId);if(!src)throw new Error(`Eine ausgewählte Ausgangsschicht von ${USERS?.[op.sourceUid]?.name||op.sourceUid} wurde inzwischen geändert. Bitte Organisation neu öffnen.`);if(op.sourceFingerprint&&op.sourceFingerprint!==blockFingerprint(src.block))throw new Error(`Eine ausgewählte Ausgangsschicht von ${USERS?.[op.sourceUid]?.name||op.sourceUid} wurde nach dem Öffnen der Organisation geändert. Bitte neu laden.`);let moved=applyTimeOverride(src.block,op.start,op.end);const same=op.sourceUid===op.targetUid&&op.sourceDayIdx===op.targetDayIdx;if(same){replaceBlock(sday,src.key,{...moved,organizationId:request.id,organizedBy:uidNow()});continue;}const targetDate=weekDate(request.weekKey,op.targetDayIdx);if(!samePosition(op.sourceUid,moved,op.targetUid))throw new Error(`${USERS?.[op.targetUid]?.name||op.targetUid} ist für die Tätigkeiten dieser Schicht nicht qualifiziert.`);if(!employeeCanReceiveBlock(op.targetUid,op.targetDayIdx,moved,plan,{date:targetDate,strictAvailability:false}))throw new Error(`${USERS?.[op.targetUid]?.name||op.targetUid} ist am Zieltag wegen Abwesenheit/Wunschfrei nicht für diese Schicht verfügbar.`);removeBlock(sday,src.key);const tday=prepareDayForAssignment(ensurePlanDay(plan,op.targetUid,op.targetDayIdx),moved);removeOverlappingKv(tday,moved);moved={...moved,blockId:moved.blockId||makeId('org'),organizationId:request.id,organizedFrom:op.sourceUid,organizedBy:uidNow()};addBlock(tday,moved);}validateOrganizationPlan(plan,request.weekKey);return{plan,operations:clean};}
 
-  function candidatesFor(srcUid,dayIdx,srcBlock,plan=PLAN,opt={}){const rs=rangesForBlock(srcBlock),dt=dayDate(dayIdx),good=[],other=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;if(hasAbsence(uid,dt))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});const busy=blockDescriptors(day).some(x=>isWorkingBlock(x.block)&&rangesOverlapAny(rangesForBlock(x.block),rs));if(busy)continue;const o={uid:String(uid),u,same:samePosition(srcUid,srcBlock,uid),day};(o.same?good:other).push(o);}return opt.includeOther?[...good,...other]:good.length?good:other;}
-  function organizationCandidates(srcUid,dayIdx,srcBlock,plan=PLAN){const dt=dayDate(dayIdx),good=[],other=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid)||hasAbsence(uid,dt))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{}),same=samePosition(srcUid,srcBlock,uid);const scheduled=blockDescriptors(day).filter(x=>isWorkingBlock(x.block)||x.block.t==='KV').map(x=>`${labelShort(x.block)} ${timeText(x.block)}`).join(' · ')||'frei';const o={uid:String(uid),u,same,scheduled};(same?good:other).push(o);}return[...good,...other];}
+  function candidatesFor(srcUid,dayIdx,srcBlock,plan=PLAN,opt={}){const rs=rangesForBlock(srcBlock),dt=dayDate(dayIdx),good=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;if(!employeeCanReceiveBlock(uid,dayIdx,srcBlock,plan,{date:dt,strictAvailability:true}))continue;if(!samePosition(srcUid,srcBlock,uid))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{});const busy=blockDescriptors(day).some(x=>isWorkingBlock(x.block)&&rangesOverlapAny(rangesForBlock(x.block),rs));if(busy)continue;good.push({uid:String(uid),u,same:true,day});}return good;}
+  function organizationCandidates(srcUid,dayIdx,srcBlock,plan=PLAN){const dt=dayDate(dayIdx),good=[],other=[];for(const [uid,u] of activeEmployeeEntries()){if(String(uid)===String(srcUid))continue;if(!employeeCanReceiveBlock(uid,dayIdx,srcBlock,plan,{date:dt,strictAvailability:true}))continue;const day=normalizeDay(plan?.[uid]?.[dayIdx]||{}),same=samePosition(srcUid,srcBlock,uid);const scheduled=blockDescriptors(day).filter(x=>isWorkingBlock(x.block)||x.block.t==='KV').map(x=>`${labelShort(x.block)} ${timeText(x.block)}`).join(' · ')||'frei';const o={uid:String(uid),u,same,scheduled};(same?good:other).push(o);}return[...good,...other];}
   function swapOptions(srcUid,dayIdx,srcKey,srcBlock,plan=PLAN){
     const dt=dayDate(dayIdx),srcDay=normalizeDay(plan?.[srcUid]?.[dayIdx]||{}),srcRanges=rangesForBlock(srcBlock),out=[];
     const requesterOther=blockDescriptors(srcDay).filter(x=>x.key!==srcKey&&isWorkingBlock(x.block));
@@ -9412,6 +9486,8 @@ window.NASCH_APP_VERSION='29.20';
       const targetDay=normalizeDay(plan?.[uid]?.[dayIdx]||{});
       for(const x of blockDescriptors(targetDay)){
         if(!isWorkingBlock(x.block)&&x.block.t!=='KV')continue;
+        if(!employeeCanReceiveBlock(uid,dayIdx,srcBlock,plan,{date:dt,strictAvailability:true}))continue;
+        if(!employeeCanReceiveBlock(srcUid,dayIdx,x.block,plan,{date:dt,strictAvailability:true}))continue;
         const targetRanges=rangesForBlock(x.block);
         const targetOther=blockDescriptors(targetDay).filter(y=>y.key!==x.key&&isWorkingBlock(y.block));
         if(targetOther.some(y=>rangesOverlapAny(rangesForBlock(y.block),srcRanges)))continue;
@@ -9427,49 +9503,37 @@ window.NASCH_APP_VERSION='29.20';
 
   const ShiftActions=(()=>{
     let rows=[],unsub=null,started=false;
+    const creatingSources=new Set();
     const coll=()=>firebase.firestore().collection('nasch').doc(FID()).collection('shiftActions');
     const conv=d=>({...d,createdAt:d.createdAt?.toDate?d.createdAt.toDate().toISOString():d.createdAt,updatedAt:d.updatedAt?.toDate?d.updatedAt.toDate().toISOString():d.updatedAt});
     function start(){if(started||typeof firebase==='undefined'||!firebase.firestore)return;started=true;unsub=coll().onSnapshot(s=>{rows=s.docs.map(d=>conv({id:d.id,...d.data()})).sort((a,b)=>Date.parse(b.updatedAt||b.createdAt||0)-Date.parse(a.updatedAt||a.createdAt||0));renderShiftActionsPage();renderManagerWorkflow();refreshNotificationsSafe();},e=>console.warn('ShiftActions:',e));}
-    async function create(data){const id=makeId('sa');await coll().doc(id).set({id,branch:FID(),...data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});return id;}
+    const activeStatuses=new Set(['offen','kv_offen','wartet_leitung','kein_kv','orga_offen','orga_leitung']);
+    function sameOpenSource(a,b){return String(a.requesterUid)===String(b.requesterUid)&&String(a.weekKey)===String(b.weekKey)&&Number(a.dayIdx)===Number(b.dayIdx)&&((a.sourceFingerprint&&b.sourceFingerprint&&a.sourceFingerprint===b.sourceFingerprint)||String(a.sourceKey||'')===String(b.sourceKey||''));}
+    async function create(data){const guarded=['swap','replacement','organization'].includes(String(data?.type||''));let createKey='';if(guarded){if(String(data?.requesterUid||'')!==String(uidNow()||''))throw new Error('Schichtanfragen dürfen nur für die eigene Schicht erstellt werden.');assertActionNotPast(data);const dup=rows.find(r=>activeStatuses.has(String(r.status||''))&&['swap','replacement','organization'].includes(String(r.type||''))&&sameOpenSource(r,data));if(dup)throw new Error('Für diese Schicht läuft bereits eine Tausch-, Ersatz- oder Organisationsanfrage.');createKey=[data.requesterUid,data.weekKey,data.dayIdx,data.sourceFingerprint||data.sourceKey||''].join('|');if(creatingSources.has(createKey))throw new Error('Diese Schichtanfrage wird bereits gesendet.');creatingSources.add(createKey);}try{const id=makeId('sa');await coll().doc(id).set({id,branch:FID(),...data,createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});return id;}finally{if(createKey)creatingSources.delete(createKey);}}
     function incoming(uid){return rows.filter(r=>Array.isArray(r.candidateUids)&&r.candidateUids.includes(String(uid))&&['offen','kv_offen','orga_offen','orga_leitung'].includes(r.status)&&!(r.responses||{})[uid]);}
     function mine(uid){return rows.filter(r=>String(r.requesterUid)===String(uid));}
     function pendingManager(){return rows.filter(r=>['wartet_leitung','kein_kv','orga_offen','orga_leitung'].includes(r.status));}
-    async function respond(id,accept){const r=rows.find(x=>x.id===id);if(!r)throw new Error('Anfrage nicht gefunden.');const u=uidNow();if(!Array.isArray(r.candidateUids)||!r.candidateUids.includes(u))throw new Error('Diese Anfrage ist nicht für dich.');
-      if(r.type==='organization'){
-        const responses={...(r.responses||{}),[u]:accept?'zugesagt':'abgelehnt'},all=(r.candidateUids||[]).every(x=>!!responses[x]),any=(r.candidateUids||[]).some(x=>responses[x]==='zugesagt');
-        const status=any?'orga_leitung':(all?'abgelehnt':'orga_offen');
-        await coll().doc(id).set({responses,status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});return;
-      }
-      if(r.type==='kv_cover'){
-        const idx=Number(r.activeCandidateIndex||0),active=String(r.candidateUids[idx]||'');if(active!==u)throw new Error('Zuerst ist eine andere KV-Person an der Reihe.');if(accept){await coll().doc(id).set({acceptedUid:u,status:'wartet_leitung',responses:{...(r.responses||{}),[u]:'angenommen'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}else{const ni=idx+1,status=ni<r.candidateUids.length?'kv_offen':'kein_kv';await coll().doc(id).set({activeCandidateIndex:ni,status,responses:{...(r.responses||{}),[u]:'abgelehnt'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}return;
-      }
-      if(accept){await firebase.firestore().runTransaction(async tx=>{const ref=coll().doc(id),snap=await tx.get(ref),cur=snap.data()||{};if(cur.acceptedUid&&cur.acceptedUid!==u)throw new Error('Die Schicht wurde bereits von jemand anderem angenommen.');tx.set(ref,{acceptedUid:u,status:'wartet_leitung',responses:{...(cur.responses||{}),[u]:'angenommen'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});}
-      else{const responses={...(r.responses||{}),[u]:'abgelehnt'},all=(r.candidateUids||[]).every(x=>responses[x]==='abgelehnt');await coll().doc(id).set({responses,status:all?'abgelehnt':'offen',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
-    }
-    async function rejectByManager(id){if(!isManager())throw new Error('Keine Berechtigung.');await coll().doc(id).set({status:'abgelehnt',decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
-    async function applyAction(r){
-      const ref=firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(r.weekKey),snap=await ref.get(),data=snap.exists?(snap.data()||{}):{},plan=clone(data.publishedPlan||data.draftPlan||data.plan||{}),day=Number(r.dayIdx),srcDay=normalizeDay(plan?.[r.requesterUid]?.[day]||{t:'-',z:'',r:[],extras:[]});if(!plan[r.requesterUid])plan[r.requesterUid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));plan[r.requesterUid][day]=srcDay;const src=resolveBlock(srcDay,r.sourceKey);if(!src)throw new Error('Die ursprüngliche Schicht wurde inzwischen geändert.');const sourceBlock=clone(src.block);
-      if(r.type==='swap'){
-        const tu=String(r.acceptedUid||r.targetUid||''),td=Number(r.targetDayIdx??day);if(!tu)throw new Error('Tauschpartner fehlt.');if(!plan[tu])plan[tu]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const targetDay=normalizeDay(plan[tu][td]||{t:'-',z:'',r:[],extras:[]});plan[tu][td]=targetDay;const trg=resolveBlock(targetDay,r.targetKey);if(!trg)throw new Error('Die Tauschschicht wurde inzwischen geändert.');const targetBlock=clone(trg.block);replaceBlock(srcDay,r.sourceKey,targetBlock);replaceBlock(targetDay,r.targetKey,sourceBlock);
-      }else if(r.type==='replacement'){
-        const tu=String(r.acceptedUid||'');if(!tu)throw new Error('Ersatzperson fehlt.');if(!plan[tu])plan[tu]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const targetDay=normalizeDay(plan[tu][day]||{t:'-',z:'',r:[],extras:[]});plan[tu][day]=targetDay;const srcRanges=rangesForBlock(sourceBlock);targetDay.extras=targetDay.extras.filter(b=>!(b.t==='KV'&&rangesOverlapAny(rangesForBlock(b),srcRanges)));if(targetDay.t==='KV'&&rangesOverlapAny(rangesForBlock(targetDay),srcRanges)){const keptExtras=targetDay.extras||[];Object.keys(targetDay).forEach(k=>delete targetDay[k]);Object.assign(targetDay,{t:'-',z:'',r:[],extras:keptExtras});}removeBlock(srcDay,r.sourceKey);addBlock(targetDay,{...sourceBlock,blockId:makeId('x'),replacementFor:r.requesterUid});
-      }else if(r.type==='kv_cover'){
-        const tu=String(r.acceptedUid||'');if(!tu)throw new Error('KV-Person fehlt.');if(!plan[tu])plan[tu]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const targetDay=normalizeDay(plan[tu][day]||{t:'-',z:'',r:[],extras:[]});plan[tu][day]=targetDay;const kv=blockDescriptors(targetDay).filter(x=>x.block.t==='KV').sort((a,b)=>(Number(a.block.kvPriority)||99)-(Number(b.block.kvPriority)||99)).find(x=>rangesOverlapAny(rangesForBlock(x.block),rangesForBlock(sourceBlock)))||blockDescriptors(targetDay).find(x=>x.block.t==='KV');if(!kv)throw new Error('Der KV-Eintrag wurde inzwischen entfernt.');const worked={...sourceBlock,blockId:kv.block.blockId||makeId('x'),fromKV:true,kvWasPriority:Number(kv.block.kvPriority||kv.block.naschKvPriority||0)||null,kvWorked:true};replaceBlock(targetDay,kv.key,worked);replaceBlock(srcDay,r.sourceKey,{t:'K',z:'Krank',r:[],blockId:sourceBlock.blockId||makeId('x')});
-      }
-      await ref.set({publishedPlan:plan,draftPlan:plan,published:true,version:Number(data.version||1)+1,publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Filialleitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-      if(r.weekKey===weekKeyForOffset()){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(plan));normalizePlan();rebalanceAllKv();try{WeekPlanStore?.persistCurrent?.()}catch(_){}try{renderPlan?.();buildAdminPlan?.();renderPersonalDailyHours?.();renderAdminDailyHours?.()}catch(_){}}
-    }
-    async function approve(id){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r)throw new Error('Anfrage nicht gefunden.');if(r.status!=='wartet_leitung')throw new Error('Diese Anfrage wartet nicht auf Freigabe.');await applyAction(r);await coll().doc(id).set({status:'genehmigt',decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
-    async function saveOrganizationDraft(id,operations,managerNote=''){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r||r.type!=='organization')throw new Error('Organisationsanfrage nicht gefunden.');const clean=normalizeOrganizationOperations(operations);await coll().doc(id).set({organizationOperations:clean,managerNote:String(managerNote||'').trim(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
+    async function respond(id,accept){const u=uidNow(),ref=coll().doc(id);await firebase.firestore().runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw new Error('Anfrage nicht gefunden.');const r=snap.data()||{},cands=Array.isArray(r.candidateUids)?r.candidateUids.map(String):[];if(!cands.includes(u))throw new Error('Diese Anfrage ist nicht für dich.');if(!isActiveEmployee(u))throw new Error('Dein Mitarbeiterzugang ist für diese Anfrage nicht aktiv.');
+      if(r.type==='organization'){if(!['orga_offen','orga_leitung'].includes(r.status))throw new Error('Diese Organisationsanfrage ist nicht mehr offen.');const responses={...(r.responses||{})};if(responses[u])throw new Error('Du hast auf diese Anfrage bereits geantwortet.');responses[u]=accept?'zugesagt':'abgelehnt';const all=cands.every(x=>!!responses[x]),any=cands.some(x=>responses[x]==='zugesagt'),status=any?'orga_leitung':(all?'abgelehnt':'orga_offen');tx.set(ref,{responses,status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
+      if(r.type==='kv_cover'){if(r.status!=='kv_offen')throw new Error('Diese KV-Anfrage ist nicht mehr offen.');const idx=Number(r.activeCandidateIndex||0),active=String(cands[idx]||'');if(active!==u)throw new Error('Zuerst ist eine andere KV-Person an der Reihe.');const responses={...(r.responses||{})};if(accept){responses[u]='angenommen';tx.set(ref,{acceptedUid:u,status:'wartet_leitung',responses,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}else{responses[u]='abgelehnt';const ni=idx+1,status=ni<cands.length?'kv_offen':'kein_kv';tx.set(ref,{activeCandidateIndex:ni,status,responses,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}return;}
+      if(r.status!=='offen')throw new Error('Diese Anfrage ist nicht mehr offen.');const responses={...(r.responses||{})};if(responses[u])throw new Error('Du hast auf diese Anfrage bereits geantwortet.');if(accept){if(r.acceptedUid&&String(r.acceptedUid)!==u)throw new Error('Die Schicht wurde bereits von jemand anderem angenommen.');responses[u]='angenommen';tx.set(ref,{acceptedUid:u,status:'wartet_leitung',responses,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}else{responses[u]='abgelehnt';const all=cands.every(x=>responses[x]==='abgelehnt');tx.set(ref,{responses,status:all?'abgelehnt':'offen',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}});}
+    async function rejectByManager(id){if(!isManager())throw new Error('Keine Berechtigung.');const ref=coll().doc(id);await firebase.firestore().runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw new Error('Anfrage nicht gefunden.');const r=snap.data()||{};if(!['wartet_leitung','kein_kv','orga_offen','orga_leitung'].includes(String(r.status||'')))throw new Error('Diese Anfrage kann nicht mehr abgelehnt werden.');tx.set(ref,{status:'abgelehnt',decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});}
+    function assertBlockSnapshot(r,block,prefix){const fp=String(r?.[`${prefix}Fingerprint`]||'');if(!fp)throw new Error('Diese ältere Anfrage muss aus Sicherheitsgründen neu gestellt werden.');if(fp!==blockFingerprint(block))throw new Error(prefix==='target'?'Die Tauschschicht wurde inzwischen geändert. Bitte Anfrage neu stellen.':'Die ursprüngliche Schicht wurde inzwischen geändert. Bitte Anfrage neu stellen.');}
+    function applyActionToPlan(basePlan,r){assertActionNotPast(r);const plan=clone(basePlan||{}),day=Number(r.dayIdx);if(!plan[r.requesterUid])plan[r.requesterUid]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const srcDay=normalizeDay(plan[r.requesterUid][day]||{t:'-',z:'',r:[],extras:[]});plan[r.requesterUid][day]=srcDay;const src=resolveBlock(srcDay,r.sourceKey);if(!src)throw new Error('Die ursprüngliche Schicht wurde inzwischen entfernt.');assertBlockSnapshot(r,src.block,'source');const sourceBlock=clone(src.block),dt=weekDate(r.weekKey,day);
+      if(r.type==='swap'){const tu=String(r.acceptedUid||r.targetUid||''),td=Number(r.targetDayIdx??day);if(!tu||tu!==String(r.targetUid||''))throw new Error('Tauschpartner stimmt nicht mehr mit der Anfrage überein.');if(tu===String(r.requesterUid))throw new Error('Ein Tausch mit der eigenen Schicht ist nicht zulässig.');if(!isActiveEmployee(tu))throw new Error('Der Tauschpartner ist nicht mehr aktiv.');if(!plan[tu])plan[tu]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const targetDay=normalizeDay(plan[tu][td]||{t:'-',z:'',r:[],extras:[]});plan[tu][td]=targetDay;const trg=resolveBlock(targetDay,r.targetKey);if(!trg)throw new Error('Die Tauschschicht wurde inzwischen entfernt.');assertBlockSnapshot(r,trg.block,'target');const targetBlock=clone(trg.block),tdt=weekDate(r.weekKey,td);if(!samePosition(r.requesterUid,sourceBlock,tu)||!samePosition(tu,targetBlock,r.requesterUid))throw new Error('Die Tätigkeitszuordnung passt nicht mehr für den Tausch.');if(!employeeCanReceiveBlock(tu,td,sourceBlock,plan,{date:tdt,strictAvailability:true})||!employeeCanReceiveBlock(r.requesterUid,day,targetBlock,plan,{date:dt,strictAvailability:true}))throw new Error('Der Tausch passt nicht mehr zu Abwesenheit oder Verfügbarkeit.');replaceBlock(srcDay,r.sourceKey,targetBlock);replaceBlock(targetDay,r.targetKey,sourceBlock);
+      }else if(r.type==='replacement'){const tu=String(r.acceptedUid||'');if(!tu||!(r.candidateUids||[]).map(String).includes(tu))throw new Error('Ersatzperson fehlt oder gehört nicht zur Anfrage.');if(tu===String(r.requesterUid))throw new Error('Die eigene Schicht kann nicht als eigener Ersatz übernommen werden.');if(!isActiveEmployee(tu))throw new Error('Die Ersatzperson ist nicht mehr aktiv.');if(!samePosition(r.requesterUid,sourceBlock,tu))throw new Error('Die Ersatzperson ist für die Tätigkeiten dieser Schicht nicht mehr geeignet.');if(!plan[tu])plan[tu]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));let targetDay=normalizeDay(plan[tu][day]||{t:'-',z:'',r:[],extras:[]});plan[tu][day]=targetDay;if(!employeeCanReceiveBlock(tu,day,sourceBlock,plan,{date:dt,strictAvailability:true}))throw new Error('Die Ersatzperson ist inzwischen nicht mehr für diese Schicht verfügbar.');removeBlock(srcDay,r.sourceKey);targetDay=prepareDayForAssignment(targetDay,sourceBlock);plan[tu][day]=targetDay;removeOverlappingKv(targetDay,sourceBlock);addBlock(targetDay,{...sourceBlock,blockId:makeId('x'),replacementFor:r.requesterUid});
+      }else if(r.type==='kv_cover'){const tu=String(r.acceptedUid||'');if(!tu)throw new Error('KV-Person fehlt.');if(!isActiveEmployee(tu))throw new Error('Die KV-Person ist nicht mehr aktiv.');if(!plan[tu])plan[tu]=Array.from({length:7},()=>({t:'-',z:'',r:[],extras:[]}));const targetDay=normalizeDay(plan[tu][day]||{t:'-',z:'',r:[],extras:[]});plan[tu][day]=targetDay;const kv=blockDescriptors(targetDay).filter(x=>x.block.t==='KV').sort((a,b)=>(Number(a.block.kvPriority)||99)-(Number(b.block.kvPriority)||99)).find(x=>rangesOverlapAny(rangesForBlock(x.block),rangesForBlock(sourceBlock)))||blockDescriptors(targetDay).find(x=>x.block.t==='KV');if(!kv)throw new Error('Der KV-Eintrag wurde inzwischen entfernt.');const worked={...sourceBlock,blockId:kv.block.blockId||makeId('x'),fromKV:true,kvWasPriority:Number(kv.block.kvPriority||kv.block.naschKvPriority||0)||null,kvWorked:true};replaceBlock(targetDay,kv.key,worked);replaceBlock(srcDay,r.sourceKey,{t:'K',z:'Krank',r:[],blockId:sourceBlock.blockId||makeId('x')});
+      }else throw new Error('Unbekannte Schichtaktion.');validateOrganizationPlan(plan,r.weekKey);return plan;}
+    async function approve(id){if(!isManager())throw new Error('Keine Berechtigung.');const actionRef=coll().doc(id);let finalPlan=null,finalWeek='';await firebase.firestore().runTransaction(async tx=>{const actionSnap=await tx.get(actionRef);if(!actionSnap.exists)throw new Error('Anfrage nicht gefunden.');const r={id,...(actionSnap.data()||{})};if(r.status!=='wartet_leitung')throw new Error('Diese Anfrage wartet nicht auf Freigabe.');const planRef=firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(r.weekKey),planSnap=await tx.get(planRef),data=planSnap.exists?(planSnap.data()||{}):{},publishedBase=clone(data.publishedPlan||(data.published===true?data.plan:null)||data.draftPlan||data.plan||{}),hasDraft=!!(data.draftPlan&&typeof data.draftPlan==='object'&&Object.keys(data.draftPlan).length),draftBase=hasDraft?clone(data.draftPlan):clone(publishedBase);let finalPublished,finalDraft;finalPublished=applyActionToPlan(publishedBase,r);try{finalDraft=applyActionToPlan(draftBase,r);}catch(e){if(hasDraft)throw new Error('Der aktuelle Planentwurf wurde an einer betroffenen Schicht geändert. Bitte Entwurf prüfen bzw. veröffentlichen und die Tauschfreigabe danach erneut öffnen.');throw e;}finalPlan=finalDraft;finalWeek=r.weekKey;tx.set(planRef,{publishedPlan:finalPublished,draftPlan:finalDraft,published:true,version:Number(data.version||1)+1,publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Filialleitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});tx.set(actionRef,{status:'genehmigt',decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});if(finalWeek===weekKeyForOffset()&&finalPlan){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(finalPlan));normalizePlan();rebalanceAllKv();try{WeekPlanStore?.persistCurrent?.()}catch(_){}try{renderPlan?.();buildAdminPlan?.();renderPersonalDailyHours?.();renderAdminDailyHours?.()}catch(_){}}}
+    async function saveOrganizationDraft(id,operations,managerNote=''){if(!isManager())throw new Error('Keine Berechtigung.');const ref=coll().doc(id),clean=normalizeOrganizationOperations(operations);if(!clean.length)throw new Error('Bitte mindestens eine Planänderung festlegen.');await firebase.firestore().runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw new Error('Organisationsanfrage nicht gefunden.');const r=snap.data()||{};if(r.type!=='organization'||!['orga_offen','orga_leitung'].includes(String(r.status||'')))throw new Error('Diese Organisationsanfrage ist nicht mehr offen.');tx.set(ref,{organizationOperations:clean,managerNote:String(managerNote||'').trim(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});}
     async function approveOrganization(id,operations,managerNote=''){
-      if(!isManager())throw new Error('Keine Berechtigung.');const known=rows.find(x=>x.id===id);if(!known||known.type!=='organization')throw new Error('Organisationsanfrage nicht gefunden.');let finalPlan=null,finalOps=null;
-      const planRef=firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(known.weekKey),actionRef=coll().doc(id);
-      await firebase.firestore().runTransaction(async tx=>{const planSnap=await tx.get(planRef),actionSnap=await tx.get(actionRef),cur=actionSnap.data()||{};if(!['orga_offen','orga_leitung'].includes(cur.status))throw new Error('Diese Organisationsanfrage ist nicht mehr offen.');const data=planSnap.exists?(planSnap.data()||{}):{},base=clone(data.publishedPlan||data.draftPlan||data.plan||{}),applied=applyOrganizationOperations(base,{...known,...cur,id},operations);finalPlan=applied.plan;finalOps=applied.operations;tx.set(planRef,{publishedPlan:finalPlan,draftPlan:finalPlan,published:true,version:Number(data.version||1)+1,publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Filialleitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});tx.set(actionRef,{status:'genehmigt',organizationOperations:finalOps,managerNote:String(managerNote||'').trim(),decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});
-      if(known.weekKey===weekKeyForOffset()&&finalPlan){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(finalPlan));normalizePlan();rebalanceAllKv();try{WeekPlanStore?.persistCurrent?.()}catch(_){}try{renderPlan?.();buildAdminPlan?.();renderPersonalDailyHours?.();renderAdminDailyHours?.()}catch(_){}}
+      if(!isManager())throw new Error('Keine Berechtigung.');let finalPlan=null,finalOps=null,finalWeek='';const planBase=firebase.firestore().collection('nasch').doc(FID()).collection('plan'),actionRef=coll().doc(id);
+      await firebase.firestore().runTransaction(async tx=>{const actionSnap=await tx.get(actionRef);if(!actionSnap.exists)throw new Error('Organisationsanfrage nicht gefunden.');const cur={id,...(actionSnap.data()||{})};if(cur.type!=='organization'||!['orga_offen','orga_leitung'].includes(cur.status))throw new Error('Diese Organisationsanfrage ist nicht mehr offen.');assertActionNotPast(cur);const planRef=planBase.doc(cur.weekKey),planSnap=await tx.get(planRef),data=planSnap.exists?(planSnap.data()||{}):{},publishedBase=clone(data.publishedPlan||(data.published===true?data.plan:null)||data.draftPlan||data.plan||{}),hasDraft=!!(data.draftPlan&&typeof data.draftPlan==='object'&&Object.keys(data.draftPlan).length),draftBase=hasDraft?clone(data.draftPlan):clone(publishedBase),appliedPublished=applyOrganizationOperations(publishedBase,cur,operations);let appliedDraft;try{appliedDraft=applyOrganizationOperations(draftBase,cur,operations);}catch(e){if(hasDraft)throw new Error('Der aktuelle Planentwurf wurde an einer betroffenen Schicht geändert. Bitte Entwurf prüfen bzw. veröffentlichen und die Organisation danach erneut öffnen.');throw e;}finalPlan=appliedDraft.plan;finalOps=appliedDraft.operations;finalWeek=cur.weekKey;tx.set(planRef,{publishedPlan:appliedPublished.plan,draftPlan:appliedDraft.plan,published:true,version:Number(data.version||1)+1,publishedAt:firebase.firestore.FieldValue.serverTimestamp(),publishedBy:AppState.currentUser?.name||'Filialleitung',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});tx.set(actionRef,{status:'genehmigt',organizationOperations:finalOps,managerNote:String(managerNote||'').trim(),decidedBy:uidNow(),decidedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});});
+      if(finalWeek===weekKeyForOffset()&&finalPlan){Object.keys(PLAN).forEach(k=>delete PLAN[k]);Object.assign(PLAN,clone(finalPlan));normalizePlan();rebalanceAllKv();try{WeekPlanStore?.persistCurrent?.()}catch(_){}try{renderPlan?.();buildAdminPlan?.();renderPersonalDailyHours?.();renderAdminDailyHours?.()}catch(_){}}
     }
-    async function convertNoKvToReplacement(id){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r)throw new Error('Nicht gefunden.');const plan=await loadPublishedPlan(r.weekKey),src=resolveBlock(normalizeDay(plan?.[r.requesterUid]?.[r.dayIdx]||{}),r.sourceKey);if(!src)throw new Error('Schicht nicht gefunden.');const c=candidatesFor(r.requesterUid,r.dayIdx,src.block,plan,{includeOther:true});if(!c.length)throw new Error('Keine geeigneten Mitarbeiter verfügbar.');await coll().doc(id).set({type:'replacement',candidateUids:c.map(x=>x.uid),status:'offen',activeCandidateIndex:null,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
+    async function convertNoKvToReplacement(id){if(!isManager())throw new Error('Keine Berechtigung.');const r=rows.find(x=>x.id===id);if(!r)throw new Error('Nicht gefunden.');if(r.status!=='kein_kv')throw new Error('Diese KV-Anfrage wartet nicht auf eine Ersatzsuche.');assertActionNotPast(r);const plan=await loadPublishedPlan(r.weekKey),src=resolveBlock(normalizeDay(plan?.[r.requesterUid]?.[r.dayIdx]||{}),r.sourceKey);if(!src)throw new Error('Schicht nicht gefunden.');assertBlockSnapshot(r,src.block,'source');const c=candidatesFor(r.requesterUid,r.dayIdx,src.block,plan);if(!c.length)throw new Error('Keine geeigneten Mitarbeiter verfügbar.');await coll().doc(id).set({type:'replacement',candidateUids:c.map(x=>x.uid),responses:{},acceptedUid:null,status:'offen',activeCandidateIndex:null,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});}
     async function createSickCover(uid,von,bis,requestId){const start=new Date(von+'T12:00:00'),end=new Date((bis||von)+'T12:00:00'),messages=[];const weeks=new Map();for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const monday=new Date(d);const dow=monday.getDay();monday.setDate(monday.getDate()+(dow===0?-6:1-dow));const wk=dateKey(monday);if(!weeks.has(wk))weeks.set(wk,[]);weeks.get(wk).push(new Date(d));}
-      for(const [wk,dates] of weeks){const plan=await loadPublishedPlan(wk);for(const d of dates){const di=(d.getDay()+6)%7,day=normalizeDay(plan?.[uid]?.[di]||{});for(const src of blockDescriptors(day).filter(x=>isWorkingBlock(x.block))){const kv=kvCandidatesRaw(uid,di,src.block,plan);const exists=rows.some(x=>x.type==='kv_cover'&&x.weekKey===wk&&x.requesterUid===uid&&x.dayIdx===di&&x.sourceKey===src.key&&['kv_offen','wartet_leitung','genehmigt'].includes(x.status));if(exists)continue;const id=await create({type:'kv_cover',requesterUid:uid,weekKey:wk,dayIdx:di,date:dateKey(d),sourceKey:src.key,sourceLabel:`${labelShort(src.block)} ${timeText(src.block)}`,candidateUids:kv.map(x=>x.uid),activeCandidateIndex:0,responses:{},status:kv.length?'kv_offen':'kein_kv',requestId});messages.push(kv.length?`KV-Anfrage: ${USERS?.[kv[0].uid]?.name||kv[0].uid}`:'Keine KV verfügbar');}}
+      for(const [wk,dates] of weeks){const plan=await loadPublishedPlan(wk);for(const d of dates){const di=(d.getDay()+6)%7,day=normalizeDay(plan?.[uid]?.[di]||{});for(const src of blockDescriptors(day).filter(x=>isWorkingBlock(x.block))){const kv=kvCandidatesRaw(uid,di,src.block,plan);const exists=rows.some(x=>x.type==='kv_cover'&&x.weekKey===wk&&x.requesterUid===uid&&x.dayIdx===di&&x.sourceKey===src.key&&['kv_offen','wartet_leitung','genehmigt'].includes(x.status));if(exists)continue;const id=await create({type:'kv_cover',requesterUid:uid,weekKey:wk,dayIdx:di,date:dateKey(d),sourceKey:src.key,sourceFingerprint:blockFingerprint(src.block),sourceLabel:`${labelShort(src.block)} ${timeText(src.block)}`,candidateUids:kv.map(x=>x.uid),activeCandidateIndex:0,responses:{},status:kv.length?'kv_offen':'kein_kv',requestId});messages.push(kv.length?`KV-Anfrage: ${USERS?.[kv[0].uid]?.name||kv[0].uid}`:'Keine KV verfügbar');}}
       }return messages;}
     async function loadPublishedPlan(wk){const s=await firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(wk).get();const d=s.exists?(s.data()||{}):{};return ensurePlanBlockIds(clone(d.publishedPlan||(d.published===true?d.plan:null)||d.draftPlan||{}));}
     return{start,rows:()=>rows.slice(),incoming,mine,pendingManager,create,respond,approve,rejectByManager,saveOrganizationDraft,approveOrganization,createSickCover,convertNoKvToReplacement,loadPublishedPlan};
@@ -9482,7 +9546,7 @@ window.NASCH_APP_VERSION='29.20';
     const prof=document.querySelector('#pgProfil .menu-list');if(prof&&!document.getElementById('miShiftActions')){const d=document.createElement('div');d.className='mi';d.id='miShiftActions';d.onclick=()=>{goTo('pgShiftActions','Schichttausch, Ersatz & Organisation');setTimeout(renderShiftActionsPage,0)};d.innerHTML='<div class="mi-icon" style="background:#eef6ff;">🔁</div><span class="mi-lbl">Tausch, Ersatz & Organisation</span><span class="mi-arr">›</span>';prof.appendChild(d);}
     const admin=document.querySelector('#pgAdmin .menu-list');if(admin&&!document.getElementById('miAdminWorkflow')){const d=document.createElement('div');d.className='mi';d.id='miAdminWorkflow';d.onclick=()=>{goTo('pgAdminWorkflow','Tausch, Ersatz & Organisation');setTimeout(renderManagerWorkflow,0)};d.innerHTML='<div class="mi-icon" style="background:#eef6ff;">🔄</div><span class="mi-lbl">Tausch, Ersatz & Organisation</span><span class="mi-arr">›</span>';admin.appendChild(d);}
   }
-  function ownBlocksHtml(){const uid=uidNow(),mon=getMonday(AppState.weekOffset||0);let out='';for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i),day=normalizeDay(PLAN?.[uid]?.[i]||{});for(const x of blockDescriptors(day)){const b=x.block;if(!isWorkingBlock(b)&&b.t!=='KV')continue;out+=`<div class="v2817-action-row"><div style="flex:1;"><strong>${esc(d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}))} · ${esc(labelShort(b))}</strong><div>${esc(timeText(b))}${b.t==='KV'?' · Bereitschaft':''}</div></div><button onclick="NaschShiftFlow.openSwap(${i},'${x.key}')">Tauschen</button>${isWorkingBlock(b)?`<button onclick="NaschShiftFlow.openReplacement(${i},'${x.key}')">Ersatz</button><button class="v2911-org-btn" onclick="NaschShiftFlow.openOrganization(${i},'${x.key}')">Organisation</button>`:''}</div>`;}}return out||'<div style="font-size:11px;color:var(--muted);">In dieser Woche sind keine eigenen Arbeits-/KV-Blöcke vorhanden.</div>';}
+  function ownBlocksHtml(){const uid=uidNow(),mon=getMonday(AppState.weekOffset||0),today=new Date();today.setHours(0,0,0,0);let out='';for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);d.setHours(0,0,0,0);if(d<today)continue;const day=normalizeDay(PLAN?.[uid]?.[i]||{});for(const x of blockDescriptors(day)){const b=x.block;if(!isWorkingBlock(b)&&b.t!=='KV')continue;out+=`<div class="v2817-action-row"><div style="flex:1;"><strong>${esc(d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}))} · ${esc(labelShort(b))}</strong><div>${esc(timeText(b))}${b.t==='KV'?' · Bereitschaft':''}</div></div><button onclick="NaschShiftFlow.openSwap(${i},'${x.key}')">Tauschen</button>${isWorkingBlock(b)?`<button onclick="NaschShiftFlow.openReplacement(${i},'${x.key}')">Ersatz</button><button class="v2911-org-btn" onclick="NaschShiftFlow.openOrganization(${i},'${x.key}')">Organisation</button>`:''}</div>`;}}return out||'<div style="font-size:11px;color:var(--muted);">In dieser Woche sind keine eigenen Arbeits-/KV-Blöcke vorhanden.</div>';}
   function actionSummary(r){const who=USERS?.[r.requesterUid]?.name||r.requesterUid,acc=r.acceptedUid?(USERS?.[r.acceptedUid]?.name||r.acceptedUid):'';const typ=r.type==='swap'?'Tausch':r.type==='replacement'?'Ersatz':r.type==='organization'?'Organisation':'KV-Einsatz';return `${typ} · ${r.date||r.weekKey} · ${who}${acc?' → '+acc:''} · ${r.sourceLabel||''}`;}
   function statusText(s){return({offen:'wartet auf Mitarbeiter',kv_offen:'KV-Anfrage läuft',wartet_leitung:'wartet auf Filialleitung',kein_kv:'keine KV verfügbar',orga_offen:'Mehrfachanfrage läuft',orga_leitung:'Rückmeldungen vorhanden · wartet auf Filialleitung',genehmigt:'genehmigt',abgelehnt:'abgelehnt'})[s]||s||'–';}
   function responseText(v){return v==='zugesagt'?'✓ kann helfen':v==='angenommen'?'✓ angenommen':v==='abgelehnt'?'✕ kann nicht':'… offen';}
@@ -9491,11 +9555,11 @@ window.NASCH_APP_VERSION='29.20';
   function ensureActionOverlay(){if(document.getElementById('shiftActionOverlay'))return;const o=document.createElement('div');o.id='shiftActionOverlay';o.className='v2817-overlay';o.innerHTML='<div class="v2817-sheet"><div class="v2817-head"><strong id="saTitle">Schichtaktion</strong><button onclick="NaschShiftFlow.closeAction()">×</button></div><div id="saBody"></div></div>';document.body.appendChild(o);}
   let actionCtx=null;
   function openSwap(day,key){const uid=uidNow(),dayObj=ensureDay(uid,day),src=resolveBlock(dayObj,key);if(!src)return;ensureActionOverlay();actionCtx={type:'swap',day,key,src};const candidates=swapOptions(uid,day,key,src.block,PLAN);document.getElementById('saTitle').textContent='Schicht tauschen';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Dein Eintrag: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong></div>${candidates.length?`<label>Tauschpartner / Eintrag</label><select id="saTarget">${candidates.map((c,i)=>`<option value="${i}">${esc(c.name)} · ${esc(labelShort(c.b))} ${esc(timeText(c.b))}${c.same?' · gleiche Position':' · weitere geeignete Person'}</option>`).join('')}</select><button class="btn btn-primary" onclick="NaschShiftFlow.submitSwap()">Tauschanfrage senden</button>`:'<div class="banner binfo"><span>ℹ️</span><span>Für diesen Zeitraum wurde kein geeigneter Tausch-Eintrag gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');actionCtx.candidates=candidates;}
-  async function submitSwap(){try{const c=actionCtx?.candidates?.[Number(document.getElementById('saTarget').value)];if(!c)return;const d=dayDate(actionCtx.day);await ShiftActions.create({type:'swap',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,targetUid:c.uid,targetDayIdx:actionCtx.day,targetKey:c.key,targetLabel:`${labelShort(c.b)} ${timeText(c.b)}`,candidateUids:[c.uid],responses:{},status:'offen'});closeAction();showToast?.('✓ Tauschanfrage gesendet');}catch(e){alert(e.message||e)}}
+  async function submitSwap(){try{const c=actionCtx?.candidates?.[Number(document.getElementById('saTarget').value)];if(!c)return;const d=dayDate(actionCtx.day);await ShiftActions.create({type:'swap',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceFingerprint:blockFingerprint(actionCtx.src.block),sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,targetUid:c.uid,targetDayIdx:actionCtx.day,targetKey:c.key,targetFingerprint:blockFingerprint(c.b),targetLabel:`${labelShort(c.b)} ${timeText(c.b)}`,candidateUids:[c.uid],responses:{},status:'offen'});closeAction();showToast?.('✓ Tauschanfrage gesendet');}catch(e){alert(e.message||e)}}
   function openReplacement(day,key){const uid=uidNow(),src=resolveBlock(ensureDay(uid,day),key);if(!src)return;ensureActionOverlay();actionCtx={type:'replacement',day,key,src,candidates:candidatesFor(uid,day,src.block,PLAN,{includeOther:true})};const good=actionCtx.candidates.filter(x=>x.same),other=actionCtx.candidates.filter(x=>!x.same);const group=(title,a)=>a.length?`<div style="font-size:11px;font-weight:800;margin:10px 0 5px;">${title}</div>${a.map(x=>`<label class="v2817-candidate"><input type="checkbox" class="saCand" value="${esc(x.uid)}" ${x.same?'checked':''}> <strong>${esc(x.u.name)}</strong>${x.same?' · gleiche Position':' · weitere geeignete Person'}</label>`).join('')}`:'';document.getElementById('saTitle').textContent='Ersatz suchen';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Schicht: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong></div>${group('Passende Mitarbeiter',good)}${group('Weitere geeignete Mitarbeiter',other)}${actionCtx.candidates.length?'<button class="btn btn-primary" onclick="NaschShiftFlow.submitReplacement()">Ausgewählte Mitarbeiter fragen</button>':'<div class="banner binfo"><span>ℹ️</span><span>Keine verfügbaren Mitarbeiter gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');}
-  async function submitReplacement(){try{const ids=[...document.querySelectorAll('.saCand:checked')].map(x=>x.value);if(!ids.length){alert('Bitte mindestens einen Mitarbeiter auswählen.');return;}const d=dayDate(actionCtx.day);await ShiftActions.create({type:'replacement',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,candidateUids:ids,responses:{},status:'offen'});closeAction();showToast?.('✓ Ersatzanfrage gesendet');}catch(e){alert(e.message||e)}}
+  async function submitReplacement(){try{const ids=[...document.querySelectorAll('.saCand:checked')].map(x=>x.value);if(!ids.length){alert('Bitte mindestens einen Mitarbeiter auswählen.');return;}const d=dayDate(actionCtx.day);await ShiftActions.create({type:'replacement',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceFingerprint:blockFingerprint(actionCtx.src.block),sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,candidateUids:ids,responses:{},status:'offen'});closeAction();showToast?.('✓ Ersatzanfrage gesendet');}catch(e){alert(e.message||e)}}
   function openOrganization(day,key){const uid=uidNow(),src=resolveBlock(ensureDay(uid,day),key);if(!src||!isWorkingBlock(src.block))return;ensureActionOverlay();const candidates=organizationCandidates(uid,day,src.block,PLAN);actionCtx={type:'organization',day,key,src,candidates};const same=candidates.filter(x=>x.same),other=candidates.filter(x=>!x.same),group=(title,a)=>a.length?`<div style="font-size:11px;font-weight:800;margin:10px 0 5px;">${title}</div>${a.map(x=>`<label class="v2817-candidate"><input type="checkbox" class="saOrgCand" value="${esc(x.uid)}" ${x.same?'checked':''}> <strong>${esc(x.u.name)}</strong><span style="display:block;margin-left:22px;color:var(--muted);font-size:10px;">${x.same?'passende Tätigkeit · ':''}${esc(x.scheduled)}</span></label>`).join('')}`:'';document.getElementById('saTitle').textContent='Organisation / Mehrfachanfrage';document.getElementById('saBody').innerHTML=`<div class="v2817-planbox">Du möchtest diese Schicht organisatorisch lösen: <strong>${esc(labelShort(src.block))} ${esc(timeText(src.block))}</strong><br><span style="color:var(--muted);">Mehrere Mitarbeiter können unabhängig zusagen. Die Filialleitung kann danach mehrere Schichten gemeinsam neu zuordnen.</span></div><label>Begründung für die Filialleitung *</label><textarea id="saOrgReason" rows="3" maxlength="500" placeholder="z. B. wichtiger privater Termin; ich benötige diese Schicht frei"></textarea>${group('Passende Mitarbeiter',same)}${group('Weitere Teammitglieder',other)}${candidates.length?'<button class="btn btn-primary" onclick="NaschShiftFlow.submitOrganization()">Mehrfachanfrage senden</button>':'<div class="banner binfo"><span>ℹ️</span><span>Keine verfügbaren Mitarbeiter gefunden.</span></div>'}`;document.getElementById('shiftActionOverlay').classList.add('open');}
-  async function submitOrganization(){try{const reason=document.getElementById('saOrgReason')?.value.trim()||'',ids=[...document.querySelectorAll('.saOrgCand:checked')].map(x=>x.value);if(!reason){alert('Bitte eine Begründung für die Filialleitung eintragen.');return;}if(!ids.length){alert('Bitte mindestens einen Mitarbeiter für die Mehrfachanfrage auswählen.');return;}const d=dayDate(actionCtx.day);await ShiftActions.create({type:'organization',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,candidateUids:ids,responses:{},reason,status:'orga_offen'});closeAction();showToast?.('✓ Mehrfachanfrage an Team und Filialleitung gesendet');}catch(e){alert(e.message||e)}}
+  async function submitOrganization(){try{const reason=document.getElementById('saOrgReason')?.value.trim()||'',ids=[...document.querySelectorAll('.saOrgCand:checked')].map(x=>x.value);if(!reason){alert('Bitte eine Begründung für die Filialleitung eintragen.');return;}if(!ids.length){alert('Bitte mindestens einen Mitarbeiter für die Mehrfachanfrage auswählen.');return;}const d=dayDate(actionCtx.day);await ShiftActions.create({type:'organization',requesterUid:uidNow(),weekKey:weekKeyForOffset(),dayIdx:actionCtx.day,date:dateKey(d),sourceKey:actionCtx.key,sourceFingerprint:blockFingerprint(actionCtx.src.block),sourceLabel:`${labelShort(actionCtx.src.block)} ${timeText(actionCtx.src.block)}`,candidateUids:ids,responses:{},reason,status:'orga_offen'});closeAction();showToast?.('✓ Mehrfachanfrage an Team und Filialleitung gesendet');}catch(e){alert(e.message||e)}}
   function closeAction(){document.getElementById('shiftActionOverlay')?.classList.remove('open');actionCtx=null;}
   async function respondAction(id,ok){try{const r=ShiftActions.rows().find(x=>x.id===id);await ShiftActions.respond(id,ok);showToast?.(r?.type==='organization'?(ok?'✓ Rückmeldung „Kann helfen“ gesendet':'Rückmeldung gesendet'):(ok?'✓ Übernahme bestätigt':'Anfrage abgelehnt'));}catch(e){alert(e.message||e)}}
 
@@ -9505,12 +9569,12 @@ window.NASCH_APP_VERSION='29.20';
   function dayOptions(selected){return Array.from({length:7},(_,i)=>`<option value="${i}" ${Number(selected)===i?'selected':''}>${esc(DAYS?.[i]||String(i+1))}</option>`).join('');}
   function orgBlockList(op){const day=normalizeDay(orgAdminCtx?.plan?.[op.sourceUid]?.[Number(op.sourceDayIdx)]||{});return blockDescriptors(day).filter(x=>isWorkingBlock(x.block)||x.block.t==='KV').map(x=>({id:String(x.block.blockId||''),block:x.block,key:x.key}));}
   function orgBlock(op){return orgBlockList(op).find(x=>x.id===String(op.sourceBlockId||''))?.block||null;}
-  function opWithFirstBlock(op){const blocks=orgBlockList(op);if(!blocks.length){op.sourceBlockId='';op.start='';op.end='';return op;}if(!blocks.some(x=>x.id===String(op.sourceBlockId)))op.sourceBlockId=blocks[0].id;const b=orgBlock(op),r=b&&b.t!=='TS'?rangesForBlock(b)[0]:null;if(r){op.start=r[0];op.end=r[1];}else{op.start='';op.end='';}return op;}
+  function opWithFirstBlock(op){const blocks=orgBlockList(op);if(!blocks.length){op.sourceBlockId='';op.sourceFingerprint='';op.start='';op.end='';return op;}if(!blocks.some(x=>x.id===String(op.sourceBlockId)))op.sourceBlockId=blocks[0].id;const b=orgBlock(op),r=b&&b.t!=='TS'?rangesForBlock(b)[0]:null;op.sourceFingerprint=b?blockFingerprint(b):'';if(r){op.start=r[0];op.end=r[1];}else{op.start='';op.end='';}return op;}
   function makeDefaultOrgOperation(request,plan,secondary=false){ensurePlanBlockIds(plan);const accepted=(request.candidateUids||[]).filter(x=>request.responses?.[x]==='zugesagt'),sourceUid=secondary?(accepted[0]||String(request.requesterUid)):String(request.requesterUid),sourceDayIdx=Number(request.dayIdx||0),op={sourceUid,sourceDayIdx,sourceBlockId:'',targetUid:secondary?(accepted[1]||String(request.requesterUid)):(accepted[0]||request.candidateUids?.[0]||String(request.requesterUid)),targetDayIdx:Number(request.dayIdx||0),start:'',end:''};if(!secondary){const d=normalizeDay(plan?.[sourceUid]?.[sourceDayIdx]||{}),src=resolveBlock(d,request.sourceKey);if(src)op.sourceBlockId=String(src.block.blockId||'');}return opWithFirstBlock(op);}
   function renderOrganizationAdmin(){const body=document.getElementById('organizationAdminBody');if(!body||!orgAdminCtx)return;const r=orgAdminCtx.request;body.innerHTML=`<div class="v2817-planbox"><strong>${esc(USERS?.[r.requesterUid]?.name||r.requesterUid)}</strong> möchte <strong>${esc(r.sourceLabel||'Schicht')}</strong> organisatorisch lösen.<br><strong>Begründung:</strong> ${esc(r.reason||'–')}<div class="v2911-response-wrap">${responseSummaryHtml(r)}</div></div><div class="banner binfo"><span>ℹ️</span><span>Mehrere Änderungen werden erst beim letzten Schritt gemeinsam in den veröffentlichten Wochenplan übernommen. Zielzeiten dürfen angepasst werden. Nicht zugesagte Mitarbeiter sind in der Auswahl sichtbar, damit die Filialleitung den Plan vollständig umgestalten kann.</span></div><div id="orgOps">${orgAdminCtx.operations.map((op,i)=>{const blocks=orgBlockList(op),b=orgBlock(op),split=b?.t==='TS';return `<div class="v2911-org-op"><div class="v2911-org-op-title">Änderung ${i+1}<button onclick="NaschShiftFlow.orgRemove(${i})" ${orgAdminCtx.operations.length===1?'disabled':''}>×</button></div><div class="v2911-org-grid"><label>Von Mitarbeiter<select onchange="NaschShiftFlow.orgSet(${i},'sourceUid',this.value)">${employeeOptions(op.sourceUid)}</select></label><label>Tag<select onchange="NaschShiftFlow.orgSet(${i},'sourceDayIdx',this.value)">${dayOptions(op.sourceDayIdx)}</select></label><label class="full">Ausgangsschicht<select onchange="NaschShiftFlow.orgSet(${i},'sourceBlockId',this.value)">${blocks.length?blocks.map(x=>`<option value="${esc(x.id)}" ${x.id===op.sourceBlockId?'selected':''}>${esc(labelShort(x.block))} · ${esc(timeText(x.block))}</option>`).join(''):'<option value="">Keine Schicht</option>'}</select></label><div class="v2911-arrow full">↓ wird zugeordnet an</div><label>Ziel-Mitarbeiter<select onchange="NaschShiftFlow.orgSet(${i},'targetUid',this.value)">${employeeOptions(op.targetUid)}</select></label><label>Ziel-Tag<select onchange="NaschShiftFlow.orgSet(${i},'targetDayIdx',this.value)">${dayOptions(op.targetDayIdx)}</select></label><label>Start<input type="time" value="${esc(op.start||'')}" ${split?'disabled':''} onchange="NaschShiftFlow.orgSet(${i},'start',this.value)"></label><label>Ende<input type="time" value="${esc(op.end||'')}" ${split?'disabled':''} onchange="NaschShiftFlow.orgSet(${i},'end',this.value)"></label>${split?'<div class="full" style="font-size:10px;color:var(--muted);">Geteilte Schicht: Zeiten danach bei Bedarf im normalen Wochenplan-Editor anpassen.</div>':''}</div></div>`;}).join('')}</div><button class="btn btn-outline" onclick="NaschShiftFlow.orgAdd()">＋ Weitere Planänderung hinzufügen</button><label style="margin-top:10px;">Interne Notiz der Filialleitung</label><textarea id="orgManagerNote" rows="2" maxlength="500" placeholder="optional">${esc(orgAdminCtx.managerNote||'')}</textarea><div class="v2911-org-foot"><button class="btn btn-outline" onclick="NaschShiftFlow.orgSaveDraft()">Zwischenstand speichern</button><button class="btn btn-success" onclick="NaschShiftFlow.orgApprove()">✓ Mehrfach genehmigen & Plan übernehmen</button></div>`;}
-  async function openOrganizationAdmin(id){if(!isManager()){alert('Nur Filialleitung oder berechtigte Vertretung kann Organisationsvorgänge planen.');return;}const r=ShiftActions.rows().find(x=>x.id===id);if(!r||r.type!=='organization')return;ensureOrganizationOverlay();try{const plan=await ShiftActions.loadPublishedPlan(r.weekKey);ensurePlanBlockIds(plan);orgAdminCtx={request:r,plan,operations:[],managerNote:r.managerNote||''};const ops=Array.isArray(r.organizationOperations)&&r.organizationOperations.length?clone(r.organizationOperations):[makeDefaultOrgOperation(r,plan,false)];orgAdminCtx.operations=ops.map(x=>opWithFirstBlock({...x,sourceDayIdx:Number(x.sourceDayIdx),targetDayIdx:Number(x.targetDayIdx)}));document.getElementById('organizationAdminOverlay').classList.add('open');renderOrganizationAdmin();}catch(e){orgAdminCtx=null;alert(e.message||e)}}
+  async function openOrganizationAdmin(id){if(!isManager()){alert('Nur Filialleitung oder berechtigte Vertretung kann Organisationsvorgänge planen.');return;}const r=ShiftActions.rows().find(x=>x.id===id);if(!r||r.type!=='organization')return;ensureOrganizationOverlay();try{assertActionNotPast(r);const plan=await ShiftActions.loadPublishedPlan(r.weekKey);ensurePlanBlockIds(plan);const original=resolveBlock(normalizeDay(plan?.[r.requesterUid]?.[Number(r.dayIdx)]||{}),r.sourceKey);if(!r.sourceFingerprint)throw new Error('Diese Organisationsanfrage stammt aus einer älteren App-Version und muss neu gestellt werden.');if(!original||blockFingerprint(original.block)!==r.sourceFingerprint)throw new Error('Die ursprüngliche Schicht wurde seit der Anfrage geändert. Bitte die Organisation neu anfragen.');orgAdminCtx={request:r,plan,operations:[],managerNote:r.managerNote||''};const ops=Array.isArray(r.organizationOperations)&&r.organizationOperations.length?clone(r.organizationOperations):[makeDefaultOrgOperation(r,plan,false)];orgAdminCtx.operations=ops.map(x=>opWithFirstBlock({...x,sourceDayIdx:Number(x.sourceDayIdx),targetDayIdx:Number(x.targetDayIdx)}));document.getElementById('organizationAdminOverlay').classList.add('open');renderOrganizationAdmin();}catch(e){orgAdminCtx=null;alert(e.message||e)}}
   function closeOrganizationAdmin(){document.getElementById('organizationAdminOverlay')?.classList.remove('open');orgAdminCtx=null;}
-  function orgSet(i,field,value){if(!orgAdminCtx?.operations?.[i])return;const op=orgAdminCtx.operations[i];op[field]=['sourceDayIdx','targetDayIdx'].includes(field)?Number(value):value;if(field==='sourceUid'||field==='sourceDayIdx'){op.sourceBlockId='';opWithFirstBlock(op);}else if(field==='sourceBlockId'){const b=orgBlock(op),r=b&&b.t!=='TS'?rangesForBlock(b)[0]:null;op.start=r?.[0]||'';op.end=r?.[1]||'';}renderOrganizationAdmin();}
+  function orgSet(i,field,value){if(!orgAdminCtx?.operations?.[i])return;const op=orgAdminCtx.operations[i];op[field]=['sourceDayIdx','targetDayIdx'].includes(field)?Number(value):value;if(field==='sourceUid'||field==='sourceDayIdx'){op.sourceBlockId='';opWithFirstBlock(op);}else if(field==='sourceBlockId'){const b=orgBlock(op),r=b&&b.t!=='TS'?rangesForBlock(b)[0]:null;op.sourceFingerprint=b?blockFingerprint(b):'';op.start=r?.[0]||'';op.end=r?.[1]||'';}renderOrganizationAdmin();}
   function orgAdd(){if(!orgAdminCtx)return;orgAdminCtx.operations.push(makeDefaultOrgOperation(orgAdminCtx.request,orgAdminCtx.plan,true));renderOrganizationAdmin();}
   function orgRemove(i){if(!orgAdminCtx||orgAdminCtx.operations.length<=1)return;orgAdminCtx.operations.splice(i,1);renderOrganizationAdmin();}
   async function orgSaveDraft(){if(!orgAdminCtx)return;try{orgAdminCtx.managerNote=document.getElementById('orgManagerNote')?.value||'';await ShiftActions.saveOrganizationDraft(orgAdminCtx.request.id,orgAdminCtx.operations,orgAdminCtx.managerNote);showToast?.('✓ Organisations-Zwischenstand gespeichert');}catch(e){alert(e.message||e)}}
@@ -9524,7 +9588,7 @@ window.NASCH_APP_VERSION='29.20';
 
 
   // Krankmeldung: veröffentlichte Schichten prüfen und KV1→KV4 automatisch anfragen.
-  window.sendeKrank=async function(){const von=document.getElementById('krankVon')?.value||'',bis=document.getElementById('krankBis')?.value||'',hinweis=document.getElementById('krankHinweis')?.value.trim()||'';if(!von){alert('Bitte „Krank ab“ auswählen.');return;}if(bis&&bis<von){alert('Das Bis-Datum darf nicht vor dem Startdatum liegen.');return;}try{const rid=SandboxStore.addRequest('krank',uidNow(),{von,bis,hinweis});document.getElementById('krankOK')?.classList.remove('hidden');const msg=await ShiftActions.createSickCover(uidNow(),von,bis||von,rid);showToast?.('✓ Krankmeldung gespeichert');if(msg.length){const ok=document.getElementById('krankOK');if(ok)ok.textContent='✓ Krankmeldung gespeichert. '+msg.slice(0,3).join(' · ')+(msg.length>3?' …':'');}}catch(e){console.error(e);alert('Krankmeldung gespeichert, KV-Prüfung konnte aber nicht vollständig gestartet werden: '+(e.message||e));}};
+  window.sendeKrank=async function(){const von=document.getElementById('krankVon')?.value||'',bis=document.getElementById('krankBis')?.value||'',hinweis=document.getElementById('krankHinweis')?.value.trim()||'';if(!von){alert('Bitte „Krank ab“ auswählen.');return;}if(bis&&bis<von){alert('Das Bis-Datum darf nicht vor dem Startdatum liegen.');return;}const kk=document.getElementById('krankArt')?.value==='kindkrank';const allowed=typeof getEmployeeChildSickEnabled==='function'&&getEmployeeChildSickEnabled(uidNow());const reqType=kk&&allowed?'kindkrank':'krank';try{const rid=SandboxStore.addRequest(reqType,uidNow(),{von,bis,hinweis});document.getElementById('krankOK')?.classList.remove('hidden');const msg=await ShiftActions.createSickCover(uidNow(),von,bis||von,rid);showToast?.(reqType==='kindkrank'?'✓ Kind krank gespeichert':'✓ Krankmeldung gespeichert');if(msg.length){const ok=document.getElementById('krankOK');if(ok)ok.textContent=(reqType==='kindkrank'?'✓ Kind krank gespeichert. ':'✓ Krankmeldung gespeichert. ')+msg.slice(0,3).join(' · ')+(msg.length>3?' …':'');}}catch(e){console.error(e);alert('Krankmeldung gespeichert, KV-Prüfung konnte aber nicht vollständig gestartet werden: '+(e.message||e));}};
   try{sendeKrank=window.sendeKrank}catch(_){ }
 
   // ---------- KV-Übersicht neu ----------
@@ -9601,7 +9665,7 @@ window.NASCH_APP_VERSION='29.20';
       if(b.end)b.end=clock(b.end)||b.end;
       return b;
     }
-    if(['-','U','WF','K','BS',''].includes(t)){
+    if(['-','U','UU','WF','K','KK','BS',''].includes(t)){
       delete b.start;delete b.end;delete b.z1;delete b.z2;delete b.start1;delete b.end1;delete b.start2;delete b.end2;
       return b;
     }
@@ -9678,9 +9742,9 @@ window.NASCH_APP_VERSION='29.20';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (()=>{
-  const VERSION='29.20';
+  const VERSION='29.23';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9809,7 +9873,7 @@ window.NASCH_APP_VERSION='29.20';
   function planHasAssignment(uid,dayIndex){
     const d=PLAN?.[uid]?.[dayIndex];if(!d)return false;
     const blocks=[d,...(Array.isArray(d.extras)?d.extras:[])];
-    return blocks.some(b=>b&&b.t&&!['-','U','WF','K'].includes(b.t));
+    return blocks.some(b=>b&&b.t&&!['-','U','UU','WF','K','KK'].includes(b.t));
   }
   function requestRange(r){const d=r?.data||{},a=d.von||d.datum||'',b=d.bis||a;return[a,b||a];}
   function conflictsForCurrentWeek(){
@@ -9871,9 +9935,9 @@ window.NASCH_APP_VERSION='29.20';
 })();
 </script>
 
-<script id="nasch-v2820-copy-next-cloud">
-/* NASCH v28.20 · Mitarbeiter-Schichten sicher in die nächste KW kopieren */
-window.NASCH_APP_VERSION='29.20';
+<script id="nasch-v2921-copy-next-cloud">
+/* NASCH v29.23 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
+window.NASCH_APP_VERSION='29.23';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9888,15 +9952,18 @@ window.NASCH_APP_VERSION='29.20';
     try{const d=getMonday(off);return dateKey(d);}catch(_){return'';}
   };
   const isManager=()=>{try{return typeof isAdminOrDeputy==='function'&&isAdminOrDeputy(AppState.currentUserId);}catch(_){return false;}};
-  const hasWorkBlock=b=>!!(b&&b.t&&!['-','U','WF','K'].includes(String(b.t)));
+  const hasWorkBlock=b=>!!(b&&b.t&&!['-','U','UU','WF','K','KK'].includes(String(b.t)));
   const hasRowData=row=>Array.isArray(row)&&row.some(d=>{if(!d)return false;return hasWorkBlock(d)||(Array.isArray(d.extras)&&d.extras.some(hasWorkBlock));});
+  const countWorkBlocks=row=>(Array.isArray(row)?row:[]).reduce((n,d)=>n+(hasWorkBlock(d)?1:0)+(Array.isArray(d?.extras)?d.extras.filter(hasWorkBlock).length:0),0);
+  const meaningfulPlan=p=>p&&typeof p==='object'&&Object.keys(p).length>0;
 
   function cleanBlock(block,srcKey,dayIdx,extraIdx=-1){
-    if(!block||['U','WF','K'].includes(String(block.t||'')))return null;
+    if(!block||['U','UU','WF','K','KK'].includes(String(block.t||'')))return null;
     const b=clone(block);
     delete b.extras;
     delete b.autoSource;delete b.availabilityCode;delete b.businessClosure;delete b.closureConflict;delete b.closureNote;
     delete b.replacementFor;delete b.fromKV;delete b.kvWasPriority;delete b.kvWorkedAt;delete b.kvWorkedBy;
+    delete b.availabilityQueryId;delete b.availabilityConflict;
     b.copiedFrom=srcKey;
     if(hasWorkBlock(b)) b.manual=true; else delete b.manual;
     if(b.t==='KV'){
@@ -9909,7 +9976,7 @@ window.NASCH_APP_VERSION='29.20';
   }
 
   function cleanDay(day,srcKey,dayIdx){
-    if(!day||['U','WF','K'].includes(String(day.t||'')))return emptyDay();
+    if(!day||['U','UU','WF','K','KK'].includes(String(day.t||'')))return emptyDay();
     const main=cleanBlock(day,srcKey,dayIdx,-1)||emptyDay();
     const extras=(Array.isArray(day.extras)?day.extras:[]).map((b,i)=>cleanBlock(b,srcKey,dayIdx,i)).filter(Boolean);
     main.extras=extras;
@@ -9920,7 +9987,7 @@ window.NASCH_APP_VERSION='29.20';
     const data=req?.data||{},k=dateKey(d),von=data.von||data.datum||'',bis=data.bis||von;
     return !!von&&k>=von&&k<=(bis||von);
   }
-  function applyApprovedAbsences(row,uid,dstOff){
+  function applyTargetRules(row,uid,dstOff){
     let reqs=[];
     try{if(typeof SandboxStore!=='undefined')reqs=SandboxStore.getRequests?.()||[];}catch(_){}
     let mon;try{mon=getMonday(dstOff);}catch(_){return row;}
@@ -9928,20 +9995,29 @@ window.NASCH_APP_VERSION='29.20';
       const d=addDays(mon,i);
       const hits=reqs.filter(r=>String(r.uid)===String(uid)&&requestCovers(r,d));
       const kr=hits.find(r=>r.type==='krank'&&r.status!=='abgelehnt');
+      const kk=hits.find(r=>r.type==='kindkrank'&&r.status!=='abgelehnt');
       const ur=hits.find(r=>r.type==='urlaub'&&r.status==='genehmigt');
+      const uu=hits.find(r=>r.type==='unbezahlt'&&r.status==='genehmigt');
       const wf=hits.find(r=>r.type==='wunschfrei'&&r.status==='genehmigt');
-      if(kr)row[i]={t:'K',z:'Krank',r:[],extras:[],autoSource:'krank'};
-      else if(ur)row[i]={t:'U',z:'Urlaub',r:[],extras:[],autoSource:'urlaub'};
-      else if(wf)row[i]={t:'WF',z:'Wunschfrei',r:[],extras:[],autoSource:'wunschfrei',wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};
-      else{
-        let av='g';
-        try{if(typeof SandboxStore!=='undefined')av=SandboxStore.getAvailability?.(uid)?.[DAYS7[i]]||'g';}catch(_){}
-        row[i].availabilityCode=av;
-        // Kopierte Arbeitszeiten bleiben erhalten. Nicht-Verfügbarkeit wird nicht still als "leer" gespeichert.
-      }
+      let av='g';
+      try{if(typeof SandboxStore!=='undefined')av=SandboxStore.getAvailability?.(uid)?.[DAYS7[i]]||'g';}catch(_){}
+      if(kr)row[i]={t:'K',z:'Krank',r:[],extras:[],autoSource:'krank',availabilityCode:av};
+      else if(kk)row[i]={t:'KK',z:'KK',r:[],extras:[],autoSource:'kindkrank',availabilityCode:av};
+      else if(ur)row[i]={t:'U',z:'Urlaub',r:[],extras:[],autoSource:'urlaub',availabilityCode:av};
+      else if(uu)row[i]={t:'UU',z:'UU',r:[],extras:[],autoSource:'unbezahlt',availabilityCode:av};
+      else if(wf)row[i]={t:'WF',z:'Wunschfrei',r:[],extras:[],autoSource:'wunschfrei',availabilityCode:av,wishfreeScope:wishfreeScopeFromRequest(wf),wishfreeType:wf.data?.schicht||''};
+      else row[i].availabilityCode=av;
     }
     return row;
   }
+
+  function canonical(value){
+    if(Array.isArray(value))return value.map(canonical);
+    if(value&&typeof value==='object')return Object.keys(value).sort().reduce((o,k)=>{o[k]=canonical(value[k]);return o;},{});
+    return value;
+  }
+  function rowFingerprint(row){return JSON.stringify(canonical(Array.isArray(row)?row:[]));}
+  function sameRow(a,b){return rowFingerprint(a)===rowFingerprint(b);}
 
   async function copyEmployeeToNextCloud(uid){
     uid=String(uid||'');
@@ -9952,49 +10028,74 @@ window.NASCH_APP_VERSION='29.20';
 
     try{window.WeekPlanStore?.persistCurrent?.();}catch(_){}
     if(typeof editMode!=='undefined'&&editMode){
-      try{await window.NaschAutoDraft2819?.saveNow?.({force:true});}catch(_){}
+      try{
+        const ok=await window.NaschAutoDraft2819?.saveNow?.({force:true});
+        if(ok===false){alert('Die aktuelle Eingabe konnte nicht gespeichert werden. Kopieren wurde abgebrochen.');return;}
+      }catch(e){alert('Die aktuelle Eingabe konnte nicht gespeichert werden: '+(e?.message||e));return;}
     }
     try{window.NaschPlanTimeFix?.normalizePlanTimes?.();}catch(_){}
 
     const srcRow=clone((typeof PLAN!=='undefined'&&PLAN?.[uid])?PLAN[uid]:[]);
-    if(!hasRowData(srcRow)){alert(`${name} hat in dieser KW keine Schichten zum Kopieren.`);return;}
+    const blockCount=countWorkBlocks(srcRow);
+    if(!hasRowData(srcRow)){alert(`${name} hat in dieser KW keine Arbeitsschichten zum Kopieren.`);return;}
     let copied=Array.from({length:7},(_,i)=>cleanDay(srcRow[i]||emptyDay(),srcKey,i));
-    copied=applyApprovedAbsences(copied,uid,dstOff);
+    copied=applyTargetRules(copied,uid,dstOff);
 
     if(typeof firebase==='undefined'||!firebase.firestore){alert('Firebase ist nicht verbunden. Die nächste KW konnte nicht gespeichert werden.');return;}
     const ref=firebase.firestore().collection('nasch').doc(FID()).collection('plan').doc(dstKey);
     try{
-      const snap=await ref.get(),data=snap.exists?(snap.data()||{}):{};
-      const base=clone(data.draftPlan||data.publishedPlan||data.plan||{});
-      const existing=base?.[uid];
+      const firstSnap=await ref.get(),firstData=firstSnap.exists?(firstSnap.data()||{}):{};
+      const cloudPlan=firstData.draftPlan||firstData.publishedPlan||firstData.plan||null;
+      const localTarget=clone(window.WeekPlanStore?.getWeekSnapshot?.(dstOff)||{});
+      const previewBase=meaningfulPlan(cloudPlan)?clone(cloudPlan):localTarget;
+      const existing=previewBase?.[uid],existingFingerprint=rowFingerprint(existing||[]);
       if(hasRowData(existing)&&!confirm(`${name} hat in der nächsten KW bereits Schichten.
 
-Diese Mitarbeiter-Zeile überschreiben?`))return;
-      base[uid]=copied;
-      const version=Number(data.version||1)||1;
-      await ref.set({
-        draftPlan:base,
-        draftUpdatedAt:firebase.firestore.FieldValue.serverTimestamp(),
-        draftUpdatedBy:AppState.currentUser?.name||'Admin',
-        version
-      },{merge:true});
-      try{if(typeof PublishStore!=='undefined')PublishStore.saveDraft?.(PublishStore.branchKey(),dstKey,base);}catch(_){}
-      try{if(typeof showToast==='function')showToast(`✓ ${name}: nächste KW kopiert · Cloud-Entwurf gespeichert`);}catch(_){}
+Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))return;
+
+      let finalBase=null;
+      await firebase.firestore().runTransaction(async tx=>{
+        const snap=await tx.get(ref),data=snap.exists?(snap.data()||{}):{};
+        const currentCloud=data.draftPlan||data.publishedPlan||data.plan||null;
+        // Gibt es noch keinen Cloud-Plan, den vorhandenen lokalen Ziel-Entwurf als Basis erhalten.
+        const base=meaningfulPlan(currentCloud)?clone(currentCloud):clone(localTarget);
+        const currentRow=base?.[uid]||[];
+        if(rowFingerprint(currentRow)!==existingFingerprint)throw new Error('Die Ziel-KW wurde inzwischen auf einem anderen Gerät geändert. Bitte die nächste KW neu laden und erneut kopieren.');
+        base[uid]=clone(copied);
+        finalBase=base;
+        tx.set(ref,{
+          draftPlan:base,
+          draftUpdatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+          draftUpdatedBy:AppState.currentUser?.name||'Admin',
+          version:Number(data.version||1)||1
+        },{merge:true});
+      });
+
+      // Wichtig: dieselbe Ziel-KW sofort auch lokal aktualisieren, damit ein anschließender KW-Wechsel
+      // nicht erst einen alten/leeren lokalen Stand rendert oder später zurück in die Cloud schreibt.
+      try{window.WeekPlanStore?.setWeekSnapshot?.(dstOff,finalBase);}catch(e){console.warn('Lokale Ziel-KW konnte nicht synchronisiert werden',e);}
+      try{window.PublishStore?.saveDraft?.(window.PublishStore.branchKey(),dstKey,finalBase);}catch(_){}
+
+      // Firestore direkt wieder lesen: Erfolg erst melden, wenn die Mitarbeiterzeile wirklich angekommen ist.
+      const verify=await ref.get(),vd=verify.exists?(verify.data()||{}):{},vp=vd.draftPlan||vd.publishedPlan||vd.plan||{};
+      if(!sameRow(vp?.[uid],copied))throw new Error('Die Ziel-KW wurde nach dem Speichern nicht identisch zurückgelesen.');
+
+      try{if(typeof showToast==='function')showToast(`✓ ${name}: ${blockCount} Schicht${blockCount===1?'':'en'} in nächste KW übernommen`);}catch(_){}
     }catch(e){
-      console.error('v28.20 copyEmployeeToNext',e);
+      console.error('v29.23 copyEmployeeToNext',e);
       alert('Kopieren fehlgeschlagen: '+(e?.message||e));
     }
   }
 
   if(window.WeekPlanStore)window.WeekPlanStore.copyEmployeeToNext=copyEmployeeToNextCloud;
-  window.NaschCopyNext2820={copyEmployeeToNext:copyEmployeeToNextCloud};
+  window.NaschCopyNext2921={copyEmployeeToNext:copyEmployeeToNextCloud};
 })();
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.20 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v29.23 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='29.20';
+  const CURRENT='29.23';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
@@ -10082,7 +10183,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </script>
 
 
-<!-- NASCH v29.20: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
+<!-- NASCH v29.23: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
 <style id="nasch-v2824-security-desktop-css">
 #firstPinOverlay{display:none;position:fixed;inset:0;z-index:15000;background:rgba(15,23,42,.78);align-items:center;justify-content:center;padding:18px;}
 #firstPinOverlay.open{display:flex;}
@@ -10139,7 +10240,7 @@ Diese Mitarbeiter-Zeile überschreiben?`))return;
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10288,7 +10389,7 @@ window.NASCH_APP_VERSION='29.20';
   setTimeout(load,0);
   window.addEventListener('online',()=>{if(!ready){loadPromise=null;load();}});
 
-  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.20 sperrt NICHT nach Inaktivität.
+  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.23 sperrt NICHT nach Inaktivität.
 })();
 
 (()=>{
@@ -10334,8 +10435,8 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
   <button type="button" onclick="NaschEmployeeDemo.exit()">Zurück zum Admin</button>
 </div>
 <script>
-/* NASCH v29.20 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.20';
+/* NASCH v29.23 · versteckter, schreibgeschützter Demo-Mitarbeiter */
+window.NASCH_APP_VERSION='29.23';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10436,8 +10537,8 @@ window.NaschEmployeeDemo=(()=>{
   </div>
 </div>
 <script id="nasch-v2826-features">
-/* NASCH v29.20 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.20';
+/* NASCH v29.23 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
+window.NASCH_APP_VERSION='29.23';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10448,7 +10549,7 @@ window.NaschAvailabilityQuery=(()=>{
   const dateKey=d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
   const avail=(uid,day)=>{try{return getDayAvailability(String(uid),Number(day))||'g'}catch(_){return'g'}};
   const availText=c=>({g:'Ganztag',f:'Nur Früh',s:'Nur Spät',n:'Nicht verfügbar'})[c]||c||'Ganztag';
-  function working(t){return !!t&&!['-','WF','U','K'].includes(String(t))}
+  function working(t){return !!t&&!['-','WF','U','UU','K','KK'].includes(String(t))}
   function conflicts(uid,day,sh){
     if(!sh||!working(sh.t))return false;
     const a=avail(uid,day);
@@ -10667,11 +10768,11 @@ window.NaschDeputyRights=(()=>{
 @media(max-width:560px){.n293-grid{grid-template-columns:1fr}}
 </style>
 <script id="nasch-v293-unified">
-/* NASCH v29.20 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
+/* NASCH v29.23 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.20';
+window.NASCH_APP_VERSION='29.23';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -10843,7 +10944,9 @@ async function monthData(uid,year,month){
     let gross=ranges.reduce((s,x)=>s+rangeMinutes(x[0],x[1]),0),pause=rec?Math.max(autoPause(gross),Number(rec.pauseMin)||0):autoPause(gross),net=Math.max(0,(gross-pause)/60);
     let status='',displayStatus='',credit=0;const t=String(sh?.t||'-');
     if(!rec&&t==='K'){status='Krank';if(u?.typ==='AH'){const ap=sickApprovals[dkey(date)];if(ap?.approved===true){credit=quarter(Number(ap.hours)||0);status='Krank'}else{credit=0;status=''}}else credit=dailyAbsenceHours(u);absence+=credit}
+    else if(!rec&&t==='KK'){status='KK';displayStatus='KK';credit=0}
     else if(!rec&&t==='U'){status='Urlaub';credit=dailyAbsenceHours(u);absence+=credit}
+    else if(!rec&&t==='UU'){status=['VZ','TZ'].includes(typeof availabilityEmploymentType==='function'?availabilityEmploymentType(uid):String(u?.typ||'').toUpperCase())?'Frei':'';displayStatus=status;credit=0}
     else if(!rec&&t==='WF')status='Wunschfrei';
     else if(!rec&&t==='BS')status='Berufsschule';
     else if(!rec&&t==='-'){displayStatus=publishedUnplannedText(uid,di,weekShifts);status=displayStatus==='Frei'?'Frei':'';}
@@ -10987,7 +11090,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.20 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
+<!-- NASCH v29.23 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
 <style id="nasch-v296-plan-layout">
   .plan-t th.nc,.plan-t th.name-col,
   .plan-t td.nc,.plan-t td.name-cell{
@@ -11092,7 +11195,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.20 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
+<!-- NASCH v29.23 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
 <style id="nasch-v298-plan-view">
   :root{--nasch-time-font-size:11px;--nasch-activity-font-size:8px;}
   .nasch-shift-time{font-size:var(--nasch-time-font-size)!important;font-weight:700;line-height:1.15;white-space:nowrap;}

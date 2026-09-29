@@ -1,7 +1,7 @@
-/* NASCH v29.20 · PWA + Stundennachweis/Organisation + Verfügbarkeit-Fix */
+/* NASCH v29.23 · PWA + Stundennachweis/Organisation + Verfügbarkeit-Fix */
 (()=>{
 'use strict';
-const BUNDLE_VERSION='29.20';
+const BUNDLE_VERSION='29.23';
 const VERSION=String(window.NASCH_APP_VERSION||BUNDLE_VERSION);
 if(!window.NASCH_APP_VERSION) window.NASCH_APP_VERSION=BUNDLE_VERSION;
 
@@ -246,7 +246,7 @@ const Timesheets2910=(()=>{
       if(r&&(r.holiday||r.weekday==='SO'))overlay+=`<rect x="36.55" y="${(top+.35).toFixed(2)}" width="52.75" height="${(rowH-.7).toFixed(2)}" fill="#ffff00"/><rect x="36.25" y="${top.toFixed(2)}" width="38.61" height="${rowH.toFixed(2)}" fill="none" stroke="#111" stroke-width=".45"/><rect x="74.86" y="${top.toFixed(2)}" width="14.64" height="${rowH.toFixed(2)}" fill="none" stroke="#111" stroke-width=".45"/>`;
       if(!r)continue;
       const dayTop=top+3.80,dataTop=top+4.48,[von,bis]=rangeParts(r),isAbs=r.status==='Krank'||r.status==='Urlaub',hasRanges=Array.isArray(r.ranges)&&r.ranges.length>0,hours=isAbs?Number(r.credit)||0:Number(r.net)||0;
-      const rowStatus=!hasRanges?String(r.displayStatus||((isAbs||r.status==='Frei')?r.status:'')) : '';
+      const rowStatus=r.shiftType==='KK'?'':(!hasRanges?String(r.displayStatus||((isAbs||r.status==='Frei')?r.status:'')) : '');
       const rowStatusSize=rowStatus.length>14?4.8:rowStatus.length>10?5.4:rowStatus.length>7?6.2:7.305;
       overlay+=svgText(String(d),x[0],dayTop,8.794,{bold:true});
       overlay+=svgText(r.weekday||'',x[1],dataTop,7.305,{bold:true});
@@ -332,9 +332,9 @@ const Timesheets2910=(()=>{
 })();
 
 // ---------- Initialisierung / Wrapper ----------
-function patchUi(){patchShiftActionBar();patchKvEditor();patchRequestCreation();patchShiftActions();ensureTeamPage();ensureNotifySettings();ensureSickApprovalCard();ensureEmployeeHours();ensureSignatureOverlay();hideKvTimesInUi();decorateAvailabilityReads();Timesheets2910.patch();if(document.getElementById('pgTeamStatus')?.classList.contains('active'))renderTeam();if(document.getElementById('pgAdminKrank')?.classList.contains('active'))renderSickApprovals();if(document.getElementById('pgShiftActions')?.classList.contains('active'))enhanceShiftActionPage();if(document.getElementById('pgAdminWorkflow')?.classList.contains('active'))enhanceManagerWorkflow()}
+function patchUi(){patchShiftActionBar();patchKvEditor();patchRequestCreation();patchShiftActions();ensureTeamPage();ensureNotifySettings();ensureSickApprovalCard();ensureEmployeeHours();ensureSignatureOverlay();hideKvTimesInUi();decorateAvailabilityReads();Timesheets2910.patch();if(typeof refreshKindKrankUi==='function')refreshKindKrankUi();if(document.getElementById('pgTeamStatus')?.classList.contains('active'))renderTeam();if(document.getElementById('pgAdminKrank')?.classList.contains('active'))renderSickApprovals();if(document.getElementById('pgShiftActions')?.classList.contains('active'))enhanceShiftActionPage();if(document.getElementById('pgAdminWorkflow')?.classList.contains('active'))enhanceManagerWorkflow()}
 function boot(){if(!uidNow())return;patchUi();Presence.start();Notices.start();refreshEmployeeHours();const q=new URLSearchParams(location.search).get('naschNotice');if(q)Notices.open(q)}
-function wrapNavs(){if(window.goTo&&!window.goTo.__n299){const old=window.goTo;const fn=function(pg,title){const r=old.apply(this,arguments);setTimeout(()=>{patchUi();if(pg==='pgTeamStatus')renderTeam();if(pg==='pgAdminKrank')renderSickApprovals();if(pg==='pgShiftActions')enhanceShiftActionPage();if(pg==='pgAdminWorkflow')enhanceManagerWorkflow();if(pg==='pgStunden')Timesheets2910.refreshEmployeeList();if(pg==='pgAdminStz')Timesheets2910.renderAdminOverview(true);if(pg==='pgNotif'){Notices.render();markAvailabilityRead()}},60);return r};fn.__n299=true;window.goTo=fn;try{goTo=fn}catch(_){}}
+function wrapNavs(){if(window.goTo&&!window.goTo.__n299){const old=window.goTo;const fn=function(pg,title){const r=old.apply(this,arguments);setTimeout(()=>{patchUi();if(pg==='pgTeamStatus')renderTeam();if(pg==='pgAdminKrank')renderSickApprovals();if(pg==='pgKrank'&&typeof refreshKindKrankUi==='function')refreshKindKrankUi();if(pg==='pgShiftActions')enhanceShiftActionPage();if(pg==='pgAdminWorkflow')enhanceManagerWorkflow();if(pg==='pgStunden')Timesheets2910.refreshEmployeeList();if(pg==='pgAdminStz')Timesheets2910.renderAdminOverview(true);if(pg==='pgNotif'){Notices.render();markAvailabilityRead()}},60);return r};fn.__n299=true;window.goTo=fn;try{goTo=fn}catch(_){}}
   if(window.navTo&&!window.navTo.__n299){const old=window.navTo;const fn=function(k){const r=old.apply(this,arguments);setTimeout(()=>{patchUi();if(k==='notif'){Notices.render();markAvailabilityRead()}if(k==='profil')ensureNotifySettings();if(k==='office')Timesheets2910.renderOfficeOverview(true)},60);return r};fn.__n299=true;window.navTo=fn;try{navTo=fn}catch(_){}}
   if(window.buildAdminPlan&&!window.buildAdminPlan.__n299){const old=window.buildAdminPlan;const fn=function(){const r=old.apply(this,arguments);setTimeout(()=>{decorateAvailabilityReads();hideKvTimesInUi()},0);return r};fn.__n299=true;window.buildAdminPlan=fn;try{buildAdminPlan=fn}catch(_){}}
 }

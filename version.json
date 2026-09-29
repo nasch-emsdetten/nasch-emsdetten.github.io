@@ -1,5 +1,5 @@
 {
-  "version": "29.20",
+  "version": "29.23",
   "updated": "2026-09-29",
-  "notes": "v29.20: Teilzeit kann feste freie Tage und feste Nichtverfügbarkeit getrennt hinterlegen. Anzahl fester freier Tage richtet sich nach Arbeitstagen/Woche. Bearbeitungsmaske ersetzt alte Tagesdaten vollständig; Schicht/Teilschicht kann zuverlässig mit Urlaub, Wunschfrei, Krank oder Frei überschrieben werden, ohne alte Zeiten/Tätigkeiten/Extras mitzunehmen."
+  "notes": "v29.23: Mitarbeiter-Tausch/Ersatz/Organisation tief geprüft und gehärtet: atomare Freigaben, aktuelle Schichtprüfung, Abwesenheit/Verfügbarkeit, Mehrfachantworten, Duplikat- und Vergangenheits-Schutz."
 }
