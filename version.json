@@ -1,5 +1,5 @@
 {
-  "version": "29.29",
+  "version": "29.30",
   "date": "2026-09-29",
-  "notes": "v29.29: Behebt die PWA-Update-Dauerschleife. Der Versionswächter verwendet die tatsächlich geladene App-Version und besitzt einen Reload-Schleifenschutz für unvollständige Deployments."
+  "notes": "v29.30: Behebt leere Admin-Stundenübersicht und nicht sichtbare Stundenzettel durch feste Seiten/Navigation, robustes Nachladen und frische PWA-Assets."
 }

@@ -241,7 +241,7 @@ firebase.auth().signInAnonymously().catch(e => {
 window.FILIAL_ID = 'FIL004';
 </script>
 <script>window.NASCH_ENTRY_MODE="branch";window.NASCH_FIXED_BRANCH="FIL004";</script>
-<link rel="stylesheet" href="./nasch-v299.css">
+<link rel="stylesheet" href="./nasch-v2930.css">
 </head>
 <body>
 
@@ -484,8 +484,11 @@ window.FILIAL_ID = 'FIL004';
         <div class="mi" id="adminSettingsMenu" onclick="goTo('pgAdminSettings','Mitarbeiter & Einstellungen')">
           <div class="mi-icon" style="background:#EEEDFE;">🛠️</div><span class="mi-lbl">Mitarbeiter & Einstellungen</span><span class="mi-arr">›</span>
         </div>
-        <div class="mi" onclick="goTo('pgAdminStz','Stundenzettel Admin')">
-          <div class="mi-icon" style="background:#f8f8f8;">📋</div><span class="mi-lbl">Stundenzettel</span><span class="mi-arr">›</span>
+        <div class="mi" id="adminHoursOverviewMenu" onclick="goTo('pgAdminHours','Stundenübersicht');setTimeout(()=>window.NaschHoursOverview?.renderAdmin?.(),0)">
+          <div class="mi-icon" style="background:#E6F1FB;">⏱</div><span class="mi-lbl">Stundenübersicht</span><span class="mi-arr">›</span>
+        </div>
+        <div class="mi" id="adminTimesheetMenu" onclick="goTo('pgAdminStz','Stundenzettel')">
+          <div class="mi-icon" style="background:#f8f8f8;">📄</div><span class="mi-lbl">Stundenzettel</span><span class="mi-arr">›</span>
         </div>
       </div>
     </div>
@@ -873,8 +876,22 @@ window.FILIAL_ID = 'FIL004';
       </div>
     </div>
 
+    <div class="page" id="pgAdminHours">
+      <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div class="sec">Stundenübersicht · alle Mitarbeiter</div>
+      <div class="card" style="margin-bottom:10px"><div class="card-b"><label style="margin-top:0">Monat</label><select id="n297AdminMonth"></select></div></div>
+      <div id="n297AdminSummary"><div class="card"><div class="card-b" style="color:var(--muted)">Stundenübersicht wird vorbereitet …</div></div></div>
+      <div id="n297AdminDetail"></div>
+    </div>
+
     <div class="page" id="pgAdminStz">
       <div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div>
+      <div id="n293AdminMonthly" class="n293-card" style="margin-bottom:12px;">
+        <div class="n293-head">📄 Monats-Stundenzettel</div>
+        <div class="n293-body">
+          <div id="n293AdminBootStatus" class="n293-status n293-off">Stundenzettel werden vorbereitet …</div>
+        </div>
+      </div>
       <div class="banner binfo"><span>☁️</span><span>Unterschriften werden gespeichert. PDFs können direkt für einzelne oder alle Mitarbeiter erzeugt werden.</span></div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
         <div class="stat"><div class="stat-l">Unterschrieben</div><div class="stat-v" id="stzSignedCount" style="color:var(--ok-t);">0</div></div>
@@ -7648,7 +7665,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.29';
+  window.NASCH_APP_VERSION='29.30';
 })();
 </script>
 
@@ -8593,7 +8610,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.29';
+  window.NASCH_APP_VERSION='29.30';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8604,7 +8621,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8758,7 +8775,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8809,7 +8826,7 @@ window.NASCH_APP_VERSION='29.29';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8828,7 +8845,7 @@ window.NASCH_APP_VERSION='29.29';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9179,7 +9196,7 @@ window.NASCH_APP_VERSION='29.29';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9696,7 +9713,7 @@ window.NASCH_APP_VERSION='29.29';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   const VERSION='29.26';
   const AUTOSAVE_DELAY=1200;
@@ -9891,7 +9908,7 @@ window.NASCH_APP_VERSION='29.29';
 
 <script id="nasch-v2921-copy-next-cloud">
 /* NASCH v29.26 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -10047,9 +10064,9 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.29 · automatische App-Aktualisierung mit Reload-Schleifenschutz */
+/* NASCH v29.30 · automatische App-Aktualisierung mit Reload-Schleifenschutz */
 (()=>{
-  const CURRENT=String(window.NASCH_APP_VERSION||'29.29');
+  const CURRENT=String(window.NASCH_APP_VERSION||'29.30');
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   const UPDATE_GUARD_KEY='nasch-update-attempt-v1';
@@ -10220,7 +10237,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10416,7 +10433,7 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
 </div>
 <script>
 /* NASCH v29.26 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10518,7 +10535,7 @@ window.NaschEmployeeDemo=(()=>{
 </div>
 <script id="nasch-v2826-features">
 /* NASCH v29.26 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10752,7 +10769,7 @@ window.NaschDeputyRights=(()=>{
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.29';
+window.NASCH_APP_VERSION='29.30';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -11311,7 +11328,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 })();
 </script>
 
-<script src="./nasch-v299.js"></script>
+<script src="./nasch-v2930.js"></script>
 
 <!-- NASCH v29.28 · Stundenübersicht / Stundenzettel Rollenrechte + Büro-Wochenplan -->
 <style id="nasch-v2928-hours-overview-css">
@@ -11328,20 +11345,20 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </style>
 <script id="nasch-v2928-hours-overview-js">
 (()=>{
-  const VERSION='29.28';
+  const VERSION='29.30';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uidNow=()=>String(window.AppState?.currentUserId||'');
-  const currentUser=()=>window.USERS?.[uidNow()]||window.AppState?.currentUser||null;
+  const currentUser=()=>window.AppState?.currentUser||(typeof USERS!=='undefined'?USERS?.[uidNow()]:null)||null;
   const isCentral=()=>{try{return window.BranchSandbox?.isCentral?.(uidNow())===true}catch(_){return false}};
   const isOffice=()=>{try{return window.BranchSandbox?.isOffice?.(uidNow())===true}catch(_){return false}};
-  const isBranchAdmin=()=>{const u=currentUser();return !!u&&u.role==='admin'&&!isCentral()&&!isOffice()};
+  const isBranchAdmin=()=>{const u=currentUser();if(!u||isCentral()||isOffice())return false;const role=String(u.role||'').toLowerCase(),typ=String(u.typ||'').toUpperCase(),label=String(u.label||'');return role==='admin'||role==='filialleitung'||typ==='FL'||/filialleit/i.test(label)};
   const isDeputy=()=>{try{return !isBranchAdmin()&&window.NaschDeputyFeature?.isDeputy?.(uidNow())===true}catch(_){return false}};
   const de2=n=>(Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',',');
   const pauseDecimal=min=>de2((Number(min)||0)/60);
   const days=n=>`${n} ${n===1?'Tag':'Tage'}`;
   const monthValue=()=>`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
   const eligible=uid=>{try{return typeof getEmployeeSurchargeEnabled==='function'&&!!getEmployeeSurchargeEnabled(uid)}catch(_){return false}};
-  const activeEmployees=()=>{try{return typeof activeEmployeeEntries==='function'?activeEmployeeEntries():(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(USERS||{})).filter(([id,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(u.typ||''))}catch(_){return []}};
+  const activeEmployees=()=>{try{const base=typeof activeEmployeeEntries==='function'?activeEmployeeEntries():(typeof getOrderedUserEntries==='function'?getOrderedUserEntries():Object.entries(typeof USERS!=='undefined'?USERS:{}));return (base||[]).filter(([id,u])=>u&&u.name&&u.role!=='office'&&!['BU','SYS'].includes(String(u.typ||''))&&!window.NaschEmployees?.isInactive?.(id))}catch(_){return []}};
   function rowStatus(r){const t=String(r?.shiftType||'');if(t==='K')return'Krank';if(t==='U')return'Urlaub';if(t==='KK')return'Kind krank';if(t==='BS')return'Berufsschule';return String(r?.displayStatus||r?.status||'')}
   function isWorked(r){return (Array.isArray(r?.ranges)&&r.ranges.length>0)||(Number(r?.net)||0)>0||r?.corrected===true}
   function isRelevantAbsence(r){return ['K','U','KK','BS'].includes(String(r?.shiftType||''))}
@@ -11353,29 +11370,54 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
   function absenceCounts(data){let krank=0,urlaub=0,kk=0;for(const r of data?.rows||[]){const t=String(r?.shiftType||'');if(t==='K')krank++;else if(t==='U')urlaub++;else if(t==='KK')kk++;}return{krank,urlaub,kk}}
   function pauseTotal(data){return (data?.rows||[]).reduce((s,r)=>s+(!noHourStatus(r)&&isWorked(r)?Number(r.pauseMin)||0:0),0)}
   function monthOptions(id,value){const now=new Date(),opts=[];for(let i=-12;i<=1;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1),v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,l=d.toLocaleDateString('de-DE',{month:'long',year:'numeric'});opts.push(`<option value="${v}"${v===value?' selected':''}>${esc(l)}</option>`)}return `<select id="${id}">${opts.join('')}</select>`}
-  async function dataFor(uid,ym){const [y,m]=String(ym||monthValue()).split('-').map(Number);const fn=window.NaschMonthlyTimesheet?.monthData;if(typeof fn!=='function')throw new Error('Monatsdaten sind noch nicht geladen.');return fn(String(uid),y,m)}
+  async function waitMonthlyApi(){for(let i=0;i<30;i++){if(typeof window.NaschMonthlyTimesheet?.monthData==='function')return window.NaschMonthlyTimesheet;await new Promise(r=>setTimeout(r,100))}throw new Error('Monatsdaten konnten nicht initialisiert werden. Bitte die Seite einmal neu öffnen.')}
+  async function dataFor(uid,ym){const [y,m]=String(ym||monthValue()).split('-').map(Number),api=await waitMonthlyApi();return api.monthData(String(uid),y,m)}
   function employeeTable(data,uid){const showS=eligible(uid),rows=visibleRows(data),c=absenceCounts(data),p=pauseTotal(data);let body='';for(const r of rows){const date=new Date(`${r.date}T12:00:00`).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'});body+=`<tr><td><strong>${esc(date)}</strong>${r.holiday?`<div style="font-size:9px;color:var(--muted)">${esc(r.holiday)}</div>`:''}</td><td>${esc(timeCell(r))}</td><td class="r">${(!noHourStatus(r)&&isWorked(r))?pauseDecimal(r.pauseMin):'–'}</td><td class="r"><strong>${hoursCell(r)}</strong></td>${showS?`<td class="r">${surchargeCell(r,'p25')}</td><td class="r">${surchargeCell(r,'p50')}</td>`:''}</tr>`}
     if(!body)body=`<tr><td colspan="${showS?6:4}" style="text-align:center;color:var(--muted);padding:16px">Für diesen Monat sind keine relevanten Einträge vorhanden.</td></tr>`;
     return `<div style="overflow-x:auto"><table class="n297-overview-table" style="min-width:${showS?'700':'520'}px"><thead><tr><th>Datum</th><th>Arbeitszeit / Status</th><th class="r">Pause</th><th class="r">Stunden</th>${showS?'<th class="r">25 %</th><th class="r">50 %</th>':''}</tr></thead><tbody>${body}</tbody></table></div><div class="n297-summary"><div><small>Gearbeitet</small><strong>${de2(data.worked)} h</strong></div><div><small>Pause</small><strong>${pauseDecimal(p)} h</strong></div><div><small>Krank</small><strong>${days(c.krank)}</strong></div><div><small>Urlaub</small><strong>${days(c.urlaub)}</strong></div>${showS?`<div><small>Zuschläge</small><strong>25 % ${de2(data.p25)} · 50 % ${de2(data.p50)}</strong></div>`:''}</div><div style="font-size:9px;color:var(--muted);margin-top:8px">Leere/freie Tage werden ausgeblendet. Krank und Urlaub erscheinen nur als Status und ohne Stunden. Pause wird als Dezimalstunde angezeigt (30 Min. = 0,50).</div>`
   }
   async function renderEmployeeOverview(){const box=document.getElementById('personalDailyHours');if(!box||!uidNow())return;const sel=document.getElementById('n293EmpMonth'),ym=sel?.value||monthValue();box.innerHTML='<div class="card-b" style="color:var(--muted)">Stundenübersicht wird geladen …</div>';try{const data=await dataFor(uidNow(),ym);box.innerHTML=employeeTable(data,uidNow())}catch(e){box.innerHTML=`<div class="card-b" style="color:#b91c1c">Stundenübersicht konnte nicht geladen werden: ${esc(e.message||e)}</div>`}}
   function ensureEmployeePage(){const p=document.getElementById('pgStunden');if(!p)return;const topWarn=p.querySelector(':scope > .banner.bwarn');if(topWarn)topWarn.style.display='none';const stats=p.querySelector(':scope > .stat-grid');if(stats)stats.style.display='none';const box=document.getElementById('personalDailyHours'),card=box?.closest('.card');if(card){const t=card.querySelector('.card-t');if(t)t.textContent='📋 Stundenübersicht';}const pdf=document.getElementById('personalTimesheetPdfCard');if(pdf)pdf.style.setProperty('display','none','important');const mon=document.getElementById('n293EmployeeMonthly');if(mon){const h=mon.querySelector('.n293-head');if(h)h.textContent='✍️ Monatsbestätigung';}setTimeout(renderEmployeeOverview,0)}
-  function ensureAdminOverviewPage(){if(document.getElementById('pgAdminHours'))return;const anchor=document.getElementById('pgAdminStz');if(!anchor)return;const p=document.createElement('div');p.className='page';p.id='pgAdminHours';p.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div class="sec">Stundenübersicht · alle Mitarbeiter</div><div class="card" style="margin-bottom:10px"><div class="card-b"><label style="margin-top:0">Monat</label>${monthOptions('n297AdminMonth',monthValue())}</div></div><div id="n297AdminSummary"></div><div id="n297AdminDetail"></div>`;anchor.parentNode.insertBefore(p,anchor);p.querySelector('#n297AdminMonth')?.addEventListener('change',renderAdminOverview)}
-  function ensureAdminMenu(){const menu=document.querySelector('#pgAdmin .menu-list');if(!menu)return;let stz=[...menu.querySelectorAll('.mi')].find(x=>/Stundenzettel/i.test(x.textContent||''));if(stz&&!stz.id)stz.id='adminTimesheetMenu';if(stz&&stz.dataset.n297!=='1'){stz.dataset.n297='1';stz.setAttribute('onclick',"goTo('pgAdminStz','Stundenzettel')");}let h=document.getElementById('adminHoursOverviewMenu');if(!h&&stz){h=document.createElement('div');h.className='mi';h.id='adminHoursOverviewMenu';h.setAttribute('onclick',"goTo('pgAdminHours','Stundenübersicht');setTimeout(()=>window.NaschHoursOverview?.renderAdmin?.(),0)");h.innerHTML='<div class="mi-icon" style="background:#E6F1FB;">⏱</div><span class="mi-lbl">Stundenübersicht</span><span class="mi-arr">›</span>';stz.parentNode.insertBefore(h,stz)}
-    if(h)h.style.display=isBranchAdmin()?'flex':'none';if(stz){stz.style.display=(isBranchAdmin()||isDeputy())?'flex':'none';const lbl=stz.querySelector('.mi-lbl');if(lbl)lbl.textContent='Stundenzettel';stz.setAttribute('onclick',"goTo('pgAdminStz','Stundenzettel')")}}
-  async function renderAdminOverview(){const host=document.getElementById('n297AdminSummary');if(!host)return;if(!isBranchAdmin()){host.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Übersicht ist nur für den Admin / die Filialleitung verfügbar.</span></div>';return}const ym=document.getElementById('n297AdminMonth')?.value||monthValue(),entries=activeEmployees();host.innerHTML='<div class="card"><div class="card-b" style="color:var(--muted)">Monatsübersicht wird geladen …</div></div>';try{const data=await Promise.all(entries.map(async([uid,u])=>[uid,u,await dataFor(uid,ym)]));let rows='';for(const [uid,u,d] of data){const c=absenceCounts(d),p=pauseTotal(d),showS=eligible(uid);rows+=`<tr><td><strong>${esc(u.name)}</strong><div style="font-size:9px;color:var(--muted)">${esc(u.label||u.typ||'')}</div></td><td class="r"><strong>${de2(d.worked)}</strong></td><td class="r">${pauseDecimal(p)}</td><td class="r">${days(c.krank)}</td><td class="r">${days(c.urlaub)}</td><td class="r">${showS?de2(d.p25):'–'}</td><td class="r">${showS?de2(d.p50):'–'}</td><td class="r"><button class="n297-detail-btn" onclick="NaschHoursOverview.showEmployee('${esc(uid)}')">Details</button></td></tr>`}host.innerHTML=`<div class="banner binfo" style="margin-bottom:8px"><span>⏱</span><span>Allgemeine Monats-Stundenübersicht aller aktiven Mitarbeiter. Krank und Urlaub werden als Tage, nicht als Stunden dargestellt.</span></div><div class="card"><div class="card-b" style="overflow-x:auto;padding:0"><table class="n297-overview-table" style="min-width:760px"><thead><tr><th>Mitarbeiter</th><th class="r">Gearbeitet</th><th class="r">Pause</th><th class="r">Krank</th><th class="r">Urlaub</th><th class="r">25 %</th><th class="r">50 %</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8">Keine Mitarbeiter.</td></tr>'}</tbody></table></div></div><div style="font-size:9px;color:var(--muted);margin-top:7px">Stunden und Pausen werden dezimal angezeigt. Zuschläge erscheinen nur bei Mitarbeitern mit aktivierter Zuschlagsberechtigung.</div>`}catch(e){host.innerHTML=`<div class="banner bwarn"><span>⚠️</span><span>${esc(e.message||e)}</span></div>`}}
+  function ensureAdminOverviewPage(){
+    let p=document.getElementById('pgAdminHours');const anchor=document.getElementById('pgAdminStz');
+    if(!p&&anchor){p=document.createElement('div');p.className='page';p.id='pgAdminHours';p.innerHTML=`<div class="back" onclick="goTo('pgAdmin','Admin')">‹ Zurück</div><div class="sec">Stundenübersicht · alle Mitarbeiter</div><div class="card" style="margin-bottom:10px"><div class="card-b"><label style="margin-top:0">Monat</label><select id="n297AdminMonth"></select></div></div><div id="n297AdminSummary"></div><div id="n297AdminDetail"></div>`;anchor.parentNode.insertBefore(p,anchor)}
+    const sel=document.getElementById('n297AdminMonth');if(sel){const cur=sel.value||monthValue();if(!sel.options.length)sel.outerHTML=monthOptions('n297AdminMonth',cur);const live=document.getElementById('n297AdminMonth');if(live&&!live.dataset.bound){live.dataset.bound='1';live.addEventListener('change',renderAdminOverview)}}
+  }
+  function ensureAdminMenu(){
+    const menu=document.querySelector('#pgAdmin .menu-list');if(!menu)return;
+    let stz=document.getElementById('adminTimesheetMenu')||[...menu.querySelectorAll('.mi')].find(x=>/Stundenzettel/i.test(x.textContent||''));if(stz){stz.id='adminTimesheetMenu';stz.setAttribute('onclick',"goTo('pgAdminStz','Stundenzettel')");const lbl=stz.querySelector('.mi-lbl');if(lbl)lbl.textContent='Stundenzettel'}
+    let h=document.getElementById('adminHoursOverviewMenu');if(!h&&stz){h=document.createElement('div');h.className='mi';h.id='adminHoursOverviewMenu';h.innerHTML='<div class="mi-icon" style="background:#E6F1FB;">⏱</div><span class="mi-lbl">Stundenübersicht</span><span class="mi-arr">›</span>';stz.parentNode.insertBefore(h,stz)}
+    if(h){h.setAttribute('onclick',"goTo('pgAdminHours','Stundenübersicht');setTimeout(()=>window.NaschHoursOverview?.renderAdmin?.(),0)");h.style.display=isBranchAdmin()?'flex':'none'}
+    if(stz)stz.style.display=(isBranchAdmin()||isDeputy())?'flex':'none';
+  }
+  async function renderAdminOverview(){
+    ensureAdminOverviewPage();const host=document.getElementById('n297AdminSummary');if(!host)return;
+    if(!isBranchAdmin()){host.innerHTML='<div class="banner bwarn"><span>🔒</span><span>Diese Übersicht ist nur für den Admin / die Filialleitung verfügbar.</span></div>';return}
+    const ym=document.getElementById('n297AdminMonth')?.value||monthValue(),entries=activeEmployees();host.innerHTML='<div class="card"><div class="card-b" style="color:var(--muted)">Monatsübersicht wird geladen …</div></div>';
+    if(!entries.length){host.innerHTML='<div class="banner binfo"><span>ℹ️</span><span>Keine aktiven Mitarbeiter für diese Filiale gefunden.</span></div>';return}
+    let rows='';for(const [uid,u] of entries){try{const d=await dataFor(uid,ym),c=absenceCounts(d),p=pauseTotal(d),showS=eligible(uid);rows+=`<tr><td><strong>${esc(u.name)}</strong><div style="font-size:9px;color:var(--muted)">${esc(u.label||u.typ||'')}</div></td><td class="r"><strong>${de2(d.worked)}</strong></td><td class="r">${pauseDecimal(p)}</td><td class="r">${days(c.krank)}</td><td class="r">${days(c.urlaub)}</td><td class="r">${showS?de2(d.p25):'–'}</td><td class="r">${showS?de2(d.p50):'–'}</td><td class="r"><button class="n297-detail-btn" onclick="NaschHoursOverview.showEmployee('${esc(uid)}')">Details</button></td></tr>`}catch(e){rows+=`<tr><td><strong>${esc(u.name||uid)}</strong></td><td colspan="6" style="color:#b91c1c">Daten konnten nicht geladen werden: ${esc(e.message||e)}</td><td></td></tr>`}}
+    host.innerHTML=`<div class="banner binfo" style="margin-bottom:8px"><span>⏱</span><span>Allgemeine Monats-Stundenübersicht aller aktiven Mitarbeiter. Krank und Urlaub werden als Tage, nicht als Stunden dargestellt.</span></div><div class="card"><div class="card-b" style="overflow-x:auto;padding:0"><table class="n297-overview-table" style="min-width:760px"><thead><tr><th>Mitarbeiter</th><th class="r">Gearbeitet</th><th class="r">Pause</th><th class="r">Krank</th><th class="r">Urlaub</th><th class="r">25 %</th><th class="r">50 %</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div><div style="font-size:9px;color:var(--muted);margin-top:7px">Stunden und Pausen werden dezimal angezeigt. Zuschläge erscheinen nur bei Mitarbeitern mit aktivierter Zuschlagsberechtigung.</div>`;
+  }
   async function showEmployee(uid){if(!isBranchAdmin())return;const host=document.getElementById('n297AdminDetail');if(!host)return;const ym=document.getElementById('n297AdminMonth')?.value||monthValue();host.innerHTML='<div class="card"><div class="card-b" style="color:var(--muted)">Details werden geladen …</div></div>';try{const d=await dataFor(uid,ym),u=USERS?.[uid]||{};host.innerHTML=`<div class="sec" style="margin-top:14px">${esc(u.name||uid)} · Detailübersicht</div><div class="card"><div class="card-b">${employeeTable(d,uid)}</div></div>`;host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){host.innerHTML=`<div class="banner bwarn"><span>⚠️</span><span>${esc(e.message||e)}</span></div>`}}
-  function restrictTimesheets(){const p=document.getElementById('pgAdminStz');if(!p)return;const pageBanner=p.querySelector(':scope > .banner.binfo');if(pageBanner&&isDeputy())pageBanner.innerHTML='<span>📄</span><span>Stundenzettel ansehen und nach gültiger Mitarbeiter-Unterschrift gegenzeichnen. PDF-Speichern ist erlaubt; Mailversand bleibt der Filialleitung vorbehalten.</span>';const daily=document.getElementById('adminDailyHours');if(daily){daily.style.display='none';const sec=daily.previousElementSibling;if(sec&&/Stundenzettel|Stunden/i.test(sec.textContent||''))sec.style.display='none'}const monthly=document.getElementById('n293AdminMonthly');if(monthly){const mh=monthly.querySelector('.n293-head');if(mh&&isDeputy())mh.textContent='📄 Monats-Stundenzettel · Gegenzeichnung';else if(mh&&isBranchAdmin())mh.textContent='📄 Monats-Stundenzettel · Filiale';const pdf=[...monthly.querySelectorAll('button')].find(b=>/^PDF$/i.test((b.textContent||'').trim()));if(pdf)pdf.style.display=(isBranchAdmin()||isDeputy())?'':'none';const note=monthly.querySelector('.n293-small');if(note&&isDeputy())note.textContent='Stundenzettel/PDF prüfen und nach gültiger Mitarbeiter-Unterschrift gegenzeichnen. Kein Mailversand.'}const office=document.getElementById('n293OfficeMonthly');if(office&&isOffice())office.style.removeProperty('display');const oldPdf=document.getElementById('timesheetPdfAdminCard');if(oldPdf)oldPdf.style.setProperty('display','none','important');const personalBar=document.getElementById('personalTimesheetPdfBar');if(personalBar)personalBar.style.setProperty('display','none','important')}
+  function restrictTimesheets(){
+    const p=document.getElementById('pgAdminStz');if(!p)return;let monthly=document.getElementById('n293AdminMonthly');
+    if(!monthly){monthly=document.createElement('div');monthly.id='n293AdminMonthly';monthly.className='n293-card';monthly.innerHTML='<div class="n293-head">📄 Monats-Stundenzettel</div><div class="n293-body"><div class="n293-status n293-off">Stundenzettel werden vorbereitet …</div></div>';p.querySelector('.back')?.insertAdjacentElement('afterend',monthly)}
+    const mode=moduleMode('stundennachweis');if(mode==='AUS'&&(isBranchAdmin()||isDeputy())){monthly.style.removeProperty('display');monthly.innerHTML='<div class="n293-head">📄 Stundenzettel</div><div class="n293-body"><div class="banner bwarn" style="margin:0"><span>⚠️</span><span>Das Modul Monats-Stundennachweis ist derzeit auf AUS gestellt. Unter Mitarbeiter & Einstellungen → Filialmodule kann es wieder aktiviert werden.</span></div></div>';return}
+    const pageBanner=p.querySelector(':scope > .banner.binfo');if(pageBanner&&isDeputy())pageBanner.innerHTML='<span>📄</span><span>Stundenzettel ansehen und nach gültiger Mitarbeiter-Unterschrift gegenzeichnen. PDF-Speichern ist erlaubt; Mailversand bleibt der Filialleitung vorbehalten.</span>';
+    if(monthly&&(isBranchAdmin()||isDeputy()))monthly.style.removeProperty('display');
+    const daily=document.getElementById('adminDailyHours');if(daily){daily.style.display='none';const sec=daily.previousElementSibling;if(sec&&/Stundenzettel|Stunden/i.test(sec.textContent||''))sec.style.display='none'}
+    const office=document.getElementById('n293OfficeMonthly');if(office&&isOffice())office.style.removeProperty('display');const oldPdf=document.getElementById('timesheetPdfAdminCard');if(oldPdf)oldPdf.style.setProperty('display','none','important');const personalBar=document.getElementById('personalTimesheetPdfBar');if(personalBar)personalBar.style.setProperty('display','none','important');
+  }
   function renameEmployeeMenu(){const items=[...document.querySelectorAll('#pgProfil .mi')];for(const x of items){if(/Stundenzettel/i.test(x.textContent||'')){const l=x.querySelector('.mi-lbl');if(l)l.textContent='Stundenübersicht';x.setAttribute('onclick',"goTo('pgStunden','Stundenübersicht')")}}}
   function guardPdf(){const canRead=()=>isBranchAdmin()||isDeputy()||isOffice();if(window.NaschTimesheetPDF&&!window.NaschTimesheetPDF.__n298){const api=window.NaschTimesheetPDF;['openOwn','openOfficeSelected','openSelected','openAll'].forEach(k=>{if(typeof api[k]==='function'){const old=api[k];api[k]=function(){if(!canRead()){alert('Keine Berechtigung für Stundenzettel/PDF-Nachweise.');return}return old.apply(this,arguments)}}});api.__n298=true}if(typeof window.n293AdminPdf==='function'&&!window.n293AdminPdf.__n298){const old=window.n293AdminPdf,fn=function(){if(!(isBranchAdmin()||isDeputy())){alert('Keine Berechtigung für Stundenzettel/PDF-Nachweise.');return}return old.apply(this,arguments)};fn.__n298=true;window.n293AdminPdf=fn}}
   function syncMonth(){const s=document.getElementById('n293EmpMonth');if(s&&!s.dataset.n297){s.dataset.n297='1';s.addEventListener('change',()=>setTimeout(renderEmployeeOverview,0))}}
   function apply(){renameEmployeeMenu();ensureAdminOverviewPage();ensureAdminMenu();ensureEmployeePage();restrictTimesheets();guardPdf();syncMonth()}
-  const oldGo=window.goTo;if(typeof oldGo==='function'&&!oldGo.__n297){const fn=function(pg,title){if(pg==='pgAdminHours'&&!isBranchAdmin()){alert('Die allgemeine Stundenübersicht aller Mitarbeiter ist nur für den Admin / die Filialleitung verfügbar.');return}if(pg==='pgAdminStz'&&!(isBranchAdmin()||isDeputy())){alert('Dieser Bereich ist nicht freigegeben.');return}const r=oldGo.apply(this,arguments);setTimeout(()=>{apply();if(pg==='pgStunden')renderEmployeeOverview();if(pg==='pgAdminHours')renderAdminOverview()},20);return r};fn.__n297=true;window.goTo=fn;try{goTo=fn}catch(_){}}
+  const oldGo=window.goTo;if(typeof oldGo==='function'&&!oldGo.__n297){const fn=function(pg,title){if(pg==='pgAdminHours'&&!isBranchAdmin()){alert('Die allgemeine Stundenübersicht aller Mitarbeiter ist nur für den Admin / die Filialleitung verfügbar.');return}if(pg==='pgAdminStz'&&!(isBranchAdmin()||isDeputy())){alert('Dieser Bereich ist nicht freigegeben.');return}const r=oldGo.apply(this,arguments);setTimeout(()=>{apply();if(pg==='pgStunden')renderEmployeeOverview();if(pg==='pgAdminHours')renderAdminOverview();if(pg==='pgAdminStz'){window.NaschV299?.renderAdminTimesheets?.(true);setTimeout(()=>window.NaschV299?.renderAdminTimesheets?.(true),250)}},20);return r};fn.__n297=true;window.goTo=fn;try{goTo=fn}catch(_){}}
   const oldStart=window.startApp;if(typeof oldStart==='function'&&!oldStart.__n297){const fn=function(){const r=oldStart.apply(this,arguments);setTimeout(apply,350);return r};fn.__n297=true;window.startApp=fn;try{startApp=fn}catch(_){}}
   const obs=new MutationObserver(()=>{const o=document.getElementById('n293OfficeMonthly');if(o&&isOffice())o.style.removeProperty('display');const e=document.getElementById('n293EmployeeMonthly');if(e){const h=e.querySelector('.n293-head');if(h&&/Arbeitszeiten/.test(h.textContent||''))h.textContent='✍️ Monatsbestätigung'}restrictTimesheets();syncMonth()});
   document.addEventListener('DOMContentLoaded',()=>{apply();obs.observe(document.body,{childList:true,subtree:true});setTimeout(apply,400)},{once:true});setTimeout(apply,120);
   window.NaschHoursOverview={renderEmployee:renderEmployeeOverview,renderAdmin:renderAdminOverview,showEmployee,isBranchAdmin};
-  console.info('NASCH v'+VERSION+' Stundenübersicht/Stundenzettel-Rollenrechte aktiv');
+  console.info('NASCH v'+VERSION+' Stundenübersicht/Stundenzettel robust geladen');
 })();
 </script>
 </body>
