@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v29.33 · Emsdetten</title>
+<title>NASCH v29.34 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten-v2916.webmanifest">
 <link rel="apple-touch-icon" href="icon-any-180-v2916.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2916.png">
@@ -241,7 +241,7 @@ firebase.auth().signInAnonymously().catch(e => {
 window.FILIAL_ID = 'FIL001';
 </script>
 <script>window.NASCH_ENTRY_MODE="branch";window.NASCH_FIXED_BRANCH="FIL001";</script>
-<link rel="stylesheet" href="./nasch-v2933.css">
+<link rel="stylesheet" href="./nasch-v2934.css">
 </head>
 <body>
 
@@ -249,7 +249,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.33</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.34</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -1047,7 +1047,7 @@ const PLAN = Object.fromEntries(
   Object.keys(USERS).map(uid => [uid, Array.from({length:7},()=>({t:'-',z:'',r:[]}))])
 );
 
-// NASCH v29.33: Kernzustände für spätere Modulskripte explizit global verfügbar machen.
+// NASCH v29.34: Kernzustände für spätere Modulskripte explizit global verfügbar machen.
 // Top-level const-Bindings liegen in Browsern nicht automatisch auf window.
 window.USERS=USERS;
 window.PINS=PINS;
@@ -7675,7 +7675,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.33';
+  window.NASCH_APP_VERSION='29.34';
 })();
 </script>
 
@@ -8620,7 +8620,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.33';
+  window.NASCH_APP_VERSION='29.34';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8631,7 +8631,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8785,7 +8785,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8836,7 +8836,7 @@ window.NASCH_APP_VERSION='29.33';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8855,7 +8855,7 @@ window.NASCH_APP_VERSION='29.33';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9206,7 +9206,7 @@ window.NASCH_APP_VERSION='29.33';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9723,7 +9723,7 @@ window.NASCH_APP_VERSION='29.33';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   const VERSION='29.26';
   const AUTOSAVE_DELAY=1200;
@@ -9918,7 +9918,7 @@ window.NASCH_APP_VERSION='29.33';
 
 <script id="nasch-v2921-copy-next-cloud">
 /* NASCH v29.26 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -10076,7 +10076,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 <script id="nasch-v2822-auto-update">
 /* NASCH v29.30 · automatische App-Aktualisierung mit Reload-Schleifenschutz */
 (()=>{
-  const CURRENT=String(window.NASCH_APP_VERSION||'29.33');
+  const CURRENT=String(window.NASCH_APP_VERSION||'29.34');
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   const UPDATE_GUARD_KEY='nasch-update-attempt-v1';
@@ -10247,7 +10247,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10443,7 +10443,7 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
 </div>
 <script>
 /* NASCH v29.26 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10545,7 +10545,7 @@ window.NaschEmployeeDemo=(()=>{
 </div>
 <script id="nasch-v2826-features">
 /* NASCH v29.26 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10779,7 +10779,7 @@ window.NaschDeputyRights=(()=>{
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.33';
+window.NASCH_APP_VERSION='29.34';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -11339,7 +11339,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 })();
 </script>
 
-<script src="./nasch-v2933.js"></script>
+<script src="./nasch-v2934.js"></script>
 
 <!-- NASCH v29.28 · Stundenübersicht / Stundenzettel Rollenrechte + Büro-Wochenplan -->
 <style id="nasch-v2928-hours-overview-css">
@@ -11356,7 +11356,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </style>
 <script id="nasch-v2928-hours-overview-js">
 (()=>{
-  const VERSION='29.33';
+  const VERSION='29.34';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uidNow=()=>String(window.AppState?.currentUserId||'');
   const currentUser=()=>window.AppState?.currentUser||(typeof USERS!=='undefined'?USERS?.[uidNow()]:null)||null;
