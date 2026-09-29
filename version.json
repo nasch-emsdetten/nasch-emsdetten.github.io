@@ -1,5 +1,5 @@
 {
-  "version": "29.23",
-  "updated": "2026-09-29",
-  "notes": "v29.23: Mitarbeiter-Tausch/Ersatz/Organisation tief geprüft und gehärtet: atomare Freigaben, aktuelle Schichtprüfung, Abwesenheit/Verfügbarkeit, Mehrfachantworten, Duplikat- und Vergangenheits-Schutz."
+  "version": "29.26",
+  "date": "2026-09-29",
+  "notes": "v29.26: Installationshilfe erweitert. iPhone/iPad, Windows-PC und Mac sind dauerhaft in jedem rollenbezogenen Handbuch erklärt; PWA-Installationskarte unterstützt zusätzlich Desktop-Hinweise für Edge/Chrome/Safari."
 }

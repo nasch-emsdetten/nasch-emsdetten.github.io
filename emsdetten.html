@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#98C01F">
-<title>NASCH v29.23 · Emsdetten</title>
+<title>NASCH v29.26 · Emsdetten</title>
 <link rel="manifest" href="manifest-emsdetten-v2916.webmanifest">
 <link rel="apple-touch-icon" href="icon-any-180-v2916.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-any-192-v2916.png">
@@ -147,7 +147,7 @@ textarea{min-height:60px;resize:none;}
 .psd{width:8px;height:8px;border-radius:50%;background:#e5e7eb;transition:background .2s;}
 .psd.a{background:var(--navy);}
 .psd.d{background:#1D9E75;}
-/* Einstellungs-Module v29.23 */
+/* Einstellungs-Module v29.26 */
 .settings-module{margin-bottom:10px;}
 .settings-module-head{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:7px 2px;}
 .settings-module-title{flex:1;font-size:12px;font-weight:800;color:var(--text);}
@@ -249,7 +249,7 @@ window.FILIAL_ID = 'FIL001';
 <div id="fbStatusBanner" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:20px;padding:6px 18px;font-size:12px;font-weight:700;z-index:9999;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;">🔥 Firebase verbunden</div>
 
 <div id="loginScreen" class="screen active">
-  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.23</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
+  <div class="logo" id="loginLogo" style="user-select:none;"><h1 id="loginBrandTitle">NASCH Restaurant</h1><p id="loginBrandSub">Mitarbeiter-App · <span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">v29.26</span></p><p id="fbStatusBadge" style="font-size:10px;opacity:.55;margin-top:4px;">⏳ Verbinde...</p>
     <p style="font-size:11px;margin-top:5px;"><a href="#" onclick="goTo('pgHandbuch','Handbuch');return false;" style="color:#1e3a5f;opacity:.6;text-decoration:none;">📖 Hilfe &amp; Handbuch</a></p></div>
   <div class="login-card">
     <h2 id="loginHeading">Willkommen</h2><p id="loginIntro">Mitarbeiter und PIN auswählen</p>
@@ -383,7 +383,7 @@ window.FILIAL_ID = 'FIL001';
       </div>
       <div class="pwa-install-card" style="display:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px;">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px;">📲 NASCH als App installieren</div>
-        <div class="pwa-install-help" style="font-size:11px;opacity:.88;margin-bottom:10px;">Schneller Zugriff direkt vom Startbildschirm – ohne Browser.</div>
+        <div class="pwa-install-help" style="font-size:11px;opacity:.88;margin-bottom:10px;">Schneller Zugriff als eigene App auf Handy, Tablet oder Computer.</div>
         <button class="pwa-install-btn" type="button" onclick="triggerPwaInstall()" style="background:#98C01F;color:#1e3a5f;border:none;border-radius:20px;padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">App installieren</button>
       </div>
       <div class="stat-grid" style="grid-template-columns:1fr;">
@@ -1114,7 +1114,7 @@ const FirestoreStore = (() => {
               });
             }
 
-            // v29.23: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
+            // v29.26: Mitarbeiter-/Admin-Einstellungen zentral aus Firestore laden.
             // Diese Daten sind geräteübergreifend autoritativ; localStorage bleibt nur Fallback/Cache.
             try {
               const aDoc = await docRef('config','adminSettings').get();
@@ -2219,7 +2219,7 @@ function adminRemoveTime(type,encoded){
   if(typeof showToast==='function') showToast('✓ Zeitvorschlag entfernt');
 }
 
-// ── v29.23: Einstellungs-Module ein-/ausblenden ─────────────
+// ── v29.26: Einstellungs-Module ein-/ausblenden ─────────────
 const ADMIN_SETTINGS_MODULE_KEY='nasch-admin-settings-modules-v1';
 function adminSettingsReadState(){
   try{return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_MODULE_KEY)||'{}')||{};}catch(_){return {};}
@@ -2677,7 +2677,7 @@ function getWeekTotalHours() {
   return Object.keys(USERS).reduce((sum,uid)=>sum+getEmployeeWeekStats(uid).hours,0);
 }
 
-// v29.23: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
+// v29.26: Nur echte Mitarbeiterzugänge bekommen vergangene Tage/KWs ausgeblendet.
 // Filialleitung, aktive Vertretung, Personalbüro und System-Admin sehen immer die komplette Woche.
 function isEmployeePlanViewer(){
   const uid=String(AppState.currentUserId||'');
@@ -2910,7 +2910,7 @@ function startApp(uid){
 function _doStartApp(uid){
   // Versions-Toast beim Login
   try{setTimeout(()=>{
-    const v='v'+(window.NASCH_APP_VERSION||'29.23');
+    const v='v'+(window.NASCH_APP_VERSION||'29.26');
     const t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);';
     t.textContent='✅ NASCH App '+v;
@@ -3673,7 +3673,7 @@ function openShiftEditor(uid,dayIdx){
     // Reinigung nur anbieten, wenn dem Mitarbeiter RK zugeordnet ist.
     const assignedActivities=(typeof getEmployeeActivities==='function'?getEmployeeActivities(uid):activityList(user.taetigkeit));
     if(o.t==='R' && !assignedActivities.includes('RK')) return false;
-    // v29.23: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
+    // v29.26: Verfügbarkeit warnt nur noch – sie blockiert keine planbare Schicht.
     // Früh, Spät und Teilschicht bleiben immer auswählbar.
     return true;
   });
@@ -4399,7 +4399,7 @@ window.doLogout=doLogout;
 function resetSandbox(){if(typeof NaschAdminSettings!=='undefined')NaschAdminSettings.reset();SandboxStore.reset();}
 
 // PWA nur bei HTTP(S) registrieren; file:// bleibt direkt testbar.
-// v29.23: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
+// v29.26: Der Versionswächter am Dokumentende übernimmt Registrierung + erzwungene Update-Prüfung.
 </script>
 
 <style>
@@ -7517,77 +7517,14 @@ module.exports = QRCode;
 <div class="page" id="pgHandbuch">
   <div class="back" onclick="history.back()">‹ Zurück</div>
   <div style="padding:0 4px;">
-  <h2 style="font-size:18px;color:var(--navy);margin:0 0 16px;">📖 Mitarbeiter-Handbuch</h2>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">🔐 Anmelden</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>1. Seite öffnen: <strong>nasch-emsdetten.github.io/emsdetten.html</strong></p>
-      <p>2. Deinen Namen in der Liste auswählen.</p>
-      <p>3. Deine 4-stellige PIN eingeben und auf <strong>Anmelden</strong> tippen.</p>
-      <p style="color:var(--muted);font-size:11px;">Erste PIN = deine Mitarbeiternummer (z. B. 1003). Bitte beim ersten Login sofort ändern.</p>
+    <h2 style="font-size:18px;color:var(--navy);margin:0 0 16px;">📖 Hilfe &amp; Handbuch</h2>
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-b" style="font-size:12px;line-height:1.65;color:var(--muted);">
+        Das Handbuch wird nach der Anmeldung passend zu deinem Zugangsbereich geladen.
+      </div>
     </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">📅 Wochenplan ansehen</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>Unten auf <strong>Plan</strong> tippen → dein Dienstplan für die aktuelle Woche wird angezeigt.</p>
-      <p>Mit <strong>‹ ›</strong> kannst du zwischen Wochen wechseln.</p>
-      <p>Bedeutung der Kürzel:</p>
-      <p>🟦 <strong>F</strong> = Frühschicht · 🟧 <strong>S</strong> = Spätschicht<br>
-         🟩 <strong>U</strong> = Urlaub · 🟥 <strong>K</strong> = Krank · ⬜ <strong>–</strong> = frei</p>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">🕐 Stundenzettel</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>Unter <strong>Mein Bereich → Stundenzettel</strong> siehst du deine Arbeitszeiten für die aktuelle Woche.</p>
-      <p>Pausen werden automatisch abgezogen: <strong>ab 5 Std. → 30 Min.</strong>, <strong>ab 9 Std. → 45 Min.</strong></p>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">📋 Verfügbarkeit eintragen</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>Unter <strong>Mein Bereich → Verfügbarkeit</strong> siehst du deine aktuell genehmigte, regelmäßige Verfügbarkeit. Änderungen werden als Antrag an die Filialleitung gesendet.</p>
-      <p>Optionen: <strong>Ganztags · Nur Früh · Nur Spät · Nicht verfügbar</strong></p>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">🔑 PIN ändern</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>Nach dem Anmelden: <strong>Mein Bereich → PIN ändern</strong>.</p>
-      <p>Wähle eine 4-stellige Zahl die du dir gut merken kannst.</p>
-      <p style="color:#dc2626;font-size:11px;">⚠️ Teile deine PIN nie mit anderen!</p>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">📲 App auf dem Handy installieren</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p><strong>Android (Chrome):</strong><br>
-      Drei-Punkte-Menü oben rechts → <em>„Zum Startbildschirm hinzufügen"</em></p>
-      <p><strong>iPhone (Safari):</strong><br>
-      Teilen-Symbol unten → <em>„Zum Home-Bildschirm"</em></p>
-      <p style="color:var(--muted);font-size:11px;">Danach erscheint die App als Icon auf deinem Handy – genauso wie eine normale App.</p>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-h"><div class="card-t">🆘 Probleme & Hilfe</div></div>
-    <div class="card-b" style="font-size:13px;line-height:1.7;">
-      <p>PIN vergessen? → Auf dem Login-Screen <strong>„PIN vergessen?"</strong> antippen.</p>
-      <p>Plan nicht sichtbar? → Seite neu laden (runterziehen) oder <strong>Browser-Cache leeren</strong> (Einstellungen → Verlauf löschen).</p>
-      <p>Sonstiges? → <strong>Filialleitung</strong> oder <strong>Vertretung</strong> ansprechen.</p>
-    </div>
-  </div>
-
   </div>
 </div>
-
 
 <style id="nasch-v271-style">
   .v271-deadline-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
@@ -7709,7 +7646,7 @@ module.exports = QRCode;
 
   window.NaschRequestView271={render:renderAll,setStatus,openModal,closeModal,saveModal,setQuotaDefault,setQuotaOverride,setQuotaEnabled,quotaFor,quotaEnabled:()=>quota.enabled!==false};
   applyAllQuota(false);setTimeout(()=>{renderAll();loadQuotaCloud();},0);
-  window.NASCH_APP_VERSION='29.23';
+  window.NASCH_APP_VERSION='29.26';
 })();
 </script>
 
@@ -8028,7 +7965,7 @@ module.exports = QRCode;
     else box.innerHTML='';
     if(editMode) bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.cancelEdit()">↩ Abbrechen</button>';
     else bar.innerHTML='<button class="btn btn-outline" style="margin:0;" type="button" onclick="AvailabilityApproval.startEdit()">✏️ Verfügbarkeit bearbeiten</button>';
-    // v29.23: Tagesoptionen sind direkt antippbar. Der erste Tipp startet automatisch den Bearbeitungsmodus.
+    // v29.26: Tagesoptionen sind direkt antippbar. Der erste Tipp startet automatisch den Bearbeitungsmodus.
     setDayControlsEnabled(!pendingReq);
   }
   function renderDays(){
@@ -8654,7 +8591,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
   if(window.V15Planning){const ot=V15Planning.tab,orr=V15Planning.render;if(typeof ot==='function')V15Planning.tab=function(){const r=ot.apply(this,arguments);setTimeout(renderAdmin,60);return r};if(typeof orr==='function')V15Planning.render=function(){const r=orr.apply(this,arguments);setTimeout(renderAdmin,60);return r};}
 
   window.NaschRequestActions273={render:refresh,open,close,submit,withdrawOpen,withdrawChange,adminApprove,adminReject};
-  window.NASCH_APP_VERSION='29.23';
+  window.NASCH_APP_VERSION='29.26';
   setTimeout(()=>{renderEmployee();renderAdmin();},120);
 })();
 </script>
@@ -8665,7 +8602,7 @@ window.NASCH_EMPLOYEE_PLAN_CLOUD_VERSION='26.9';
 </style>
 <script id="nasch-v288-fixes">
 /* NASCH v28.16 · produktive Bereinigung ohne Demo-Oberflächen */
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (() => {
   const MODULES=[
     ['zeiterfassung','Zeiterfassung','🕐','timeTracking'],['stundennachweis','Monats-Stundennachweis','📄',null],['wochenplan','Wochenplan','📅','weekPlan'],['urlaub','Urlaub / Wunschfrei / Krank','🏖','absence'],['infos','Infos','ℹ️','infos'],['termine','Termine','🗓️','events'],['mangelliste','Mangelliste','🔧','shortages'],['gruppenaufgaben','Gruppenaufgaben','✅','groupTasks'],['vorschuss','Vorschuss','💶',null],['gutschein','Gutschein','🎁',null],['waesche','Wäsche / Schürzen','🧺',null]
@@ -8751,13 +8688,19 @@ window.NASCH_APP_VERSION='29.23';
   const oldStart=window.startApp;if(typeof oldStart==='function'){window.startApp=function(){const r=oldStart.apply(this,arguments);setTimeout(()=>{applyVisibility();renderAdmin();renderOfficeDelegations();window.updateInstallVisibility?.();},350);return r};try{startApp=window.startApp}catch(_){}}
 })();
 
-// ── PWA install: only after login; hide in standalone mode ──────────────────
+// ── PWA install: after login; mobile + desktop guidance ─────────────────────
 let _naschPwaPrompt=null;
+function isNaschIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function isNaschDesktop(){return !/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent)&&!isNaschIOS()}
 function isPwaInstalled(){return window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true||document.referrer.includes('android-app://')}
 function updateInstallVisibility(){
-  const logged=!!window.AppState?.currentUser,installed=isPwaInstalled(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent),can=!!_naschPwaPrompt||ios;
+  const logged=!!window.AppState?.currentUser,installed=isPwaInstalled(),ios=isNaschIOS(),desktop=isNaschDesktop(),can=!!_naschPwaPrompt||ios||desktop;
   document.querySelectorAll('.pwa-install-card').forEach(c=>c.style.display=(logged&&!installed&&can)?'block':'none');
-  document.querySelectorAll('.pwa-install-help').forEach(x=>{if(ios&&!_naschPwaPrompt)x.textContent='Auf iPhone/iPad über Teilen → „Zum Home-Bildschirm“ installieren.';});
+  document.querySelectorAll('.pwa-install-help').forEach(x=>{
+    if(ios&&!_naschPwaPrompt)x.textContent='iPhone/iPad: Safari → Teilen → „Zum Home-Bildschirm“.';
+    else if(desktop&&!_naschPwaPrompt)x.textContent='PC/Mac: NASCH über Edge, Chrome oder Safari als App installieren.';
+    else x.textContent='Schneller Zugriff als eigene App auf diesem Gerät.';
+  });
 }
 window.updateInstallVisibility=updateInstallVisibility;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_naschPwaPrompt=e;updateInstallVisibility()});
@@ -8766,7 +8709,16 @@ window.matchMedia?.('(display-mode: standalone)').addEventListener?.('change',up
 window.triggerPwaInstall=async function(){
   if(isPwaInstalled()){updateInstallVisibility();return}
   if(_naschPwaPrompt){_naschPwaPrompt.prompt();try{await _naschPwaPrompt.userChoice}catch(_){} _naschPwaPrompt=null;updateInstallVisibility();return}
-  if(/iphone|ipad|ipod/i.test(navigator.userAgent))alert('📱 iPhone/iPad:\n\n1. In Safari auf Teilen (□↑) tippen\n2. „Zum Home-Bildschirm“ wählen\n3. „Hinzufügen“ tippen');
+  if(isNaschIOS()){
+    alert('📱 iPhone/iPad:\n\n1. NASCH in Safari öffnen\n2. Auf Teilen (□↑) tippen\n3. „Zum Home-Bildschirm“ wählen\n4. Oben rechts „Hinzufügen“ tippen');
+    return;
+  }
+  const mac=/Macintosh|Mac OS X/i.test(navigator.userAgent),safari=/Safari/i.test(navigator.userAgent)&&!/Chrome|Chromium|Edg/i.test(navigator.userAgent);
+  if(mac&&safari){
+    alert('💻 Mac mit Safari (macOS Sonoma 14+):\n\n1. NASCH in Safari öffnen\n2. „Ablage“ → „Zum Dock hinzufügen“ wählen\n3. „Hinzufügen“ anklicken');
+    return;
+  }
+  alert('💻 PC / Mac:\n\nMicrosoft Edge: Menü (…) → Weitere Tools → Apps → „Diese Website als App installieren“.\n\nGoogle Chrome: Menü (⋮) → Cast, speichern und teilen → „Seite als App installieren“ bzw. „NASCH installieren“.\n\nDanach kann NASCH wie ein normales Programm über Startmenü/Taskleiste bzw. Dock geöffnet werden.');
 };
 const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doLogout=function(){const r=_v288Logout.apply(this,arguments);document.querySelectorAll('.pwa-install-card').forEach(c=>c.style.display='none');return r};try{doLogout=window.doLogout}catch(_){}}
 </script>
@@ -8804,7 +8756,7 @@ const _v288Logout=window.doLogout;if(typeof _v288Logout==='function'){window.doL
 </style>
 <script id="nasch-v2811-production-cleanup">
 /* NASCH v28.16 · keine Demo-Oberflächen: nur echte Daten/Aktionen anzeigen */
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (()=>{
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reqDate=r=>{const v=r?.createdAt;try{if(v?.toDate)return v.toDate();if(typeof v==='string'||typeof v==='number')return new Date(v);}catch(_){}return null;};
@@ -8855,7 +8807,7 @@ window.NASCH_APP_VERSION='29.23';
 
 <script id="nasch-v2813-final-fixes">
 /* NASCH v28.16 · Ganzjahres-Abwesenheit, bestätigte Urlaubswerte, Kalender & lokaler QR */
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (()=>{
   const YEAR=new Date().getFullYear(),vacKeys=['urlaubRest','urlaubAnspruch','urlaubVorjahr','urlaubGenommen'];
   function clearUnverifiedLocal(){Object.entries(window.USERS||{}).forEach(([uid,u])=>{if(!/^10\d\d$/.test(uid)||!u)return;if(Number(u.urlaubConfirmedYear)!==YEAR){vacKeys.forEach(k=>u[k]=null);u.urlaubConfirmedYear=null;}});}
@@ -8874,7 +8826,7 @@ window.NASCH_APP_VERSION='29.23';
 
 <script id="nasch-v2815-kv-calendar-sync">
 /* NASCH v28.16 · KV1–KV4 automatisch + echter Kalender-Abo-Link */
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (()=>{
   const KV_MAX=4;
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -9205,7 +9157,7 @@ window.NASCH_APP_VERSION='29.23';
   function versionInfo(){
     if(AppState?.currentUser?.role!=='admin'&&!window.BranchSandbox?.isCentral?.(AppState?.currentUserId))return;
     const pg=document.getElementById('pgAdminSettings');if(!pg||document.getElementById('naschVersionInfo'))return;
-    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.23')}</strong></span>`;pg.appendChild(d);
+    const d=document.createElement('div');d.id='naschVersionInfo';d.className='banner binfo';d.style.marginTop='10px';d.innerHTML=`<span>ℹ️</span><span>Geladene App-Version: <strong>v${esc(window.NASCH_APP_VERSION||'29.26')}</strong></span>`;pg.appendChild(d);
   }
   const baseGo=window.goTo;
   if(typeof baseGo==='function'){
@@ -9225,7 +9177,7 @@ window.NASCH_APP_VERSION='29.23';
 </script>
 <script id="nasch-v2817-shift-workflow">
 /* NASCH v28.20 · Mehrfach-Schichten, KV-Zeitfenster, Tausch/Ersatz, Krank→KV, Arbeitszeitkorrektur ±15 */
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (()=>{
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9742,9 +9694,9 @@ window.NASCH_APP_VERSION='29.23';
 
 <script id="nasch-v2819-autodraft">
 /* NASCH v28.20 · automatisches Cloud-Entwurfsspeichern + Wunschfrei-Konflikthinweis */
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (()=>{
-  const VERSION='29.23';
+  const VERSION='29.26';
   const AUTOSAVE_DELAY=1200;
   let timer=null,saving=false,pending=false,lastSavedAt=null,lastError='';
   let requestRows=[],requestUnsub=null,requestStartedFor='';
@@ -9936,8 +9888,8 @@ window.NASCH_APP_VERSION='29.23';
 </script>
 
 <script id="nasch-v2921-copy-next-cloud">
-/* NASCH v29.23 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
-window.NASCH_APP_VERSION='29.23';
+/* NASCH v29.26 · nächste KW zuverlässig übernehmen + Cloud/Local synchronisieren */
+window.NASCH_APP_VERSION='29.26';
 (()=>{
   const clone=x=>JSON.parse(JSON.stringify(x??{}));
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
@@ -10082,7 +10034,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 
       try{if(typeof showToast==='function')showToast(`✓ ${name}: ${blockCount} Schicht${blockCount===1?'':'en'} in nächste KW übernommen`);}catch(_){}
     }catch(e){
-      console.error('v29.23 copyEmployeeToNext',e);
+      console.error('v29.26 copyEmployeeToNext',e);
       alert('Kopieren fehlgeschlagen: '+(e?.message||e));
     }
   }
@@ -10093,9 +10045,9 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </script>
 
 <script id="nasch-v2822-auto-update">
-/* NASCH v29.23 · automatische App-Aktualisierung ohne Versions-Link */
+/* NASCH v29.26 · automatische App-Aktualisierung ohne Versions-Link */
 (()=>{
-  const CURRENT='29.23';
+  const CURRENT='29.26';
   const VERSION_FILE='./version.json';
   const CHECK_EVERY_MS=5*60*1000;
   let checking=false, updating=false, lastCheck=0;
@@ -10183,7 +10135,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </script>
 
 
-<!-- NASCH v29.23: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
+<!-- NASCH v29.26: Erst-PIN-Schutz + Desktop-Adminansicht; bewusst OHNE Inaktivitäts-/App-Sperre -->
 <style id="nasch-v2824-security-desktop-css">
 #firstPinOverlay{display:none;position:fixed;inset:0;z-index:15000;background:rgba(15,23,42,.78);align-items:center;justify-content:center;padding:18px;}
 #firstPinOverlay.open{display:flex;}
@@ -10240,7 +10192,7 @@ Diese Mitarbeiter-Zeile vollständig mit der aktuellen KW überschreiben?`))retu
 </div>
 
 <script id="nasch-v2824-pin-security-desktop">
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 (()=>{
   const FID=()=>window.FILIAL_ID||window.BranchSandbox?.active?.()||'FIL001';
   const stateKey=()=>`nasch-pin-state-${FID()}`;
@@ -10389,7 +10341,7 @@ window.NASCH_APP_VERSION='29.23';
   setTimeout(load,0);
   window.addEventListener('online',()=>{if(!ready){loadPromise=null;load();}});
 
-  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.23 sperrt NICHT nach Inaktivität.
+  // Kein visibilitychange-, Timeout- oder App-Lock-Handler: v29.26 sperrt NICHT nach Inaktivität.
 })();
 
 (()=>{
@@ -10435,8 +10387,8 @@ body.nasch-demo-mode #ni-admin,body.nasch-demo-mode #ni-office{display:none!impo
   <button type="button" onclick="NaschEmployeeDemo.exit()">Zurück zum Admin</button>
 </div>
 <script>
-/* NASCH v29.23 · versteckter, schreibgeschützter Demo-Mitarbeiter */
-window.NASCH_APP_VERSION='29.23';
+/* NASCH v29.26 · versteckter, schreibgeschützter Demo-Mitarbeiter */
+window.NASCH_APP_VERSION='29.26';
 window.NaschEmployeeDemo=(()=>{
   const DEMO_ID='__NASCH_DEMO__';
   const demoUser={name:'Demo Mitarbeiter',initials:'DM',typ:'TZ',role:'user',label:'Teilzeit · Demo',urlaubRest:12,wunschKont:2,homeoffice:false,sollStundenMonat:80,arbeitstageWoche:3,stundenlohn:null,urlaubAnspruch:24,urlaubGenommen:12,urlaubVorjahr:0,urlaubConfirmedYear:null,__naschDemo:true};
@@ -10537,8 +10489,8 @@ window.NaschEmployeeDemo=(()=>{
   </div>
 </div>
 <script id="nasch-v2826-features">
-/* NASCH v29.23 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
-window.NASCH_APP_VERSION='29.23';
+/* NASCH v29.26 · Vertretungsrechte, Veröffentlichung und Verfügbarkeitswarnungen */
+window.NASCH_APP_VERSION='29.26';
 window.NaschAvailabilityQuery=(()=>{
   let bypass=false,pendingApply=null,unsub=null,listenBranch='',cloudRows=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10768,11 +10720,11 @@ window.NaschDeputyRights=(()=>{
 @media(max-width:560px){.n293-grid{grid-template-columns:1fr}}
 </style>
 <script id="nasch-v293-unified">
-/* NASCH v29.23 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
+/* NASCH v29.26 · Claude-Merge: Filial-Feiertage, Monats-Stundennachweis, Monatsunterschriften,
    Rollenhandbücher, optionale Vertretung, filialübergreifender Export und neutrales Teams/Teilen. */
 (()=>{
 'use strict';
-window.NASCH_APP_VERSION='29.23';
+window.NASCH_APP_VERSION='29.26';
 
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const WDS=['SO','MO','DI','MI','DO','FR','SA'];
@@ -11040,18 +10992,78 @@ function hideLegacyTimesheetUi(){
 // ---------- Rollenbezogenes Handbuch ----------
 function handbook(){
   const page=document.getElementById('pgHandbuch');if(!page)return;
-  const u=currentUser(),office=!!window.BranchSandbox?.isOffice?.(uidNow()),central=!!window.BranchSandbox?.isCentral?.(uidNow()),dep=DeputyFeature.isDeputy(uidNow()),admin=u?.role==='admin';
+  const u=currentUser(),me=uidNow();
+  const office=!!window.BranchSandbox?.isOffice?.(me),central=!!window.BranchSandbox?.isCentral?.(me),dep=!!(u&&DeputyFeature.isDeputy(me)),admin=!!(u?.role==='admin'&&!central&&!office);
   const card=(t,b)=>`<div class="card" style="margin-bottom:10px"><div class="card-h"><div class="card-t">${t}</div></div><div class="card-b" style="font-size:12px;line-height:1.65">${b}</div></div>`;
-  let title='📖 Hilfe',body='';
-  if(!u){title='📖 Hilfe zur Anmeldung';body=card('🔐 Anmelden','Filiale/Name auswählen und persönliche PIN eingeben. Beim ersten Login bzw. nach einem PIN-Reset muss eine neue persönliche PIN vergeben werden.')}
-  else if(central){title='📖 System-Admin-Handbuch';body=card('🏪 Filialen','Filialen aktivieren und Stammdaten prüfen. Emsdetten nutzt NRW-Feiertage; alle anderen bekannten Filialen Niedersachsen.')+card('🧩 Module','Jedes Modul filialweise auf AUS, FILIALE oder BÜRO setzen. Änderungen gelten geräteübergreifend.')+card('🪪 Vertretung','Emsdetten standardmäßig aktiv; in anderen Filialen standardmäßig aus und bei Bedarf aktivieren.')+card('📅 Wochenplan','System-Admin sieht immer die vollständige 7-Tage-Woche und kann auch vergangene Kalenderwochen öffnen. Nur echte Mitarbeiterzugänge blenden vergangene Tage/KWs aus. Der heutige Tag bleibt markiert.')}
-  else if(office){title='📖 Büro-Handbuch';const mods=[['stundennachweis','Monats-Stundennachweis'],['vorschuss','Vorschuss'],['gutschein','Gutschein'],['waesche','Wäsche / Schürzen'],['zeiterfassung','Zeiterfassung']].filter(x=>moduleOffice(x[0])).map(x=>`<li>${x[1]}</li>`).join('');body=card('🏢 Büro-Aufgaben',mods?`Für diese Filiale sind aktuell folgende Module ans Büro übertragen:<ul>${mods}</ul>`:'Aktuell ist kein Modul dieser Filiale ans Büro übertragen.')+(moduleOffice('wochenplan')?card('📅 Wochenplan','Wenn der Wochenplan ans Büro übertragen ist, zeigt die Büroansicht immer alle sieben Wochentage und erlaubt auch vergangene Kalenderwochen. Die Mitarbeiter-Ausblendlogik gilt hier nicht.'):'')+card('👁 Teamstatus & Lesen','Soweit für den Büroprozess freigegeben, können Online/zuletzt online und Lesestatus betrieblicher Anfragen angezeigt werden. Pushtexte bleiben neutral.')+card('📄 Stundennachweise','Büro kann die übertragenen Monats-Stundennachweise in einer Mitarbeiterübersicht prüfen und als PDF abrufen. Die Gegenzeichnung erfolgt durch Filialleitung oder berechtigte Vertretung.')}
-  else if(dep){title='📖 Vertretungs-Handbuch';body=(moduleVisible('wochenplan')?card('📅 Wochenplan','Wochenplan vollständig bearbeiten und veröffentlichen – auch vergangene Kalenderwochen und alle sieben Wochentage bleiben sichtbar. Der heutige Wochentag ist markiert. Veröffentlichung wird mit deinem Namen und der Rolle Vertretung protokolliert. Bei Verfügbarkeitskonflikten wird gewarnt; die Schicht bleibt planbar und der Mitarbeiter kann angefragt werden.'):'')+(moduleBranch('stundennachweis')?card('📄 Monats-Stundennachweis','Nach der Mitarbeiter-Unterschrift darfst du den Monats-Stundenzettel gegenzeichnen. Jede Gegenzeichnung gilt nur für den gewählten Monat und Datenstand.'):'')+card('🔁 Tausch, Ersatz & Organisation','Normale Tausch-/Ersatzanfragen werden nach Zustimmung freigegeben. Bei einer Mehrfach-Organisation sammelt NASCH mehrere Hilfszusagen; du kannst daraus mehrere Schichtverschiebungen mit passenden Zeiten zusammenstellen und gemeinsam genehmigen. Erst die abschließende Freigabe verändert den veröffentlichten Plan.')+card('👥 KV','KV-Bereitschaften werden ohne Uhrzeit/Tätigkeit geplant. Bei Krankmeldung übernimmt der verbindlich zuständige KV die ursprüngliche Schicht. Der KV-Einsatz kann nicht abgelehnt werden; ein Tausch/Ersatz wird erst nach Freigabe wirksam.')+card('👁 Teamstatus & Lesen','Für die operative Planung sind Online/zuletzt online und der Lesestatus relevanter Anfragen sichtbar. Mitarbeiter sehen diese Teamdaten nicht.')+card('🔒 Rechte','Nicht freigegebene Adminfunktionen werden vollständig ausgeblendet.')}
-  else if(admin){title='📖 Filialleitungs-Handbuch';body=card('🧩 Module','Unter Einstellungen Module pro Filiale als AUS, FILIALE oder BÜRO konfigurieren.')+card('🪪 Vertretung',`${bid()==='FIL001'?'In Emsdetten ist die Vertretung standardmäßig aktiv.':'In dieser Filiale ist die Vertretung standardmäßig deaktiviert und kann bei Bedarf aktiviert werden.'}`)+(moduleVisible('wochenplan')?card('📅 Planung','Der vollständige Wochenplan bleibt für Filialleitung sichtbar – inklusive vergangener Kalenderwochen und aller sieben Wochentage; der heutige Wochentag ist markiert. Verfügbarkeitskonflikte warnen, blockieren aber nicht. Vollzeit kann einen festen freien Tag hinterlegen; Teilzeit/Aushilfe feste nicht verfügbare Tage. „Trotzdem einplanen“ oder Mitarbeiter direkt/nachträglich anfragen. Pläne können veröffentlicht werden.'):'')+(moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis',moduleOffice('stundennachweis')?'Das Modul wird durch das Büro bearbeitet/exportiert. Die fachliche Gegenzeichnung bleibt bei Filialleitung bzw. berechtigter Vertretung. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.':'Für jeden Mitarbeiter und Monat steht eine einfache Übersicht mit offiziellem PDF-Stundennachweis bereit. Zuerst unterschreibt der Mitarbeiter, anschließend Filialleitung oder berechtigte Vertretung. Nur die Filialleitung/Admin kann vollständig unterschriebene PDFs per E-Mail an das Büro senden; die eigene Adresse wird im BCC geführt. Änderungen an Arbeitszeiten machen beide Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Neben normalem 1:1-Tausch und Ersatz gibt es Organisation/Mehrfachanfrage. Die Begründung wird der Filialleitung angezeigt; mehrere Mitarbeiter können unabhängig ihre Hilfsbereitschaft melden. Filialleitung bzw. berechtigte Vertretung kann daraus mehrere Schichtverschiebungen und passende Zielzeiten in einem zusammenhängenden Vorgang planen und gemeinsam freigeben. Bei Konflikten oder zwischenzeitlich geänderten Ausgangsschichten wird keine Teiländerung gespeichert.')+card('🤒 Krankstunden Aushilfen','Krankmeldungen von Aushilfen erscheinen ohne Freigabe nicht als Krankzeit im Stundensystem. Erst eine ausdrückliche Freigabe der Filialleitung übernimmt die genehmigten Stunden als Krankzeit in den Monatsnachweis.')+card('👁 Online & Lesestatus','Im Teamstatus sind Online/zuletzt online sowie bei betrieblichen Anfragen der Lesestatus sichtbar. Push-Mitteilungen auf dem Sperrbildschirm bleiben neutral und zeigen keine Schicht-, Krank- oder Personaldetails.')+card('🔑 PIN','Persönliche PINs werden nicht im Klartext angezeigt. Reset erzeugt erneute Pflicht zur persönlichen PIN-Vergabe.')}
-  else{title='📖 Mitarbeiter-Handbuch';body=card('🔐 PIN','Beim ersten Login bzw. nach einem Reset eine eigene 4-stellige PIN festlegen. Es gibt keine automatische Inaktivitäts-Sperre.')+(moduleVisible('wochenplan')?card('📅 Wochenplan & Verfügbarkeit','Veröffentlichten Wochenplan ansehen. In der aktuellen KW werden bereits vergangene Wochentage ausgeblendet; vergangene Kalenderwochen sind nicht aufrufbar. Zukünftige veröffentlichte KWs können aufgerufen werden. Der heutige Wochentag ist markiert. Verfügbarkeit pflegen; bei einer Konfliktschicht kann eine Nachfrage erscheinen, die mit Ja oder Nein beantwortet wird.'):'')+(moduleVisible('stundennachweis')?card('📋 Arbeitszeiten & Monatsbestätigung','Deine Arbeitszeiten werden direkt in der App als Monatsliste mit Pausen und Zuschlägen angezeigt. Mitarbeiter erhalten keine PDF-Ansicht. Nach Prüfung unterschreibst du den Monat; Filialleitung oder berechtigte Vertretung zeichnet anschließend gegen. Nachträgliche Änderungen machen die Unterschriften ungültig.'):'')+card('🔁 Tausch, Ersatz & Organisation','Für eine einzelne Schicht kannst du Tauschen, Ersatz oder Organisation wählen. Organisation ist für komplexere Fälle gedacht: Begründung eintragen, mehrere Teammitglieder anfragen und deren Rückmeldungen abwarten. Die Filialleitung entscheidet anschließend über die tatsächliche Umplanung; Mitarbeiter verändern den veröffentlichten Plan nicht selbst.')+card('✍ Unterschrift','Für die Monatsunterschrift kann ein großflächiges Unterschriftsfeld geöffnet werden; auf unterstützten Handys wird Querformat genutzt.')+card('🔔 Meldungen','Benachrichtigungen auf dem Sperrbildschirm enthalten keine Schicht-, Krank- oder KV-Details, sondern nur „Neue Meldung verfügbar“. Details sind erst in NASCH sichtbar.')+card('📲 Installation','Unter „Mein Bereich“ NASCH als App installieren. Es gibt kein automatisches Zeitlimit bzw. keine Inaktivitäts-Sperre.')}
-  if(u && moduleVisible('wochenplan')) body+=card('🔎 Wochenplan-Anzeige','Unter „Mein Bereich → Wochenplan-Anzeige“ können Uhrzeit und Tätigkeit unabhängig in drei Stufen eingestellt werden. „📍 Heute“ springt im Ansichtsmodus zur aktuellen KW und positioniert den heutigen Tag direkt neben der Namensspalte. Im Bearbeitungsmodus ist dieser Schnellbutton ausgeblendet.');
-  page.innerHTML=`<div class="back" onclick="history.back()">‹ Zurück</div><div style="padding:0 4px"><h2 style="font-size:18px;color:var(--navy);margin:0 0 16px">${title}</h2>${body}</div>`;
+  const installationCards=()=>card('📱 Installation auf iPhone / iPad','<strong>Safari verwenden:</strong><ol style="margin:6px 0 0 18px;padding:0"><li>NASCH in Safari öffnen und anmelden.</li><li>Auf <strong>Teilen (□↑)</strong> tippen.</li><li><strong>„Zum Home-Bildschirm“</strong> auswählen.</li><li>Oben rechts <strong>„Hinzufügen“</strong> tippen.</li><li>Danach NASCH über das Symbol auf dem Home-Bildschirm öffnen.</li></ol>')+card('💻 Installation auf PC / Mac','<strong>Windows – Microsoft Edge:</strong><ol style="margin:6px 0 8px 18px;padding:0"><li>NASCH in Edge öffnen und anmelden.</li><li>Falls das Installationssymbol in der Adressleiste erscheint, darauf klicken. Alternativ: <strong>… → Weitere Tools → Apps → Diese Website als App installieren</strong>.</li><li>Installation bestätigen; anschließend kann NASCH an Startmenü oder Taskleiste angeheftet werden.</li></ol><strong>Google Chrome:</strong> Menü <strong>⋮ → Cast, speichern und teilen → Seite als App installieren</strong> bzw. <strong>NASCH installieren</strong> (Bezeichnung kann je nach Chrome-Version leicht abweichen).<br><br><strong>Mac – Safari:</strong> ab macOS Sonoma 14 <strong>Ablage → Zum Dock hinzufügen</strong> oder Teilen → Zum Dock hinzufügen.');
+  const footer=label=>`<div style="font-size:10px;color:var(--muted);text-align:center;padding:4px 8px 14px">${label} · Stand v29.26</div>`;
+  let title='📖 Hilfe',body='',roleLabel='Hilfe';
+
+  if(!u){
+    title='📖 Hilfe zur Anmeldung';roleLabel='Anmeldehilfe';
+    body=card('🔐 Anmelden','Filiale und Namen auswählen und die persönliche PIN eingeben. Beim ersten Login oder nach einem PIN-Reset muss eine neue persönliche 4-stellige PIN vergeben werden. Bei vergessenem Zugang „PIN vergessen?“ verwenden oder die Filialleitung ansprechen.');
+  }
+  else if(central){
+    title='📖 System-Admin-Handbuch';roleLabel='System-Admin-Handbuch';
+    body=card('🏪 Filialen & Stammdaten','Filialen aktivieren und zentrale Stammdaten prüfen. Emsdetten verwendet die NRW-Feiertagslogik; die übrigen bekannten Filialen Niedersachsen.')+
+      card('🧩 Module','Module je Filiale auf <strong>AUS</strong>, <strong>FILIALE</strong> oder <strong>BÜRO</strong> setzen. AUS blendet den Bereich aus; FILIALE belässt ihn im Filialprozess; BÜRO übergibt den vorgesehenen Bearbeitungs-/Lesebereich an das Büro.')+
+      card('🪪 Vertretung','Vertretungsfunktion filialbezogen steuern. Emsdetten ist standardmäßig aktiviert; andere Filialen bleiben standardmäßig deaktiviert, bis sie bewusst freigeschaltet werden.')+
+      card('📅 Wochenplan','Vollständige 7-Tage-Ansicht einschließlich vergangener Kalenderwochen. Der heutige Tag bleibt markiert. Mitarbeiterbezogene Ausblendregeln für vergangene Tage gelten hier nicht.')+
+      (moduleVisible('stundennachweis')?card('📄 Stundennachweise','Offizielle Monats-PDFs können zur Kontrolle geöffnet werden. System-Admin zeichnet jedoch <strong>nicht</strong> als Filialleitung gegen, versendet keine offiziellen Mitarbeiter-PDFs und startet keine OneDrive-Archivierung als Filialleitung.'): '')+
+      card('🔒 Sicherheit','Rollen und Filialzuordnung müssen zusätzlich serverseitig durch Firestore-Regeln abgesichert sein. UI-Ausblendung allein ist kein Zugriffsschutz. Push-Inhalte bleiben neutral und enthalten keine Schicht-, Krank- oder Personaldetails.');
+  }
+  else if(office){
+    title='📖 Büro-Handbuch';roleLabel='Büro-Handbuch';
+    const mods=[['wochenplan','Wochenplan'],['stundennachweis','Monats-Stundennachweis'],['vorschuss','Vorschuss'],['gutschein','Gutschein'],['waesche','Wäsche / Schürzen'],['zeiterfassung','Zeiterfassung']].filter(x=>moduleOffice(x[0])).map(x=>`<li>${x[1]}</li>`).join('');
+    body=card('🏢 Zugewiesene Bereiche',mods?`Für diese Filiale sind aktuell folgende Bereiche auf <strong>BÜRO</strong> gestellt:<ul>${mods}</ul>`:'Für diese Filiale ist aktuell kein Bereich an das Büro übertragen. Nicht zugewiesene Filialfunktionen werden nicht erläutert oder freigeschaltet.')+
+      (moduleOffice('wochenplan')?card('📅 Wochenplan','Vollständige 7-Tage-Ansicht einschließlich vergangener Kalenderwochen. Die Mitarbeiter-Ausblendlogik gilt für den Bürozugang nicht.'): '')+
+      (moduleOffice('stundennachweis')?card('📄 Monats-Stundennachweise','Mitarbeiterübersicht prüfen und den offiziellen PDF-Stundennachweis abrufen. Mitarbeiter- und Leitungsunterschriften werden im PDF nur angezeigt, wenn sie zum aktuellen Monatsdatenstand gültig sind. Büro zeichnet nicht gegen, startet keine OneDrive-Archivierung und versendet den offiziellen Filialleitungs-Mailvorgang nicht.'): '')+
+      card('👁 Teamstatus & Meldungen','Nur soweit für den Büroprozess freigegeben: Online/zuletzt online und Lesestatus betrieblicher Vorgänge. Push-/Sperrbildschirmtexte bleiben neutral; fachliche Details erscheinen erst nach Öffnen von NASCH.')+
+      card('🔒 Rollenabgrenzung','Keine PIN-/Filialleitungs-/Vertretungs- oder System-Admin-Funktionen verwenden. Es gelten ausschließlich die für die gewählte Filiale auf BÜRO gestellten Module.');
+  }
+  else if(dep){
+    title='📖 Vertretungs-Handbuch';roleLabel='Vertretungs-Handbuch';
+    body=(moduleVisible('wochenplan')?card('📅 Wochenplanung','Während der aktiven bzw. temporären Vertretungsberechtigung den vollständigen Wochenplan bearbeiten und veröffentlichen. Alle sieben Tage und vergangene Kalenderwochen bleiben sichtbar; der heutige Tag ist markiert. Verfügbarkeitskonflikte warnen, blockieren aber nicht automatisch. Veröffentlichungen werden mit Name und Rolle protokolliert.'): '')+
+      (moduleVisible('wochenplan')?card('🔁 Tausch, Ersatz & Organisation','Tausch-/Ersatzvorgänge und Mehrfach-Organisationen erst nach den vorgesehenen Rückmeldungen freigeben. Vor der Übernahme prüft NASCH Ausgangsschicht/Fingerprint, Tätigkeitseignung, Abwesenheiten (inkl. KK/UU/Wunschfrei), Verfügbarkeit und Überschneidungen erneut. Organisationsänderungen werden gemeinsam oder gar nicht übernommen; unabhängige Entwurfsänderungen bleiben erhalten.'): '')+
+      card('👥 KV-Bereitschaft','KV wird ohne eigene Uhrzeit/Tätigkeit geplant. Bei Aktivierung wegen Krankmeldung übernimmt der zuständige KV die Originalschicht verbindlich. Weitere Tausch-/Ersatzänderungen werden erst nach dem normalen Freigabeprozess wirksam.')+
+      (moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis','Nach einer gültigen Mitarbeiter-Unterschrift darf die berechtigte Vertretung gegenzeichnen und den offiziellen PDF-Nachweis ansehen. Jede Unterschrift gilt nur für den gewählten Monat und Daten-Hash. Änderungen machen die bisherigen Unterschriften ungültig. Nach vollständiger Gegenzeichnung wird der aktuelle Nachweis automatisch zur OneDrive-Archivierung eingereiht; bei einem Fehler kann ein vollständig unterschriebener Stand über „Archivieren“ erneut angestoßen werden. Der offizielle E-Mail-Versand bleibt der Filialleitung vorbehalten.'): '')+
+      card('👁 Teamstatus & Lesen','Für die operative Planung dürfen Online/zuletzt online und Lesestatus relevanter Anfragen sichtbar sein. Mitarbeiter selbst sehen diese Teamdaten nicht.')+
+      card('🔒 Rechte','Nur während einer gültigen Vertretungsberechtigung und nur für freigegebene operative Funktionen handeln. Admin-only Stammdaten-, PIN- und Systemfunktionen bleiben ausgeblendet.');
+  }
+  else if(admin){
+    title='📖 Filialleitungs-Handbuch';roleLabel='Filialleitungs-Handbuch';
+    body=card('🧩 Module & Vertretung','Module je Filiale als AUS, FILIALE oder BÜRO konfigurieren. Die Vertretungsfunktion filialbezogen steuern; Emsdetten ist standardmäßig aktiv, andere Filialen optional.')+
+      card('👤 Mitarbeiter & PIN','Mitarbeiterdaten gemäß Berechtigung verwalten. Persönliche PINs werden nicht im Klartext angezeigt; ein Reset erzwingt bei der nächsten Anmeldung eine neue persönliche PIN. „Kind krank (KK)“ kann nur für Vollzeit/Teilzeit individuell freigeschaltet werden; Aushilfen erhalten KK nicht.')+
+      (moduleVisible('wochenplan')?card('📅 Wochenplanung','Vollständige 7-Tage-Ansicht einschließlich vergangener Kalenderwochen. Vollzeit/Teilzeit können vertragliche Frei-Regeln nutzen; Aushilfen bleiben an normalen ungeplanten Tagen leer. Feste Nichtverfügbarkeit, Wunschfrei, Urlaub, unbezahlter Urlaub (UU), Krank und freigeschaltetes Kind krank (KK) werden berücksichtigt. Verfügbarkeitskonflikte warnen, blockieren die Planung aber nicht. „→ nächste KW“ ersetzt nur die gewählte Mitarbeiterzeile und schützt Abwesenheiten, parallele Cloud-Änderungen und vorhandene unabhängige Entwurfsänderungen.'): '')+
+      (moduleVisible('wochenplan')?card('🔁 Tausch, Ersatz & Organisation','1:1-Tausch, Ersatz und Organisation/Mehrfachanfrage nach Rückmeldungen prüfen und freigeben. Vor dem Commit werden Schicht-Fingerprints, Tätigkeitseignung, Abwesenheiten, Wunschfrei, Verfügbarkeit und Überschneidungen erneut geprüft. Vergangene Schichten sind gesperrt. Mehrfachänderungen sind atomar: bei einem Konflikt wird nichts teilweise gespeichert.'): '')+
+      card('🤒 Abwesenheiten & Aushilfen','Urlaub, Wunschfrei, Krank, unbezahlter Urlaub und – sofern individuell freigeschaltet – Kind krank verwalten. Bei Aushilfen erzeugt eine Krankmeldung allein keine Krankstunden im Monatsnachweis; Krankstunden müssen pro Tag ausdrücklich freigegeben oder wieder aufgehoben werden.')+
+      card('👥 KV-Bereitschaft','KV wird ohne eigene Uhrzeit/Tätigkeit geplant. Wird KV wegen Krankmeldung aktiviert, übernimmt der zuständige KV die Originalschicht verbindlich. Ein weiterer Tausch/Ersatz wird erst nach Freigabe wirksam.')+
+      (moduleVisible('stundennachweis')?card('📄 Monats-Stundennachweis & Unterschrift',moduleOffice('stundennachweis')?'Auch bei Übergabe des Moduls an das Büro bleibt die fachliche Gegenzeichnung bei Filialleitung bzw. berechtigter Vertretung. Mitarbeiter unterschreibt zuerst; danach Gegenzeichnung. Jede Änderung der relevanten Monatsdaten erzeugt einen neuen Hash und macht beide bisherigen Unterschriften ungültig.':'Für jeden Mitarbeiter/Monat stehen Übersicht und offizieller PDF-Nachweis bereit. Mitarbeiter unterschreibt zuerst, danach Filialleitung oder berechtigte Vertretung. Jede Änderung der relevanten Monatsdaten erzeugt einen neuen Hash und macht beide bisherigen Unterschriften ungültig. Mitarbeiter selbst erhalten keine PDF-Ansicht.'):'')+
+      (moduleVisible('stundennachweis')?card('☁️ PDF-Archiv & E-Mail','Nach vollständiger, zum aktuellen Datenstand gültiger Gegenzeichnung wird der offizielle Stundennachweis automatisch serverseitig als PDF zur OneDrive-Archivierung eingereiht. Status: „OneDrive ✓“, „…“ oder „Fehler“. Ein identischer signierter Datenstand wird nicht doppelt archiviert; bei Fehlern kann „Archivieren“ erneut verwendet werden. Offizieller Mailversand vollständig unterschriebener PDFs geht an alswede@nasch.com mit hinterlegter eigener BCC-Adresse. „Testmail an mich“ sendet nur den eigenen Nachweis an die eigene Adresse und benötigt keine vollständigen Unterschriften. Kein Excel-Export.'): '')+
+      card('👁 Teamstatus & Datenschutz','Online/zuletzt online und Lesestatus betrieblicher Anfragen für die Planung verwenden. Push-/Sperrbildschirmmeldungen enthalten keine Schicht-, Krank-, KV- oder Personaldetails, sondern nur eine neutrale Meldung.');
+  }
+  else{
+    title='📖 Mitarbeiter-Handbuch';roleLabel='Mitarbeiter-Handbuch';
+    let typ='';try{typ=typeof availabilityEmploymentType==='function'?availabilityEmploymentType(me):String(u?.typ||'').toUpperCase()}catch(_){typ=String(u?.typ||'').toUpperCase()}
+    let av='Verfügbarkeit pflegen; Änderungen werden zur Freigabe an die Filialleitung gesendet.';
+    if(typ==='VZ')av+=' Als Vollzeit kann ein fester freier Wochentag hinterlegt werden.';
+    else if(typ==='TZ')av+=' Bei Teilzeit richten sich reguläre Frei-Tage nach den hinterlegten Arbeitstagen/Woche; feste freie bzw. feste nicht verfügbare Tage werden entsprechend berücksichtigt.';
+    else if(typ==='AH')av+=' Bei Aushilfen bleiben normale ungeplante Tage leer; feste Nichtverfügbarkeit kann hinterlegt werden.';
+    let kk=false;try{kk=typeof getEmployeeChildSickEnabled==='function'&&!!getEmployeeChildSickEnabled(me)}catch(_){}
+    body=card('🔐 Anmeldung & PIN','Beim ersten Login oder nach einem Reset eine eigene 4-stellige PIN festlegen. Die PIN nicht weitergeben. NASCH besitzt keine automatische Inaktivitäts-Sperre.')+
+      (moduleVisible('wochenplan')?card('📅 Wochenplan',`Den veröffentlichten Wochenplan ansehen. In der aktuellen Kalenderwoche werden bereits vergangene Tage ausgeblendet; vergangene Kalenderwochen sind für Mitarbeiter nicht aufrufbar. Zukünftige veröffentlichte Wochen können geöffnet werden. „📍 Heute“ springt zur aktuellen Woche/heutigen Spalte. Unter „Wochenplan-Anzeige“ lassen sich Uhrzeit und Tätigkeit getrennt vergrößern.`): '')+
+      (moduleVisible('wochenplan')?card('📋 Verfügbarkeit & Frei',av+' Wunschfrei kann mit dem vorgesehenen Umfang beantragt werden. Verfügbarkeitsangaben bleiben beim Mitarbeiter und werden bei einem späteren Tausch nicht auf andere Personen übertragen.'): '')+
+      card('🏖 Abwesenheiten',`Urlaub, Wunschfrei, Krank und unbezahlten Urlaub (UU) über die vorgesehenen Bereiche melden bzw. beantragen.${kk?' Für deinen Zugang ist zusätzlich „Kind krank (KK)“ freigeschaltet.':''}`)+
+      (moduleVisible('wochenplan')?card('🔁 Tauschen, Ersatz & Organisation','Nur für eigene zukünftige Arbeitsschichten verwenden. Tausch/Ersatz verändert den Plan nicht sofort. Bei Organisation kann eine Begründung angegeben und mehrere Teammitglieder gleichzeitig angefragt werden. Die tatsächliche Änderung erfolgt erst nach Freigabe durch Filialleitung bzw. berechtigte Vertretung; NASCH prüft die Schicht dann erneut.'): '')+
+      (moduleVisible('stundennachweis')?card('📋 Arbeitszeiten & Monatsunterschrift','Eigene Arbeitszeiten als Monatsliste mit Zeit/Status, Pause und Stunden prüfen. Pausen werden nach der hinterlegten Regel berücksichtigt (ab 5:00 h 30 Min., ab 9:00 h 45 Min.). Mitarbeiter sehen keinen offiziellen PDF-Nachweis. Jeder Monat muss separat unterschrieben werden; erst danach kann die Leitung/Vertretung gegenzeichnen. Werden relevante Monatsdaten nachträglich geändert, werden die bisherigen Unterschriften ungültig und der Monat muss erneut unterschrieben werden.'): '')+
+      card('✍ Unterschrift','Die Monatsunterschrift im großen Unterschriftsfeld setzen; auf unterstützten Handys kann dafür Querformat genutzt werden. Eine Unterschrift wird niemals automatisch in den Folgemonat übernommen.')+
+      card('🔔 Meldungen','Fachliche Details sind erst in NASCH sichtbar; Push-/Sperrbildschirmtexte bleiben neutral („Neue Meldung verfügbar“). Signalton/Vibration können lokal eingestellt werden.');
+  }
+
+  body+=installationCards();
+  page.innerHTML=`<div class="back" onclick="history.back()">‹ Zurück</div><div style="padding:0 4px"><h2 style="font-size:18px;color:var(--navy);margin:0 0 16px">${title}</h2>${body}${footer(roleLabel)}</div>`;
 }
+
 
 // ---------- Teilen / Teams-neutral ----------
 function shareText(){
@@ -11090,7 +11102,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.23 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
+<!-- NASCH v29.26 · Wochenplan kompakt + rollenabhängige Zeitnavigation -->
 <style id="nasch-v296-plan-layout">
   .plan-t th.nc,.plan-t th.name-col,
   .plan-t td.nc,.plan-t td.name-cell{
@@ -11195,7 +11207,7 @@ setTimeout(()=>{ensureCards();hideLegacyTimesheetUi();ensureShareButton();applyE
 </script>
 
 
-<!-- NASCH v29.23 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
+<!-- NASCH v29.26 · Anzeigegrößen + Heute-Sprung + Wochenplan-Rollsystem -->
 <style id="nasch-v298-plan-view">
   :root{--nasch-time-font-size:11px;--nasch-activity-font-size:8px;}
   .nasch-shift-time{font-size:var(--nasch-time-font-size)!important;font-weight:700;line-height:1.15;white-space:nowrap;}
