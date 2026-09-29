@@ -1,4 +1,4 @@
-const VERSION='29.26';
+const VERSION='29.28';
 const CACHE=`nasch-app-v${VERSION}`;
 const CORE=[
   './index.html','./emsdetten.html','./lohne.html','./werlte.html','./loeningen.html','./leitung.html',

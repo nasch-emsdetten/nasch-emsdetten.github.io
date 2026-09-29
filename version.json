@@ -1,5 +1,5 @@
 {
-  "version": "29.26",
+  "version": "29.28",
   "date": "2026-09-29",
-  "notes": "v29.26: Installationshilfe erweitert. iPhone/iPad, Windows-PC und Mac sind dauerhaft in jedem rollenbezogenen Handbuch erklärt; PWA-Installationskarte unterstützt zusätzlich Desktop-Hinweise für Edge/Chrome/Safari."
+  "notes": "v29.28: Vertretung sieht offiziellen Stundenzettel/PDF und kann gegenzeichnen. Büro darf Stundenzettel ansehen/PDF speichern sowie Wochenpläne inklusive vergangener KWs lesen; Wochenplan zeigt Tages- und Wochenstunden und ist als PDF speicherbar."
 }
